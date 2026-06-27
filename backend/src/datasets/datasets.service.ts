@@ -70,10 +70,12 @@ export class DatasetsService {
 
     const columns = headers.map((name, index) => {
       const allValues = rows.map((row) => row[index] ?? '');
+      const { type, confidence } = this.columnType.detect(allValues);
       return {
         name,
         index,
-        type: this.columnType.detect(allValues),
+        type,
+        confidence,
         sampleValues: allValues.slice(0, 3),
       };
     });

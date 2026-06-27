@@ -164,6 +164,7 @@ describe('DatasetsService', () => {
         name: 'Ngày',
         index: 0,
         type: ColumnType.date,
+        confidence: 1,
         sampleValues: ['2024-01-01', '2024-01-02', '2024-01-03'],
       });
       expect(result.columns[1].type).toBe(ColumnType.number);
