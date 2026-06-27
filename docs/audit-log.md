@@ -444,4 +444,99 @@ make up      # chạy stack
 ### Tasks liên quan
 - P1-T6 ✅
 
+## [2026-06-27] Session 12 — Full chart rendering (P1-T7)
+
+### Yêu cầu
+- Khi user click "Chọn biểu đồ này" → render full chart với toàn bộ data (không chỉ 3 previewRows)
+
+### Công việc đã làm
+- Backend: `DatasetsService.getRows()` + `GET /datasets/:id/rows` — trả toàn bộ rows dưới dạng Record[]
+- Frontend: `ChartDetailPage` mới tại `/datasets/:id/chart`:
+  - Nhận `suggestion` + `selectedColumns` từ router state
+  - Gọi `fetchRows` → build ECharts option từ all rows → render full chart (480px)
+  - Back button → `/charts` kèm selectedColumns để không mất selection
+- Update `SuggestionCard` — nút "Chọn biểu đồ này" navigate tới ChartDetailPage
+- Fix pre-existing test race condition: `ColumnOverviewPage` auto-select test cần `waitFor`
+  (`findByRole` chờ element hiện, nhưng `useEffect` set selection chạy sau → cần waitFor thêm lần nữa)
+
+### Quyết định quan trọng
+- **Endpoint riêng `/rows`** thay vì sửa `/columns` — giữ previewRows nhỏ (10 dòng) cho column overview page, `/rows` trả all khi user đã quyết định
+- **Router state** truyền suggestion (không dùng URL param) — suggestion là transient state, không cần bookmark-able
+- **buildChartOption reuse** — cùng 1 function cho thumbnail (previewRows) và full render (allRows), chỉ khác data
+
+### Test coverage
+- 3 backend tests mới: getRows NotFoundException, all rows returned, controller delegation
+- 7 frontend tests mới: redirect, spinner, title, ChartView, row count, back button, error
+- Fix 1 test: ColumnOverviewPage auto-select cần `waitFor`
+- 83 backend + 58 frontend = 141 tests pass
+
+### Kết quả
+- Commit `d25e880` push lên https://github.com/GohanVu/excel-visualize
+
+### Tasks liên quan
+- P1-T7 ✅
+
+## [2026-06-27] Session 13 — Lưu chart vào DB (P1-T8)
+
+### Yêu cầu
+- Khi user click "Lưu vào dashboard" → tạo Dashboard (nếu chưa có) + Chart record trong DB
+
+### Công việc đã làm
+- Backend: `ChartsModule` mới (`charts.service.ts`, `charts.controller.ts`, `dto/save-chart.dto.ts`)
+  - `POST /charts`: verify dataset ownership → tìm/tạo default dashboard → tạo Chart record với config JSONB
+  - Cast `dto.config as Prisma.InputJsonValue` để giải quyết TS type mismatch với Prisma Json field
+- Frontend: nút "Lưu vào dashboard" trong `ChartDetailPage`
+  - Loading → "Đã lưu!" → navigate `/dashboard` sau 1.2s
+  - Error message khi save fail
+  - `api/charts.ts`: `saveChart()` function mới
+
+### Quyết định quan trọng
+- **Auto-create default dashboard**: lần đầu user lưu chart → tạo dashboard "Dashboard của tôi", lần sau reuse — không bắt user tạo dashboard thủ công ở phase này (P2 sẽ thêm tính năng tạo nhiều dashboard)
+- **config lưu JSONB**: toàn bộ ECharts option object lưu nguyên vào `config` field — flexible, không cần migration khi đổi chart type
+- **Prisma.InputJsonValue cast**: Prisma `Json` field type không nhận `Record<string, unknown>` trực tiếp, cần cast
+
+### Test coverage
+- 6 backend tests: NotFoundException, tạo dashboard mới, reuse dashboard, đúng fields, trả chart+dashboardId, controller delegation
+- 4 frontend tests: gọi đúng args, feedback "Đã lưu!", navigate /dashboard, error message
+- Fix: `vi.useFakeTimers()` không tương thích với `userEvent` → dùng real timers + `waitFor` timeout 2500ms
+- 89 backend + 62 frontend = 151 tests pass
+
+### Kết quả
+- Commit `6f42276` push lên https://github.com/GohanVu/excel-visualize
+
+### Tasks liên quan
+- P1-T8 ✅
+
+## [2026-06-28] Session 14 — Load dashboard từ DB (P1-T9) — Phase 1 hoàn thành
+
+### Yêu cầu
+- User quay lại `/dashboard` vẫn thấy các chart đã lưu trước đó
+
+### Công việc đã làm
+- Backend: `ChartsService.listCharts()` + `GET /charts`
+  - Query qua quan hệ `dashboard.userId`, order `createdAt asc`
+  - `select` chỉ field cần (id, type, title, config, createdAt)
+- Frontend: viết lại `DashboardPage`
+  - `useQuery(listCharts)` → render grid `ChartView` từ config JSONB
+  - Empty state (welcome + Upload) khi chưa có chart
+  - Khi có chart: header "Biểu đồ của bạn" + count + nút "Thêm biểu đồ"
+  - `api/charts.ts`: `listCharts()` + type `DashboardChart`
+
+### Quyết định quan trọng
+- **config JSONB render thẳng**: chart đã lưu nguyên ECharts option → không cần fetch lại dataset rows, render `ChartView` trực tiếp từ config — nhanh, ít round-trip
+- **Query qua `dashboard.userId`** thay vì lấy dashboardId riêng: ở phase này 1 user = 1 dashboard mặc định, query nested relation gọn hơn
+- **React Query staleTime mặc định (0)**: navigate từ ChartDetailPage về /dashboard sẽ refetch → chart mới lưu hiện ngay
+
+### Test coverage
+- 3 backend tests: list charts của user, empty array, controller delegation
+- 4 frontend tests: empty state, render saved charts, chart count, navigate "Thêm biểu đồ"
+- 92 backend + 66 frontend = 158 tests pass
+
+### Kết quả
+- Commit `fcf4f25` push lên https://github.com/GohanVu/excel-visualize
+- **Phase 1 (Core Data Flow MVP) HOÀN THÀNH**: upload → parse → detect type → suggest → render → lưu → load lại end-to-end
+
+### Tasks liên quan
+- P1-T9 ✅ → Phase 1 done (P1-T1 đến P1-T9 tất cả ✅)
+
 <!-- Thêm session mới ở đây -->
