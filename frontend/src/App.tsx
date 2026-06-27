@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
 import UploadPage from './pages/UploadPage';
 import ColumnOverviewPage from './pages/ColumnOverviewPage';
 import ChartSuggestionPage from './pages/ChartSuggestionPage';
@@ -18,14 +19,7 @@ export default function App() {
 
       {/* Protected routes — redirect to /login if not authenticated */}
       <Route element={<PrivateRoute />}>
-        <Route
-          path="/dashboard"
-          element={
-            <div className="flex h-screen items-center justify-center bg-gray-950 text-white">
-              Dashboard — coming soon
-            </div>
-          }
-        />
+        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/datasets/:id/columns" element={<ColumnOverviewPage />} />
         <Route path="/datasets/:id/charts" element={<ChartSuggestionPage />} />
