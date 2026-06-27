@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import UploadPage from './pages/UploadPage';
 import ColumnOverviewPage from './pages/ColumnOverviewPage';
+import ChartSuggestionPage from './pages/ChartSuggestionPage';
 import PrivateRoute from './components/PrivateRoute';
 import PublicRoute from './components/PublicRoute';
 
@@ -27,6 +28,7 @@ export default function App() {
         />
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/datasets/:id/columns" element={<ColumnOverviewPage />} />
+        <Route path="/datasets/:id/charts" element={<ChartSuggestionPage />} />
         <Route
           path="/admin/*"
           element={

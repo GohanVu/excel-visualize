@@ -88,3 +88,28 @@ export async function fetchColumns(datasetId: string): Promise<DatasetOverview> 
   );
   return data;
 }
+
+export type ChartType = 'line' | 'bar' | 'pie' | 'scatter';
+
+export interface ChartSuggestion {
+  type: ChartType;
+  title: string;
+  description: string;
+  encoding: { x: string; y: string[] };
+}
+
+export interface SuggestResponse {
+  datasetId: string;
+  suggestions: ChartSuggestion[];
+}
+
+export async function suggestCharts(
+  datasetId: string,
+  columns: number[],
+): Promise<SuggestResponse> {
+  const { data } = await client.post<SuggestResponse>(
+    `/datasets/${datasetId}/suggest`,
+    { columns },
+  );
+  return data;
+}
