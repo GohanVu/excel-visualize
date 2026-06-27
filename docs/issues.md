@@ -55,4 +55,13 @@
 - **Test added**: Covered bởi `src/hooks/useAuth.test.ts` — test "returns null when /auth/me returns 401" xác nhận 401 không throw, trả về `isAuthenticated = false`
 - **Lesson learned**: Endpoint dùng để **kiểm tra** trạng thái auth (`/auth/me`) phải được loại ra khỏi interceptor refresh — 401 ở đây là expected, không phải lỗi. Redirect trong interceptor phải luôn kèm guard `window.location.pathname !== '/login'` để tránh reload loop.
 
+### [Lesson-004] Đặt tên button trùng với tab label gây test ambiguity
+
+- **Status**: 🟢 Fixed
+- **Severity**: Low
+- **Phát hiện**: 2026-06-27 — LoginPage có tab "Đăng nhập" và submit button "Đăng nhập" → `getByRole('button', { name: 'Đăng nhập' })` tìm thấy 2 elements
+- **Fix**: Submit form bằng `fireEvent.submit(screen.getByRole('form'))` thay vì click button. Thêm `aria-label="auth-form"` vào `<form>` để `getByRole('form')` hoạt động.
+- **Test added**: `LoginPage.test.tsx`
+- **Lesson learned**: Khi có nhiều interactive element cùng text, dùng `fireEvent.submit(form)` thay vì click button. Thêm `aria-label` vào `<form>` khi cần query form trong test.
+
 <!-- Thêm issues ở đây -->
