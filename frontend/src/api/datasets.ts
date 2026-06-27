@@ -64,3 +64,27 @@ export async function fetchDatasets(): Promise<Dataset[]> {
   const { data } = await client.get<Dataset[]>('/datasets');
   return data;
 }
+
+export type ColumnType = 'date' | 'number' | 'string' | 'category';
+
+export interface DatasetColumn {
+  name: string;
+  index: number;
+  type: ColumnType;
+  sampleValues: string[];
+}
+
+export interface DatasetOverview {
+  datasetId: string;
+  name: string;
+  totalRows: number;
+  columns: DatasetColumn[];
+  previewRows: Record<string, string>[];
+}
+
+export async function fetchColumns(datasetId: string): Promise<DatasetOverview> {
+  const { data } = await client.get<DatasetOverview>(
+    `/datasets/${datasetId}/columns`,
+  );
+  return data;
+}
