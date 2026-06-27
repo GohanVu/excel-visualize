@@ -89,6 +89,65 @@
 
 ---
 
+## Phase 1.5 — Parsing Robustness, Assisted Correction & Aggregation
+
+> Mục tiêu: App đọc đúng Excel "thực tế" của người Việt (banner gộp ô, cột rỗng, ô merge),
+> cho user SỬA phỏng đoán khi auto không chắc, và biến dữ liệu toàn chữ thành chart bằng ĐẾM/NHÓM.
+> Bối cảnh + thiết kế: file "Từ vựng HSK" hiển thị rác — xem audit Session 15.
+>
+> **Triết lý "50/50":** auto chạy 100% như bản nháp; manual là sửa-khi-cần (corrective),
+> KHÔNG phải setup bắt buộc. Control chỉ nổi lên khi **confidence thấp** (file sạch im lặng).
+> Manual áp vào CẤU TRÚC dữ liệu (user hiểu data của họ), giữ AUTO cho chọn chart (user không rành).
+
+### Nhóm A — Auto parsing robust (backend, trả kèm confidence)
+
+| Task ID | Mô tả | Status | Dependencies | Notes |
+|---------|--------|--------|--------------|-------|
+| P1.5-T1 | Dò dòng header thật + trả `headerRowIndex` & cờ `headerConfident`; `parse()` nhận optional headerRow để re-parse khi user đổi | ✅ Done | P1-T2 | Bỏ dòng chỉ 1 ô non-empty (banner gộp ô); header = dòng đầu có ≥2 ô non-empty |
+| P1.5-T2 | Loại cột rỗng/gần rỗng khỏi overview | ⬜ Todo | P1-T3 | Cột 0% dữ liệu (vd cột ảnh) → không đưa lên UI |
+| P1.5-T3 | Min fill-ratio guard + trả `confidence` mỗi cột — hết date/number giả | ⬜ Todo | P1-T3 | Cột quá thưa → string. confidence = ratio khớp, để FE biết khi nào nhắc |
+| P1.5-T4 | Forward-fill ô gộp dọc (vertical merge) | ⬜ Todo | P1.5-T1 | Ưu tiên thấp — defer nếu T1-T3 đã đủ sạch |
+
+### Nhóm B — Assisted correction (confidence-gated, FE + API)
+
+| Task ID | Mô tả | Status | Dependencies | Notes |
+|---------|--------|--------|--------------|-------|
+| P1.5-T5 | ColumnOverviewPage: chip kiểu cột **editable** + nút **đổi header row** — CHỈ hiện khi confidence thấp | ⬜ Todo | P1.5-T1, P1.5-T3 | File sạch: 0 nhắc. File rác: icon "?" + dropdown đổi kiểu, dải "đọc từ dòng N ✎" |
+| P1.5-T6 | API `/suggest` nhận type override `{index, type}[]` thay `number[]` | ⬜ Todo | P1.5-T5, P1-T5 | Override từ request (mức gọn, không đụng DB). Persist vào `DatasetColumn` để sau |
+
+### Nhóm C — Aggregation charts (mở khoá dữ liệu toàn chữ)
+
+| Task ID | Mô tả | Status | Dependencies | Notes |
+|---------|--------|--------|--------------|-------|
+| P1.5-T7 | Suggester: rule "đếm số dòng theo category" + field `aggregation` trên ChartSuggestion | ⬜ Todo | P1.5-T6 | Category (không cần cột số) → bar/pie đếm. `aggregation: 'count'`, y rỗng. Target type=category, KHÔNG string nhiều distinct |
+| P1.5-T8 | buildChartOption (FE): hỗ trợ `aggregation: 'count'` — group-by x + đếm | ⬜ Todo | P1.5-T7 | Group rows theo x, value = số lượng |
+| P1.5-T9 | Verify end-to-end với file HSK thật | ⬜ Todo | P1.5-T1..T8 | "Từ loại" → đếm Danh từ/Động từ/Số từ; "Nhóm" → đếm theo nhóm nét |
+
+### Tính năng tương lai (Pro, không làm v1)
+
+- Thêm/bỏ cột, đổi tên cột hiển thị → gói trả phí (Phase 2+). Persist qua `DatasetColumn`.
+
+### Test cases P1.5
+
+- [ ] File banner gộp ô dòng 1 → header detect đúng từ dòng 2, `headerConfident=false`
+- [ ] Cột toàn rỗng (ảnh) → không hiện trong overview
+- [ ] Cột 2/500 ô có dữ liệu ngày → KHÔNG bị gán "Thời gian"
+- [ ] File sạch (header rõ, type rõ) → KHÔNG hiện control sửa (confidence cao)
+- [ ] File HSK → hiện chip đổi kiểu + nút đổi header (confidence thấp)
+- [ ] User đổi kiểu 1 cột → /suggest dùng type mới
+- [ ] Chọn cột "Từ loại" → suggester trả "Đếm số từ theo Từ loại"; render đúng số lượng mỗi nhóm
+
+### Thứ tự đề xuất
+
+```
+A: T1 (header+confidence) → T3 (fill guard+confidence) → T2 (drop empty)
+B: T5 (UI sửa, gated) → T6 (API override)
+C: T7 (suggester count) → T8 (buildChartOption count) → T9 (verify)
+T4 (merged cells) nếu còn cần
+```
+
+---
+
 ## Phase 2 — Dashboard Builder
 
 > Mục tiêu: User tạo được dashboard nhiều chart, kéo thả, resize. Enforce free tier gate.

@@ -539,4 +539,69 @@ make up      # chạy stack
 ### Tasks liên quan
 - P1-T9 ✅ → Phase 1 done (P1-T1 đến P1-T9 tất cả ✅)
 
+## [2026-06-28] Session 15 — Chẩn đoán file HSK + lập mini-phase Parsing Robustness & Aggregation
+
+### Yêu cầu
+- User upload file thật "0. Từ vựng HSK" (501 dòng, 14 cột) → UI hiển thị rác, không hiểu được file có gì
+- Hỏi: làm sao app đọc hiểu tốt hơn với file toàn chữ
+
+### Chẩn đoán (từ 2 screenshot: app UI + Excel gốc)
+**Bug thật:**
+1. Dòng 1 là banner gộp ô "TONG HOP TU VUNG HSK 1" bị hiểu nhầm là header (parser lấy cứng raw[0]) → lệch toàn bộ cột
+2. Cột "Thời gian / Ngày bắt đầu" là date GIẢ — `column-type.detect` tính ratio chỉ trên ô non-empty, cột gần rỗng + vài ô lọt regex → vượt ngưỡng 80%. Thiếu guard độ lấp đầy
+3. Cột rỗng (K/L/M chứa ảnh nét chữ) vẫn hiện trên UI
+4. Ô gộp dọc (STT nhảy 3,5,8...) → SheetJS trả rỗng ở ô dưới → sample lệch
+
+**Bản chất dữ liệu:** bảng tra cứu từ vựng — text duy nhất, không có số liệu đo lường. Cột số duy nhất (STT) vô nghĩa khi vẽ. Suggester hiện KHÔNG gợi ý gì khi chỉ có category (cần cột number làm y) → ra "chưa có gợi ý".
+
+### Quyết định quan trọng
+- **Đi hướng A+B** (user chốt): A = parsing robustness (bug thật, ảnh hưởng mọi file Excel VN có banner/merge), B = aggregation charts (đếm số dòng theo category) để dữ liệu toàn chữ vẫn vẽ được
+- **Tạo Phase 1.5** giữa Phase 1 và Phase 2 — 7 task (A: T1-T4, B: T5-T7)
+- **Aggregation qua field `aggregation: 'count'`** trên ChartSuggestion, encoding y rỗng; buildChartOption (FE) thực hiện group-by + đếm — giữ kiến trúc hiện tại (suggester rule-based, FE shape data)
+- **Target aggregation là cột `category`** (Từ loại, Nhóm), KHÔNG phải string nhiều distinct (Chữ Hán unique → 500 cột vô nghĩa)
+
+### Brainstorm bổ sung — Hybrid auto + manual (50/50)
+User đề xuất: dò header / xác định cột nên kết hợp auto + chút thủ công cho chính xác. Tinh chỉnh thành:
+- **"50/50" = chia vai, không chia đều công sức**: auto chạy 100% như bản nháp; manual là sửa-khi-cần (corrective), KHÔNG phải wizard setup bắt buộc — giữ wow < 30s
+- **Áp manual vào cấu trúc dữ liệu** (header, kiểu cột — user hiểu data của họ); **giữ AUTO cho chọn chart** (user không rành bar/line/pie). Đừng đảo ngược
+- **Confidence-gated**: control chỉ nổi khi auto không chắc → file sạch im lặng hoàn toàn, file rác mới hiện chip đổi kiểu + nút đổi header
+- **Scope v1 (user chốt)**: chỉ sửa header row + kiểu cột. Thêm/bỏ/đổi tên cột → để tính năng Pro sau (persist qua `DatasetColumn` đang bỏ trống)
+- **Override mức gọn**: truyền type override trong request `/suggest`, chưa đụng DB
+
+### Kết quả
+- Plan cập nhật: Phase 1.5 nắn lại thành 9 task, 3 nhóm (A auto-parse+confidence, B assisted-correction gated, C aggregation) + mục "tính năng Pro tương lai"
+- Chưa code — phiên sau bắt đầu P1.5-T1 (header detection + confidence)
+
+### Tasks liên quan
+- Phase 1.5 (mới) — P1.5-T1 đến P1.5-T9
+
+## [2026-06-28] Session 16 — Header detection + confidence (P1.5-T1)
+
+### Yêu cầu
+- Bắt đầu Phase 1.5: dò dòng header thật, bỏ qua banner gộp ô; trả confidence để FE biết khi nào nhắc user
+
+### Công việc đã làm
+- `parser.service.ts`:
+  - `detectHeaderRow()`: quét tối đa 10 dòng đầu, header = dòng đầu tiên có ≥2 ô non-empty → banner/title gộp ô (1 ô) bị bỏ
+  - `parse()` trả thêm `headerRowIndex` + `headerConfident`
+  - `parse()` nhận optional `headerRow` (clamp range) để re-parse khi user override
+- `datasets.service.parseDataset`: expose `headerRowIndex` + `headerConfident` trong overview
+
+### Quyết định quan trọng
+- **confident = (headerRowIndex === 0)**: nếu phải bỏ qua dòng nào để tìm header → không chắc → FE sẽ hiện control cho user xác nhận. File header sạch ở dòng đầu → im lặng. Đúng triết lý confidence-gated
+- **Ngưỡng ≥2 ô non-empty**: banner gộp ô chỉ có 1 ô giá trị, header thật nhiều ô → tách được. File 1 cột rơi vào fallback dùng dòng đầu (confident)
+- **headerRow override → confident=true tuyệt đối**: user đã quyết thì tin, không tự đoán lại
+- **headerRowIndex theo mảng đã đọc** (sau blankrows:false), ổn định để re-parse vì options đồng nhất
+
+### Test coverage
+- 4 parser tests mới: skip banner (index 1, confident false), header dòng 0 (confident true), override ghi đè auto, clamp out-of-range
+- Cập nhật mock + assertion trong datasets.service.spec
+- 96 backend tests pass
+
+### Kết quả
+- Commit `157fc15` push lên https://github.com/GohanVu/excel-visualize
+
+### Tasks liên quan
+- P1.5-T1 ✅ → tiếp theo P1.5-T3 (min fill-ratio guard + confidence mỗi cột)
+
 <!-- Thêm session mới ở đây -->
