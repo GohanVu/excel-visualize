@@ -1,7 +1,6 @@
 # Agent Instructions
 
 > File này dùng khi làm việc với AI agent KHÔNG phải Kiro (Claude, GPT, Cursor, Copilot, v.v.)
-> Copy nội dung bên dưới vào system prompt hoặc paste đầu conversation.
 
 ---
 
@@ -10,6 +9,7 @@
 | AI Agent | File auto-loaded | Đã có trong template |
 |----------|-----------------|:-------------------:|
 | **Kiro** | `.kiro/steering/*.md` | ✅ |
+| **Claude Code** | `CLAUDE.md` | ✅ |
 | **Cursor** | `.cursorrules` | ✅ |
 | **Windsurf** | `.windsurfrules` | ✅ |
 | **GitHub Copilot** | `.github/copilot-instructions.md` | ✅ |

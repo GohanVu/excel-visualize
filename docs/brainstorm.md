@@ -5,46 +5,109 @@
 
 ---
 
-## Session 1 — [YYYY-MM-DD] — [Tiêu đề]
+## Session 1 — 2026-06-27 — UI/UX & Product Direction
 
 ### Bối cảnh & Vấn đề
-- Người dùng muốn gì?
-- Problem statement là gì?
+
+Người dùng muốn build web app giúp **người dùng Excel lâu năm, data lớn, muốn xem visual nhưng không biết cách**.
+
+Mục tiêu cốt lõi: **đưa user từ file Excel → chart đẹp nhanh nhất có thể, ít quyết định nhất có thể.**
+
+Không phải tool cho data analyst — là tool cho người không chuyên.
 
 ### Yêu cầu đã xác nhận
-- **Feature 1**: Mô tả
-- **Feature 2**: Mô tả
-- **Platform**: Web / Mobile / Desktop
-- **Users**: Ai dùng, bao nhiêu user
 
-### Tech Stack đã chọn
+- **Platform**: Web app SaaS
+- **Target**: Người dùng Việt Nam, dùng Excel lâu năm, data lớn, không biết cách tạo chart đẹp
+- **Model**: Freemium với subscription trả phí
+- **Ngôn ngữ UI**: Tiếng Việt (tên tính năng, AI insight đều bằng tiếng Việt)
 
-| Layer | Công nghệ | Lý do |
-|-------|-----------|-------|
-| Frontend | | |
-| Backend | | |
-| Database | | |
-| Auth | | |
-| Deploy | | |
+### 3 Nguyên tắc UX cốt lõi
 
-### Architecture
-<!-- Vẽ diagram nếu cần -->
+1. **Đừng hỏi user chọn chart** — họ không biết Bar vs Line là gì. App suggest trước, user click chọn.
+2. **Wow moment < 30 giây** — Upload xong → thấy chart ngay. Smart default, detect tự động.
+3. **Ẩn hết jargon** — Không dùng "dataset", "transform", "axis". Dùng "cột", "số liệu", "So sánh theo thời gian".
 
-### Database Schema (draft)
-<!-- Draft schema ban đầu -->
+### User Journey đã chốt
 
-### Features MVP
-1. Feature 1
-2. Feature 2
-3. ...
+```
+Upload file (5s)
+  → Tổng quan cột (tự động)
+  → Chọn cột muốn dùng (auto pre-select)
+  → App suggest chart (không hỏi gì)
+  → Xem chart → Tuỳ chỉnh (optional)
+  → Export / Lưu dashboard
+```
 
-### Quyết định
-- Quyết định 1 — lý do
-- Quyết định 2 — lý do
+### Màn hình Tổng quan cột
 
-### Câu hỏi mở
-- Câu hỏi chưa trả lời được
-- Để quyết định sau
+- App tự detect kiểu cột và nhóm thành 3 loại bằng tiếng Việt:
+  - 📅 **Thời gian** (date/datetime columns)
+  - 🔢 **Số liệu** (numeric columns)
+  - 🏷️ **Phân loại** (string/categorical columns)
+- Hiện preview 3 dòng đầu để user nhận ra file của mình
+- **Auto pre-select**: cột date đầu tiên + cột số liệu đầu tiên
+- User có thể thay đổi selection — nhưng không bắt buộc
+
+### Màn hình Gợi ý Chart
+
+- Hiện 4 chart thumbnails render bằng **data thật** của user (không phải data mẫu)
+- Mô tả bằng tiếng Việt đơn giản: "So sánh theo từng tháng", "Xu hướng theo thời gian"
+- Không dùng tên kỹ thuật (Bar chart, Line chart)
+- 1 thumbnail được pre-select sẵn (recommended)
+- Có escape hatch nhỏ: "Tôi tự chọn loại chart" cho power user
+
+### Freemium Gate đã chốt
+
+#### Free tier
+- Tối đa **3 chart / dashboard** (hoặc ít hơn nếu data không đủ để suggest)
+- Tối đa **1 dashboard**
+- Tối đa **2 dataset**
+- Rule-based suggest: **2 gợi ý** (không tốn API)
+- Export PNG cơ bản
+- Sync Google Sheet: manual only (nút Refresh)
+
+#### Pro tier
+- Không giới hạn chart, dashboard, dataset
+- AI suggest: **4 gợi ý + insight tiếng Việt** (Claude API)
+- Export PNG + PDF, watermark-free
+- Sync Google Sheet tự động (BullMQ cron)
+
+#### Rule gate quan trọng
+**Số chart free user thấy = min(3, số chart hợp lý app suggest được từ data)**
+
+- Nếu data chỉ đủ cho 2 chart → free user thấy 2, không hiện slot "🔒 bị khóa" trống
+- Gate chỉ kích hoạt khi có thứ gì đó thực sự để khóa
+- Hiện locked: blur + 🔒, không ẩn đi — user thấy mình bỏ lỡ gì
+
+#### Chi phí API (ước tính)
+- Rule-based suggest: $0 (chạy local)
+- Claude API cho 1 dataset ~500 rows: ~$0.01–0.03 / lần
+- Paid user dùng 10 lần/tháng: ~$0.1–0.3 / user / tháng
+- → Margin tốt nếu plan từ 99k VND/tháng
+
+### Tech Stack đã chốt (từ spec)
+
+| Layer | Công nghệ |
+|---|---|
+| Frontend | React + Vite + TailwindCSS |
+| Chart | ECharts (echarts-for-react) |
+| Dashboard layout | react-grid-layout |
+| Data fetching | TanStack Query |
+| Backend | NestJS + Prisma |
+| DB | PostgreSQL 16 |
+| File storage | MinIO |
+| Cache/Queue | Redis + BullMQ |
+| Auth | Google OAuth2 + JWT |
+| Infra | Docker + Traefik + GitHub Actions |
+| Payment | Stripe |
+
+### Câu hỏi còn mở
+
+- Tên sản phẩm và domain cụ thể (đang để "ChartLy" tạm)
+- Giá subscription cụ thể (đề xuất từ 99k VND/tháng)
+- VPS provider (ưu tiên VN, hoặc Vultr/Hetzner)
+- Plan có bao nhiêu tier? (Free + 1 Pro, hay Free + Pro + Business?)
 
 ---
 

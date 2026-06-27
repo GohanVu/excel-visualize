@@ -12,12 +12,25 @@ Thumbs.db
 .env.local
 .env.*.local
 
-# Dependencies (thêm theo tech stack)
-# node_modules/
-# venv/
-# __pycache__/
+# Dependencies
+node_modules/
+.pnpm-store/
 
-# Build output (thêm theo tech stack)
-# dist/
-# build/
-# *.pyc
+# Build output
+dist/
+build/
+frontend/.vite/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test coverage
+coverage/
+
+# Prisma
+# (migrations nên commit — không ignore)
+
+# VSCode user settings (global settings vẫn dùng được)
+.vscode/settings.json
