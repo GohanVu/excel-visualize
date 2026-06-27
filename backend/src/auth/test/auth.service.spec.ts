@@ -212,6 +212,19 @@ describe('AuthService', () => {
     });
   });
 
+  describe('sanitizeUser', () => {
+    it('strips passwordHash and encryptedRefreshToken', () => {
+      const result = service.sanitizeUser({
+        ...mockUser,
+        passwordHash: '$2a$10$secret',
+        encryptedRefreshToken: 'iv:cipher',
+      } as any);
+      expect(result).not.toHaveProperty('passwordHash');
+      expect(result).not.toHaveProperty('encryptedRefreshToken');
+      expect(result).toMatchObject({ id: mockUser.id, email: mockUser.email });
+    });
+  });
+
   describe('verifyRefreshToken', () => {
     it('calls jwt.verify with refresh secret', () => {
       mockJwt.verify.mockReturnValue({ sub: 'user-1' });

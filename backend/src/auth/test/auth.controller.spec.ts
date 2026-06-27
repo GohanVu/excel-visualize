@@ -13,6 +13,7 @@ const mockUser = {
   googleId: 'google-123',
   avatarUrl: null,
   encryptedRefreshToken: 'iv:ciphertext',
+  passwordHash: '$2a$10$hashed-secret-value',
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -23,6 +24,13 @@ const mockAuthService = {
     refreshToken: 'refresh-tok',
   }),
   verifyRefreshToken: jest.fn(),
+  // logic thật để test sanitize loại bỏ field nhạy cảm
+  sanitizeUser: jest.fn((u: any) => {
+    const { passwordHash, encryptedRefreshToken, ...safe } = u;
+    void passwordHash;
+    void encryptedRefreshToken;
+    return safe;
+  }),
 };
 
 const mockConfig = {
@@ -141,6 +149,11 @@ describe('AuthController', () => {
     it('does not return encryptedRefreshToken', () => {
       const result = controller.me(mockUser as any);
       expect(result).not.toHaveProperty('encryptedRefreshToken');
+    });
+
+    it('does not return passwordHash (security)', () => {
+      const result = controller.me(mockUser as any);
+      expect(result).not.toHaveProperty('passwordHash');
     });
 
     it('returns basic user fields', () => {

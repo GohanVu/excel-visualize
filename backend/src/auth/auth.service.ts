@@ -108,6 +108,12 @@ export class AuthService {
     });
   }
 
+  /** Loại bỏ field nhạy cảm trước khi trả user ra ngoài (passwordHash, refresh token) */
+  sanitizeUser(user: User) {
+    const { passwordHash: _ph, encryptedRefreshToken: _rt, ...safe } = user;
+    return safe;
+  }
+
   private encryptToken(token: string): string {
     const iv = randomBytes(16);
     const cipher = createCipheriv('aes-256-cbc', this.encryptionKey, iv);

@@ -64,4 +64,14 @@
 - **Test added**: `LoginPage.test.tsx`
 - **Lesson learned**: Khi có nhiều interactive element cùng text, dùng `fireEvent.submit(form)` thay vì click button. Thêm `aria-label` vào `<form>` khi cần query form trong test.
 
+### [Issue-005] `/auth/me` lộ passwordHash ra client
+
+- **Status**: 🟢 Fixed
+- **Severity**: Critical
+- **Phát hiện**: 2026-06-27 — User mở DevTools Network thấy response `/auth/me` chứa `passwordHash` (bcrypt hash)
+- **Root cause**: Khi thêm `passwordHash` vào User (Session 6), `me()` chỉ destructure loại `encryptedRefreshToken`, quên loại `passwordHash`. Field nhạy cảm mới thêm không được cập nhật vào nơi sanitize.
+- **Fix**: Tạo `AuthService.sanitizeUser()` loại bỏ cả `passwordHash` + `encryptedRefreshToken`, dùng chung cho `/me`, register, login (DRY — 1 nơi sanitize duy nhất)
+- **Test added**: `auth.controller.spec.ts` "does not return passwordHash (security)"; `auth.service.spec.ts` "sanitizeUser strips passwordHash and encryptedRefreshToken"
+- **Lesson learned**: Mỗi khi thêm field nhạy cảm vào model, PHẢI rà soát tất cả nơi serialize user ra ngoài. Tốt nhất: 1 hàm `sanitizeUser` duy nhất thay vì destructure rải rác — thêm field mới chỉ sửa 1 chỗ. Khi bcrypt hash lộ ra, kẻ tấn công có thể brute-force offline.
+
 <!-- Thêm issues ở đây -->

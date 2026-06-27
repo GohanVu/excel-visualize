@@ -37,8 +37,7 @@ export class AuthController {
   async register(@Body() dto: RegisterDto, @Res() res: Response) {
     const user = await this.authService.registerWithPassword(dto.email, dto.password, dto.name);
     this.setTokenCookies(res, user);
-    const { passwordHash: _, encryptedRefreshToken: __, ...safe } = user as any;
-    return (res as any).json(safe);
+    return res.json(this.authService.sanitizeUser(user));
   }
 
   @Post('login')
@@ -46,8 +45,7 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Res() res: Response) {
     const user = await this.authService.loginWithPassword(dto.email, dto.password);
     this.setTokenCookies(res, user);
-    const { passwordHash: _, encryptedRefreshToken: __, ...safe } = user as any;
-    return (res as any).json(safe);
+    return res.json(this.authService.sanitizeUser(user));
   }
 
   private setTokenCookies(res: Response, user: User) {
@@ -122,7 +120,6 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: User) {
-    const { encryptedRefreshToken: _, ...safe } = user;
-    return safe;
+    return this.authService.sanitizeUser(user);
   }
 }
