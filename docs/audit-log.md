@@ -158,4 +158,29 @@
 ### Tasks liên quan
 - P0-T5 ✅
 
+## [2026-06-27] Session 5 — Route guard FE (P0-T6)
+
+### Yêu cầu
+- Route guard: redirect /login nếu chưa đăng nhập, redirect /dashboard nếu đã đăng nhập
+
+### Công việc đã làm
+- `src/components/PrivateRoute.tsx` — bọc protected routes, redirect /login nếu unauthenticated, spinner khi loading
+- `src/components/PublicRoute.tsx` — bọc public-only routes, redirect /dashboard nếu đã authenticated
+- Cập nhật `App.tsx` — wire PrivateRoute + PublicRoute vào Routes tree
+- `PrivateRoute.test.tsx` — 3 tests: spinner, render khi auth, redirect khi không auth
+- `PublicRoute.test.tsx` — 3 tests: spinner, render khi không auth, redirect khi đã auth
+
+### Quyết định quan trọng
+- **Dùng `<Outlet />`** thay vì `children` prop — pattern chuẩn của React Router v6 cho nested routes
+- **Spinner inline** trong guard thay vì global loading overlay — đơn giản, đủ dùng ở phase này
+
+### Test coverage
+- 13/13 tests pass (`make test-frontend`)
+
+### Kết quả
+- Commit `5b58040` push lên https://github.com/GohanVu/excel-visualize
+
+### Tasks liên quan
+- P0-T6 ✅
+
 <!-- Thêm session mới ở đây -->

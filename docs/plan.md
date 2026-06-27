@@ -24,7 +24,7 @@
 | P0-T3 | Prisma schema — bổ sung role: users(role: admin\|user), bảng: datasets, dataset_columns, dashboards, charts, subscriptions, audit_logs | ✅ Done | P0-T1 | role lưu enum trong DB |
 | P0-T4 | Auth module backend: Google OAuth2 + JWT (access + refresh token) + role guard | ✅ Done | P0-T2, P0-T3 | Refresh token Google PHẢI mã hoá trước khi lưu DB |
 | P0-T5 | Auth flow UI: trang Login (Google Sign-In button), callback handler, lưu JWT vào httpOnly cookie | ✅ Done | P0-T4 | Không dùng localStorage cho token |
-| P0-T6 | Route guard FE: redirect về /login nếu chưa đăng nhập, redirect về /dashboard nếu đã đăng nhập | ⬜ Todo | P0-T5 | |
+| P0-T6 | Route guard FE: redirect về /login nếu chưa đăng nhập, redirect về /dashboard nếu đã đăng nhập | ✅ Done | P0-T5 | |
 | P0-T7 | GitHub Actions CI: lint + test + build check khi push | ⬜ Todo | P0-T1 | Không cần deploy thật lúc này |
 | P0-T8 | ESLint + Husky pre-commit: enforce max-lines (200 soft / 400 hard), max-lines-per-function (50) | ⬜ Todo | P0-T1 | Xem quy tắc trong spec |
 | P0-T9 | Traefik reverse proxy config (local dev + production skeleton) | ⬜ Todo | P0-T2 | SSL via Let's Encrypt cho prod |
