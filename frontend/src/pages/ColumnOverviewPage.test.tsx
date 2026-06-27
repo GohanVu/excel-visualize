@@ -57,12 +57,16 @@ describe('ColumnOverviewPage', () => {
 
   it('auto pre-selects first date + first number column', async () => {
     renderPage();
+    // findByRole waits for the element, but useEffect fires after render →
+    // waitFor is needed to wait for the second re-render that applies the selection
     const ngay = await screen.findByRole('button', { name: /Ngày/ });
     const doanhThu = screen.getByRole('button', { name: /Doanh thu/ });
     const khuVuc = screen.getByRole('button', { name: /Khu vực/ });
-    expect(ngay).toHaveAttribute('aria-pressed', 'true');
-    expect(doanhThu).toHaveAttribute('aria-pressed', 'true');
-    expect(khuVuc).toHaveAttribute('aria-pressed', 'false');
+    await waitFor(() => {
+      expect(ngay).toHaveAttribute('aria-pressed', 'true');
+      expect(doanhThu).toHaveAttribute('aria-pressed', 'true');
+      expect(khuVuc).toHaveAttribute('aria-pressed', 'false');
+    });
   });
 
   it('toggles selection on click', async () => {

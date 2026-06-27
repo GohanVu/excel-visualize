@@ -182,6 +182,32 @@ describe('DatasetsService', () => {
     });
   });
 
+  describe('getRows', () => {
+    const mockDataset = {
+      id: 'ds-1',
+      userId: 'user-1',
+      name: 'report',
+      minioKey: 'user-1/file.xlsx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    };
+
+    it('throws NotFoundException when dataset does not belong to user', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue(null);
+      await expect(service.getRows('user-1', 'ds-99')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('returns all rows as key-value objects', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue(mockDataset);
+      const result = await service.getRows('user-1', 'ds-1');
+      expect(result.datasetId).toBe('ds-1');
+      expect(result.rows).toHaveLength(3);
+      expect(result.rows[0]).toEqual({ Ngày: '2024-01-01', 'Doanh thu': '100' });
+      expect(result.rows[2]).toEqual({ Ngày: '2024-01-03', 'Doanh thu': '300' });
+    });
+  });
+
   describe('suggestCharts', () => {
     const mockDataset = {
       id: 'ds-1',

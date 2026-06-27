@@ -2,6 +2,7 @@ import { useParams, useLocation, Navigate, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query';
 import { fetchColumns, suggestCharts } from '../api/datasets';
 import type { ChartSuggestion } from '../api/datasets';
+
 import { buildChartOption } from '../lib/buildChartOption';
 import ChartView from '../components/ChartView';
 
@@ -89,7 +90,13 @@ function SuggestionContent({
         ) : (
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             {suggestions.map((s, i) => (
-              <SuggestionCard key={i} suggestion={s} rows={rows} />
+              <SuggestionCard
+                key={i}
+                suggestion={s}
+                rows={rows}
+                datasetId={datasetId}
+                selectedColumns={selectedColumns}
+              />
             ))}
           </div>
         )}
@@ -101,10 +108,16 @@ function SuggestionContent({
 function SuggestionCard({
   suggestion,
   rows,
+  datasetId,
+  selectedColumns,
 }: {
   suggestion: ChartSuggestion;
   rows: Record<string, string>[];
+  datasetId: string;
+  selectedColumns: number[];
 }) {
+  const navigate = useNavigate();
+
   return (
     <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
       <div className="rounded-lg bg-gray-950 p-2">
@@ -114,6 +127,11 @@ function SuggestionCard({
       <p className="mt-1 text-sm text-gray-400">{suggestion.description}</p>
       <button
         type="button"
+        onClick={() =>
+          navigate(`/datasets/${datasetId}/chart`, {
+            state: { suggestion, selectedColumns },
+          })
+        }
         className="mt-4 w-full rounded-lg bg-blue-600 py-2 text-sm font-medium transition hover:bg-blue-500"
       >
         Chọn biểu đồ này

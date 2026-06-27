@@ -32,6 +32,11 @@ export class DatasetsController {
     return this.datasetsService.parseDataset(user.id, id);
   }
 
+  @Get(':id/rows')
+  rows(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.datasetsService.getRows(user.id, id);
+  }
+
   @Post(':id/suggest')
   suggest(
     @CurrentUser() user: User,

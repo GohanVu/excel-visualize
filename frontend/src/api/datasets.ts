@@ -103,6 +103,16 @@ export interface SuggestResponse {
   suggestions: ChartSuggestion[];
 }
 
+export interface DatasetRows {
+  datasetId: string;
+  rows: Record<string, string>[];
+}
+
+export async function fetchRows(datasetId: string): Promise<DatasetRows> {
+  const { data } = await client.get<DatasetRows>(`/datasets/${datasetId}/rows`);
+  return data;
+}
+
 export async function suggestCharts(
   datasetId: string,
   columns: number[],

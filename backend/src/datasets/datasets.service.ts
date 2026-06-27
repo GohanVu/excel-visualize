@@ -105,6 +105,22 @@ export class DatasetsService {
     return { datasetId, suggestions: this.suggester.suggest(selected) };
   }
 
+  async getRows(userId: string, datasetId: string) {
+    const dataset = await this.prisma.dataset.findFirst({
+      where: { id: datasetId, userId },
+    });
+    if (!dataset) throw new NotFoundException('Dataset không tồn tại.');
+
+    const buffer = await this.storage.getObject(dataset.minioKey);
+    const { headers, rows } = this.parser.parse(buffer, dataset.mimeType);
+
+    const allRows = rows.map((row) =>
+      Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ''])),
+    );
+
+    return { datasetId, rows: allRows };
+  }
+
   async findAllByUser(userId: string) {
     return this.prisma.dataset.findMany({
       where: { userId },

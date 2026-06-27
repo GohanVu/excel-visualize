@@ -7,6 +7,8 @@ const mockService = {
   confirmUpload: jest.fn(),
   findAllByUser: jest.fn(),
   parseDataset: jest.fn(),
+  getRows: jest.fn(),
+  suggestCharts: jest.fn(),
 };
 
 const mockUser = { id: 'user-1' } as any;
@@ -62,6 +64,17 @@ describe('DatasetsController', () => {
     mockService.parseDataset.mockResolvedValue(expected);
     const result = await controller.columns(mockUser, 'ds-1');
     expect(mockService.parseDataset).toHaveBeenCalledWith('user-1', 'ds-1');
+    expect(result).toEqual(expected);
+  });
+
+  it('GET /datasets/:id/rows → delegates to service.getRows with userId and id', async () => {
+    const expected = {
+      datasetId: 'ds-1',
+      rows: [{ Ngày: '2024-01-01', 'Doanh thu': '100' }],
+    };
+    mockService.getRows.mockResolvedValue(expected);
+    const result = await controller.rows(mockUser, 'ds-1');
+    expect(mockService.getRows).toHaveBeenCalledWith('user-1', 'ds-1');
     expect(result).toEqual(expected);
   });
 });
