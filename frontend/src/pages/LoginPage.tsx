@@ -24,8 +24,9 @@ export default function LoginPage() {
         await client.post('/auth/login', { email, password });
       }
       navigate('/dashboard', { replace: true });
-    } catch (err: any) {
-      const msg = err?.response?.data?.message;
+    } catch (err) {
+      const resp = (err as { response?: { data?: { message?: string | string[] } } }).response;
+      const msg = resp?.data?.message;
       setError(Array.isArray(msg) ? msg[0] : (msg ?? 'Đã có lỗi xảy ra'));
     } finally {
       setLoading(false);

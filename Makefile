@@ -1,4 +1,4 @@
-.PHONY: up down build logs shell-backend shell-frontend db-migrate db-studio db-seed
+.PHONY: up down build logs shell-backend shell-frontend db-migrate db-studio db-seed setup lint
 
 # Khởi động toàn bộ stack (build nếu chưa có image)
 up:
@@ -70,7 +70,15 @@ test:
 	docker compose exec backend pnpm test
 	docker compose exec frontend pnpm test
 
+# Setup pre-commit hooks (chạy 1 lần sau khi clone)
+setup:
+	pnpm install
+
 # Chạy lint
+lint:
+	docker compose exec backend pnpm lint
+	docker compose exec frontend pnpm lint
+
 lint-backend:
 	docker compose exec backend pnpm lint
 

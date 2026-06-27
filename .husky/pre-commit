@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+
+# Hard limit: block commits with TypeScript files > 400 lines
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' || true)
+if [ -n "$STAGED_TS" ]; then
+  FAIL=0
+  for f in $STAGED_TS; do
+    [ -f "$f" ] || continue
+    lines=$(wc -l < "$f" | tr -d ' ')
+    if [ "$lines" -gt 400 ]; then
+      echo "ERROR: $f exceeds 400-line hard limit ($lines lines)"
+      FAIL=1
+    fi
+  done
+  [ "$FAIL" -eq 0 ] || exit 1
+fi
+
+pnpm lint-staged
