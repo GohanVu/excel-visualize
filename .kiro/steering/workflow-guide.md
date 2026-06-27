@@ -26,6 +26,12 @@ Sau brainstorm, tạo plan tại `docs/plan.md` bao gồm:
 - Critical path
 - Timeline ước tính
 
+**Lưu ý:** Phase 1 (Setup) LUÔN phải bao gồm:
+- Environment isolation (venv / Docker / Devcontainer)
+- Đảm bảo portability: clone → 1 command → chạy toàn bộ
+- .gitignore chuẩn, không commit artifacts local
+- Lock files cho dependencies (pin versions)
+
 ## 3. Implementation Phase
 
 Khi implement từng task:
