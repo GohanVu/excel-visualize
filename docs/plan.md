@@ -74,7 +74,7 @@
 | P1-T3 | Column type detection: phân loại date / number / string / category | ✅ Done | P1-T2 | ColumnTypeService rule-based, ngưỡng khớp 80% |
 | P1-T4 | Column overview screen (FE): hiện 3 nhóm cột, preview 3 dòng đầu, auto pre-select | ✅ Done | P1-T3 | 3 nhóm: Thời gian/Số liệu/Phân loại; auto-select date+number đầu |
 | P1-T5 | Rule-based chart suggester: nhận cột đã chọn → trả về danh sách chart types hợp lệ | ✅ Done | P1-T3 | POST /datasets/:id/suggest; tối đa 4 gợi ý, mô tả tiếng Việt |
-| P1-T6 | Chart suggestion screen (FE): render 4 thumbnail bằng data thật, mô tả tiếng Việt | ⬜ Todo | P1-T4, P1-T5 | Tối đa 4 gợi ý; mô tả plain Vietnamese, không dùng tên kỹ thuật |
+| P1-T6 | Chart suggestion screen (FE): render 4 thumbnail bằng data thật, mô tả tiếng Việt | ✅ Done | P1-T4, P1-T5 | ECharts thumbnail; buildChartOption + ChartView dùng chung |
 | P1-T7 | Chart rendering (FE): ECharts render chart từ config + data user đã chọn | ⬜ Todo | P1-T6 | |
 | P1-T8 | Lưu chart vào DB (dashboard + chart record) | ⬜ Todo | P1-T7, P0-T3 | Chart config lưu JSONB |
 | P1-T9 | Load lại dashboard từ DB — user quay lại vẫn thấy chart cũ | ⬜ Todo | P1-T8 | |

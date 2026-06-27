@@ -417,4 +417,31 @@ make up      # chạy stack
 ### Tasks liên quan
 - P1-T5 ✅
 
+## [2026-06-27] Session 11 — Chart suggestion screen (P1-T6)
+
+### Yêu cầu
+- FE render 4 thumbnail bằng data thật + mô tả tiếng Việt cho mỗi gợi ý
+
+### Công việc đã làm
+- Cài `echarts` (echarts-for-react đã có sẵn)
+- `lib/buildChartOption.ts`: dựng ECharts option cho line/bar/pie/scatter — thuần
+- `components/ChartView.tsx`: wrapper echarts-for-react (SVG renderer), dùng chung cho P1-T7
+- `ChartSuggestionPage` (route `/datasets/:id/charts`): fetch suggest + preview, render cards
+- `api/datasets.ts`: `suggestCharts` + types ChartSuggestion/SuggestResponse
+- eslintrc frontend: override cho phép `any` trong test files
+
+### Quyết định quan trọng
+- **Thumbnail dùng previewRows (data thật)**: không placeholder, đúng yêu cầu plan
+- **buildChartOption tách thuần**: test không cần DOM/canvas; ChartView mock được trong page test
+- **SVG renderer**: nhẹ, không cần canvas — thân thiện test môi trường happy-dom
+- **Redirect khi thiếu state**: vào thẳng `/charts` (reload) mà không có selectedColumns → về `/columns`
+- **ChartView tái dùng cho P1-T7**: full render chỉ cần truyền data đầy đủ thay previewRows
+
+### Test coverage
+- 11 test mới: 6 buildChartOption (4 loại chart + coerce số + dấu phẩy) + 5 page (redirect, render cards, thumbnail, gọi API, empty)
+- 48/48 frontend pass
+
+### Tasks liên quan
+- P1-T6 ✅
+
 <!-- Thêm session mới ở đây -->
