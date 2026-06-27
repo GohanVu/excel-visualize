@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ParserService } from '../parser/parser.service';
 import { ColumnTypeService } from '../parser/column-type.service';
+import { ChartSuggesterService } from '../suggester/chart-suggester.service';
 import { PresignUploadDto } from './dto/presign-upload.dto';
 import { ConfirmUploadDto } from './dto/confirm-upload.dto';
 
@@ -18,6 +19,7 @@ export class DatasetsService {
     private storage: StorageService,
     private parser: ParserService,
     private columnType: ColumnTypeService,
+    private suggester: ChartSuggesterService,
   ) {}
 
   async presignUpload(user: User, dto: PresignUploadDto) {
@@ -86,6 +88,21 @@ export class DatasetsService {
       columns,
       previewRows,
     };
+  }
+
+  async suggestCharts(userId: string, datasetId: string, columnIndexes: number[]) {
+    const { columns } = await this.parseDataset(userId, datasetId);
+
+    const selected = columnIndexes
+      .map((i) => columns.find((c) => c.index === i))
+      .filter((c): c is (typeof columns)[number] => c != null)
+      .map((c) => ({ name: c.name, type: c.type }));
+
+    if (selected.length === 0) {
+      throw new BadRequestException('Cột đã chọn không hợp lệ.');
+    }
+
+    return { datasetId, suggestions: this.suggester.suggest(selected) };
   }
 
   async findAllByUser(userId: string) {

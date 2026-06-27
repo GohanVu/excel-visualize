@@ -5,6 +5,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { DatasetsService } from './datasets.service';
 import { PresignUploadDto } from './dto/presign-upload.dto';
 import { ConfirmUploadDto } from './dto/confirm-upload.dto';
+import { SuggestChartsDto } from './dto/suggest-charts.dto';
 
 @Controller('datasets')
 @UseGuards(JwtAuthGuard)
@@ -29,5 +30,14 @@ export class DatasetsController {
   @Get(':id/columns')
   columns(@CurrentUser() user: User, @Param('id') id: string) {
     return this.datasetsService.parseDataset(user.id, id);
+  }
+
+  @Post(':id/suggest')
+  suggest(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: SuggestChartsDto,
+  ) {
+    return this.datasetsService.suggestCharts(user.id, id, dto.columns);
   }
 }

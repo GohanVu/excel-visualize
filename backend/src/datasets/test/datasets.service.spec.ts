@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../../storage/storage.service';
 import { ParserService } from '../../parser/parser.service';
 import { ColumnTypeService } from '../../parser/column-type.service';
+import { ChartSuggesterService } from '../../suggester/chart-suggester.service';
 import { ColumnType } from '@prisma/client';
 
 const mockPrisma = {
@@ -37,6 +38,7 @@ describe('DatasetsService', () => {
         { provide: StorageService, useValue: mockStorage },
         { provide: ParserService, useValue: mockParser },
         ColumnTypeService,
+        ChartSuggesterService,
       ],
     }).compile();
     service = module.get(DatasetsService);
@@ -177,6 +179,30 @@ describe('DatasetsService', () => {
         Ngày: '2024-01-01',
         'Doanh thu': '100',
       });
+    });
+  });
+
+  describe('suggestCharts', () => {
+    const mockDataset = {
+      id: 'ds-1',
+      userId: 'user-1',
+      name: 'report',
+      minioKey: 'user-1/file.xlsx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    };
+
+    it('returns suggestions for selected date + number columns', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue(mockDataset);
+      const result = await service.suggestCharts('user-1', 'ds-1', [0, 1]);
+      expect(result.datasetId).toBe('ds-1');
+      expect(result.suggestions.map((s) => s.type)).toEqual(['line', 'bar']);
+    });
+
+    it('throws BadRequestException when selected indexes are invalid', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue(mockDataset);
+      await expect(
+        service.suggestCharts('user-1', 'ds-1', [99]),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });
