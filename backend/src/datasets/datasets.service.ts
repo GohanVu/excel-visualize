@@ -3,6 +3,7 @@ import { User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ParserService } from '../parser/parser.service';
+import { ColumnTypeService } from '../parser/column-type.service';
 import { PresignUploadDto } from './dto/presign-upload.dto';
 import { ConfirmUploadDto } from './dto/confirm-upload.dto';
 
@@ -16,6 +17,7 @@ export class DatasetsService {
     private prisma: PrismaService,
     private storage: StorageService,
     private parser: ParserService,
+    private columnType: ColumnTypeService,
   ) {}
 
   async presignUpload(user: User, dto: PresignUploadDto) {
@@ -63,11 +65,15 @@ export class DatasetsService {
     const buffer = await this.storage.getObject(dataset.minioKey);
     const { headers, rows } = this.parser.parse(buffer, dataset.mimeType);
 
-    const columns = headers.map((name, index) => ({
-      name,
-      index,
-      sampleValues: rows.slice(0, 3).map((row) => row[index] ?? ''),
-    }));
+    const columns = headers.map((name, index) => {
+      const allValues = rows.map((row) => row[index] ?? '');
+      return {
+        name,
+        index,
+        type: this.columnType.detect(allValues),
+        sampleValues: allValues.slice(0, 3),
+      };
+    });
 
     const previewRows = rows.slice(0, 10).map((row) =>
       Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ''])),

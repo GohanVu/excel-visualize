@@ -4,6 +4,8 @@ import { DatasetsService } from '../datasets.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../../storage/storage.service';
 import { ParserService } from '../../parser/parser.service';
+import { ColumnTypeService } from '../../parser/column-type.service';
+import { ColumnType } from '@prisma/client';
 
 const mockPrisma = {
   subscription: { findUnique: jest.fn() },
@@ -34,6 +36,7 @@ describe('DatasetsService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: StorageService, useValue: mockStorage },
         { provide: ParserService, useValue: mockParser },
+        ColumnTypeService,
       ],
     }).compile();
     service = module.get(DatasetsService);
@@ -154,8 +157,10 @@ describe('DatasetsService', () => {
       expect(result.columns[0]).toEqual({
         name: 'Ngày',
         index: 0,
+        type: ColumnType.date,
         sampleValues: ['2024-01-01', '2024-01-02', '2024-01-03'],
       });
+      expect(result.columns[1].type).toBe(ColumnType.number);
     });
 
     it('calls storage.getObject with dataset minioKey', async () => {
