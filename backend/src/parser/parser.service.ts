@@ -4,11 +4,18 @@ import * as XLSX from 'xlsx';
 export interface ParsedDataset {
   headers: string[];
   rows: string[][];
+  // Vị trí (0-based, trong mảng đã đọc) của dòng được dùng làm header
+  headerRowIndex: number;
+  // false khi phải bỏ qua banner/title gộp ô để tìm header → FE nên gợi ý user xác nhận
+  headerConfident: boolean;
 }
 
 @Injectable()
 export class ParserService {
-  parse(buffer: Buffer, mimeType: string): ParsedDataset {
+  // Số dòng đầu tối đa quét để tìm header (banner/title thường chỉ 1-3 dòng)
+  private readonly MAX_HEADER_SCAN = 10;
+
+  parse(buffer: Buffer, mimeType: string, headerRow?: number): ParsedDataset {
     const isCsv = mimeType === 'text/csv' || mimeType === 'application/csv';
 
     if (!isCsv) this.assertBinarySpreadsheet(buffer);
@@ -35,16 +42,52 @@ export class ParserService {
       blankrows: false,
     });
 
-    if (raw.length === 0) return { headers: [], rows: [] };
+    if (raw.length === 0) {
+      return { headers: [], rows: [], headerRowIndex: 0, headerConfident: true };
+    }
 
-    const headers = (raw[0] as unknown[]).map((h) =>
+    // User ép header row (sau khi sửa thủ công) → tin tưởng tuyệt đối.
+    // Ngược lại tự dò: bỏ qua banner gộp ô (dòng chỉ 1 ô có dữ liệu).
+    const header =
+      headerRow != null
+        ? { index: this.clampHeaderRow(headerRow, raw.length), confident: true }
+        : this.detectHeaderRow(raw);
+
+    const headers = (raw[header.index] as unknown[]).map((h) =>
       String(h ?? '').trim(),
     );
-    const rows = (raw.slice(1) as unknown[][]).map((row) =>
+    const rows = (raw.slice(header.index + 1) as unknown[][]).map((row) =>
       headers.map((_, i) => this.cellToString(row[i])),
     );
 
-    return { headers, rows };
+    return {
+      headers,
+      rows,
+      headerRowIndex: header.index,
+      headerConfident: header.confident,
+    };
+  }
+
+  // Header = dòng đầu tiên có ≥2 ô non-empty (banner gộp ô chỉ có 1 ô).
+  // confident chỉ khi dòng đầu đã là header — phải bỏ qua dòng nào → để FE hỏi user.
+  private detectHeaderRow(raw: unknown[][]): { index: number; confident: boolean } {
+    const limit = Math.min(raw.length, this.MAX_HEADER_SCAN);
+    for (let i = 0; i < limit; i++) {
+      const nonEmpty = (raw[i] ?? []).filter(
+        (c) => String(c ?? '').trim().length > 0,
+      ).length;
+      if (nonEmpty >= 2) {
+        return { index: i, confident: i === 0 };
+      }
+    }
+    // Không có dòng nhiều ô (vd file 1 cột) → dùng dòng đầu
+    return { index: 0, confident: true };
+  }
+
+  private clampHeaderRow(index: number, length: number): number {
+    if (index < 0) return 0;
+    if (index >= length) return length - 1;
+    return index;
   }
 
   // File binary spreadsheet phải khớp magic bytes — chặn file rác / sai định dạng

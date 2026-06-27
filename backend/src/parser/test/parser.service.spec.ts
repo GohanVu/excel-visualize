@@ -98,6 +98,54 @@ describe('ParserService', () => {
     });
   });
 
+  describe('parse — header detection', () => {
+    it('skips a merged banner/title row and detects the real header', () => {
+      const buf = makeXlsxBuffer([
+        ['TỔNG HỢP TỪ VỰNG HSK 1'], // banner gộp ô — chỉ 1 ô có dữ liệu
+        ['STT', 'Chữ Hán', 'Bính âm'], // header thật
+        ['3', '八', 'bā'],
+      ]);
+      const result = service.parse(buf, XLSX_MIME);
+      expect(result.headers).toEqual(['STT', 'Chữ Hán', 'Bính âm']);
+      expect(result.headerRowIndex).toBe(1);
+      expect(result.headerConfident).toBe(false);
+      expect(result.rows).toHaveLength(1);
+      expect(result.rows[0]).toEqual(['3', '八', 'bā']);
+    });
+
+    it('is confident when the first row is already a clean header', () => {
+      const buf = makeXlsxBuffer([
+        ['Ngày', 'Doanh thu'],
+        ['2024-01-01', '100'],
+      ]);
+      const result = service.parse(buf, XLSX_MIME);
+      expect(result.headerRowIndex).toBe(0);
+      expect(result.headerConfident).toBe(true);
+    });
+
+    it('respects an explicit headerRow override (overrides auto-detection)', () => {
+      const buf = makeXlsxBuffer([
+        ['A', 'B'], // auto sẽ chọn dòng này (index 0)
+        ['C', 'D'], // nhưng ép dùng dòng index 1
+        ['x', 'y'],
+      ]);
+      const result = service.parse(buf, XLSX_MIME, 1);
+      expect(result.headers).toEqual(['C', 'D']);
+      expect(result.headerRowIndex).toBe(1);
+      expect(result.headerConfident).toBe(true);
+      expect(result.rows[0]).toEqual(['x', 'y']);
+    });
+
+    it('clamps an out-of-range headerRow override', () => {
+      const buf = makeXlsxBuffer([
+        ['A', 'B'],
+        ['x', 'y'],
+      ]);
+      const result = service.parse(buf, XLSX_MIME, 99);
+      expect(result.headerRowIndex).toBe(1); // clamp về dòng cuối
+    });
+  });
+
   describe('parse — error cases', () => {
     it('throws BadRequestException for corrupted buffer', () => {
       const corrupt = Buffer.from('not-a-valid-file');

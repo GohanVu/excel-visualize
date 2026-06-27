@@ -65,7 +65,8 @@ export class DatasetsService {
     if (!dataset) throw new NotFoundException('Dataset không tồn tại.');
 
     const buffer = await this.storage.getObject(dataset.minioKey);
-    const { headers, rows } = this.parser.parse(buffer, dataset.mimeType);
+    const { headers, rows, headerRowIndex, headerConfident } =
+      this.parser.parse(buffer, dataset.mimeType);
 
     const columns = headers.map((name, index) => {
       const allValues = rows.map((row) => row[index] ?? '');
@@ -85,6 +86,8 @@ export class DatasetsService {
       datasetId: dataset.id,
       name: dataset.name,
       totalRows: rows.length,
+      headerRowIndex,
+      headerConfident,
       columns,
       previewRows,
     };

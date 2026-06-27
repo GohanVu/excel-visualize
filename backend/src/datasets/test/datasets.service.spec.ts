@@ -52,6 +52,8 @@ describe('DatasetsService', () => {
         ['2024-01-02', '200'],
         ['2024-01-03', '300'],
       ],
+      headerRowIndex: 0,
+      headerConfident: true,
     });
   });
 
@@ -155,6 +157,8 @@ describe('DatasetsService', () => {
 
       expect(result.datasetId).toBe('ds-1');
       expect(result.totalRows).toBe(3);
+      expect(result.headerRowIndex).toBe(0);
+      expect(result.headerConfident).toBe(true);
       expect(result.columns).toHaveLength(2);
       expect(result.columns[0]).toEqual({
         name: 'Ngày',
