@@ -315,4 +315,32 @@ make up      # chạy stack
 ### Tasks liên quan
 - Không nằm trong plan — hotfix unblock dev flow
 
+## [2026-06-27] Session 7 — Dọn dẹp & commit code mồ côi
+
+### Yêu cầu
+- Phát hiện nhiều code đã viết (CI, husky, eslint, Phase 1 backend/frontend) nhưng chưa commit
+- Dọn dẹp, fix lỗi, commit theo nhóm task
+
+### Công việc đã làm
+- Review toàn bộ code untracked, quét secret (sạch)
+- Fix 2 backend test fail trước khi commit (tránh CI đỏ ngay lần push đầu):
+  - `parser`: CSV decode UTF-8 (dấu tiếng Việt) + validate magic bytes (xlsx=PK/ZIP, xls=OLE2) chặn file rác
+  - `storage` test: `EventEmitter` import tĩnh (TS type), emit event trong `setImmediate` để listener kịp attach
+- Fix lint errors (CI chạy lint):
+  - backend: `no-unused-vars` thêm `ignoreRestSiblings` cho idiom destructure-omit
+  - frontend: bỏ `any` trong LoginPage catch
+- Commit theo 4 nhóm: P0-T8 (tooling), P0-T7 (CI), P1 backend, P1 frontend
+- Phát hiện FileUpload.tsx bị bỏ sót chưa commit ở session trước (test đã commit, component thì chưa) → bổ sung
+
+### Quyết định quan trọng
+- **Không commit code có test fail**: fix trước khi commit để CI xanh ngay từ đầu
+- **Đánh dấu plan trung thực**: P1-T3 (column type detection) thực tế CHƯA làm — `columns` chỉ có name/index/sampleValues, không có type → giữ ⬜ Todo, không over-claim
+- **Commit tách theo task**: mỗi nhóm 1 commit có message rõ task ID
+
+### Test coverage
+- 54/54 backend pass, 25/25 frontend pass, 0 lint error
+
+### Tasks liên quan
+- P0-T7 ✅, P0-T8 ✅, P1-T1 ✅, P1-T2 ✅ (P1-T3 vẫn Todo)
+
 <!-- Thêm session mới ở đây -->

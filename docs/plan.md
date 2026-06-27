@@ -25,9 +25,9 @@
 | P0-T4 | Auth module backend: Google OAuth2 + JWT (access + refresh token) + role guard | ✅ Done | P0-T2, P0-T3 | Refresh token Google PHẢI mã hoá trước khi lưu DB |
 | P0-T5 | Auth flow UI: trang Login (Google Sign-In button), callback handler, lưu JWT vào httpOnly cookie | ✅ Done | P0-T4 | Không dùng localStorage cho token |
 | P0-T6 | Route guard FE: redirect về /login nếu chưa đăng nhập, redirect về /dashboard nếu đã đăng nhập | ✅ Done | P0-T5 | |
-| P0-T7 | GitHub Actions CI: lint + test + build check khi push | ⬜ Todo | P0-T1 | Không cần deploy thật lúc này |
-| P0-T8 | ESLint + Husky pre-commit: enforce max-lines (200 soft / 400 hard), max-lines-per-function (50) | ⬜ Todo | P0-T1 | Xem quy tắc trong spec |
-| P0-T9 | Traefik reverse proxy config (local dev + production skeleton) | ⬜ Todo | P0-T2 | SSL via Let's Encrypt cho prod |
+| P0-T7 | GitHub Actions CI: lint + test + build check khi push | ✅ Done | P0-T1 | Không cần deploy thật lúc này |
+| P0-T8 | ESLint + Husky pre-commit: enforce max-lines (200 soft / 400 hard), max-lines-per-function (50) | ✅ Done | P0-T1 | Xem quy tắc trong spec |
+| P0-T9 | Traefik reverse proxy config (local dev + production skeleton) | ⏭️ Skipped | P0-T2 | Làm trước Phase 6 deploy, không block Phase 1–5 |
 
 ---
 
@@ -69,8 +69,8 @@
 
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
-| P1-T1 | Upload file Excel/CSV lên MinIO (backend: presigned URL, FE: drag-drop UI) | ⬜ Todo | P0 done | Giới hạn: 10MB free / 50MB pro |
-| P1-T2 | Excel/CSV parser service: đọc file từ MinIO, trả về rows + column metadata | ⬜ Todo | P1-T1 | Dùng `xlsx` (SheetJS) |
+| P1-T1 | Upload file Excel/CSV lên MinIO (backend: presigned URL, FE: drag-drop UI) | ✅ Done | P0 done | Giới hạn: 10MB free / 50MB pro |
+| P1-T2 | Excel/CSV parser service: đọc file từ MinIO, trả về rows + column metadata | ✅ Done | P1-T1 | SheetJS; CSV decode UTF-8, validate magic bytes |
 | P1-T3 | Column type detection: phân loại date / number / string / category | ⬜ Todo | P1-T2 | Rule-based: regex date, NaN check cho number |
 | P1-T4 | Column overview screen (FE): hiện 3 nhóm cột, preview 3 dòng đầu, auto pre-select | ⬜ Todo | P1-T3 | Auto pre-select: cột date đầu + cột number đầu |
 | P1-T5 | Rule-based chart suggester: nhận cột đã chọn → trả về danh sách chart types hợp lệ | ⬜ Todo | P1-T3 | Rules: date+number→line/bar, category+number→bar/pie, v.v. |
