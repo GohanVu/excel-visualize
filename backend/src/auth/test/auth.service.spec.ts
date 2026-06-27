@@ -13,6 +13,7 @@ const mockUser = {
   googleId: 'google-123',
   avatarUrl: null,
   encryptedRefreshToken: null,
+  passwordHash: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -168,6 +169,46 @@ describe('AuthService', () => {
       const result = service.generateTokens(mockUser as any);
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
+    });
+  });
+
+  describe('registerWithPassword', () => {
+    it('throws ConflictException if email already exists', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      await expect(service.registerWithPassword('test@example.com', 'pass123', 'Test')).rejects.toThrow('Email đã được sử dụng');
+    });
+
+    it('creates user with hashed password (not plaintext)', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.user.create.mockResolvedValue(mockUser);
+
+      await service.registerWithPassword('new@example.com', 'pass123', 'New User');
+
+      const createCall = mockPrisma.user.create.mock.calls[0][0];
+      expect(createCall.data.passwordHash).toBeDefined();
+      expect(createCall.data.passwordHash).not.toBe('pass123');
+    });
+  });
+
+  describe('loginWithPassword', () => {
+    it('throws UnauthorizedException if user not found', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      await expect(service.loginWithPassword('none@example.com', 'pass')).rejects.toThrow('Email hoặc mật khẩu không đúng');
+    });
+
+    it('throws UnauthorizedException if password is wrong', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ ...mockUser, passwordHash: '$2a$10$invalid' });
+      await expect(service.loginWithPassword('test@example.com', 'wrongpass')).rejects.toThrow('Email hoặc mật khẩu không đúng');
+    });
+
+    it('returns user when credentials are correct', async () => {
+      const { hash } = await import('bcryptjs');
+      const passwordHash = await hash('correct123', 10);
+      const userWithHash = { ...mockUser, passwordHash };
+      mockPrisma.user.findUnique.mockResolvedValue(userWithHash);
+
+      const result = await service.loginWithPassword('test@example.com', 'correct123');
+      expect(result).toEqual(userWithHash);
     });
   });
 

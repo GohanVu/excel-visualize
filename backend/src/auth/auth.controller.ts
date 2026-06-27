@@ -2,11 +2,15 @@ import {
   Controller,
   Get,
   Post,
+  Body,
   Req,
   Res,
   UseGuards,
   UnauthorizedException,
+  HttpCode,
 } from '@nestjs/common';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
@@ -27,6 +31,37 @@ export class AuthController {
     private authService: AuthService,
     private config: ConfigService,
   ) {}
+
+  @Post('register')
+  @HttpCode(201)
+  async register(@Body() dto: RegisterDto, @Res() res: Response) {
+    const user = await this.authService.registerWithPassword(dto.email, dto.password, dto.name);
+    this.setTokenCookies(res, user);
+    const { passwordHash: _, encryptedRefreshToken: __, ...safe } = user as any;
+    return (res as any).json(safe);
+  }
+
+  @Post('login')
+  @HttpCode(200)
+  async login(@Body() dto: LoginDto, @Res() res: Response) {
+    const user = await this.authService.loginWithPassword(dto.email, dto.password);
+    this.setTokenCookies(res, user);
+    const { passwordHash: _, encryptedRefreshToken: __, ...safe } = user as any;
+    return (res as any).json(safe);
+  }
+
+  private setTokenCookies(res: Response, user: User) {
+    const { accessToken, refreshToken } = this.authService.generateTokens(user);
+    (res as any).cookie('access_token', accessToken, {
+      ...COOKIE_OPTIONS,
+      maxAge: 15 * 60 * 1000,
+    });
+    (res as any).cookie('refresh_token', refreshToken, {
+      ...COOKIE_OPTIONS,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/auth/refresh',
+    });
+  }
 
   @Get('google')
   @UseGuards(AuthGuard('google'))

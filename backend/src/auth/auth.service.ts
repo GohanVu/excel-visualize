@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
+import { hash, compare } from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { User } from '@prisma/client';
 
@@ -74,6 +75,31 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  async registerWithPassword(email: string, password: string, name: string): Promise<User> {
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) throw new ConflictException('Email đã được sử dụng');
+
+    const passwordHash = await hash(password, 10);
+    return this.prisma.user.create({
+      data: {
+        email,
+        name,
+        passwordHash,
+        subscription: { create: { plan: 'free', status: 'active' } },
+      },
+    });
+  }
+
+  async loginWithPassword(email: string, password: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user?.passwordHash) throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
+
+    const valid = await compare(password, user.passwordHash);
+    if (!valid) throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
+
+    return user;
   }
 
   verifyRefreshToken(token: string) {
