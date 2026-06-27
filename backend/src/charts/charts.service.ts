@@ -37,4 +37,21 @@ export class ChartsService {
 
     return { chart, dashboardId: dashboard.id };
   }
+
+  // Load các chart đã lưu của user (qua dashboard mặc định) — dùng cho trang Dashboard
+  async listCharts(userId: string) {
+    const charts = await this.prisma.chart.findMany({
+      where: { dashboard: { userId } },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        type: true,
+        title: true,
+        config: true,
+        createdAt: true,
+      },
+    });
+
+    return { charts };
+  }
 }

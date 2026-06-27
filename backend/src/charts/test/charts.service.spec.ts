@@ -6,7 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 const mockPrisma = {
   dataset: { findFirst: jest.fn() },
   dashboard: { findFirst: jest.fn(), create: jest.fn() },
-  chart: { create: jest.fn() },
+  chart: { create: jest.fn(), findMany: jest.fn() },
 };
 
 const config = { type: 'line', title: 'Xu hướng', config: { series: [] } };
@@ -85,5 +85,30 @@ describe('ChartsService', () => {
 
     expect(result.chart.id).toBe('chart-42');
     expect(result.dashboardId).toBe('dash-1');
+  });
+
+  describe('listCharts', () => {
+    it('returns charts belonging to the user dashboards, oldest first', async () => {
+      mockPrisma.chart.findMany.mockResolvedValue([
+        { id: 'c-1', type: 'line', title: 'A', config: {}, createdAt: new Date() },
+        { id: 'c-2', type: 'bar', title: 'B', config: {}, createdAt: new Date() },
+      ]);
+
+      const result = await service.listCharts('user-1');
+
+      expect(result.charts).toHaveLength(2);
+      expect(mockPrisma.chart.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { dashboard: { userId: 'user-1' } },
+          orderBy: { createdAt: 'asc' },
+        }),
+      );
+    });
+
+    it('returns empty array when user has no charts', async () => {
+      mockPrisma.chart.findMany.mockResolvedValue([]);
+      const result = await service.listCharts('user-1');
+      expect(result.charts).toEqual([]);
+    });
   });
 });

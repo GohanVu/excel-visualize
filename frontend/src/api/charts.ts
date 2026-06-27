@@ -5,6 +5,19 @@ export interface SavedChart {
   dashboardId: string;
 }
 
+export interface DashboardChart {
+  id: string;
+  type: string;
+  title: string | null;
+  config: Record<string, unknown>;
+  createdAt: string;
+}
+
+export async function listCharts(): Promise<DashboardChart[]> {
+  const { data } = await client.get<{ charts: DashboardChart[] }>('/charts');
+  return data.charts;
+}
+
 export async function saveChart(
   datasetId: string,
   type: string,
