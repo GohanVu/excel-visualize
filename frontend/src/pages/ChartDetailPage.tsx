@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useParams, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchRows } from '../api/datasets';
 import type { ChartSuggestion } from '../api/datasets';
+import { saveChart } from '../api/charts';
 import { buildChartOption } from '../lib/buildChartOption';
 import ChartView from '../components/ChartView';
 
@@ -28,6 +30,7 @@ export default function ChartDetailPage() {
       onBack={() =>
         navigate(`/datasets/${id}/charts`, { state: { selectedColumns } })
       }
+      onSaved={() => navigate('/dashboard')}
     />
   );
 }
@@ -36,11 +39,17 @@ function ChartDetail({
   datasetId,
   suggestion,
   onBack,
+  onSaved,
 }: {
   datasetId: string;
   suggestion: ChartSuggestion;
   onBack: () => void;
+  onSaved: () => void;
 }) {
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dataset', datasetId, 'rows'],
     queryFn: () => fetchRows(datasetId),
@@ -62,6 +71,22 @@ function ChartDetail({
     );
   }
 
+  const option = buildChartOption(suggestion, data.rows);
+
+  async function handleSave() {
+    setSaving(true);
+    setSaveError('');
+    try {
+      await saveChart(datasetId, suggestion.type, suggestion.title, option);
+      setSaved(true);
+      setTimeout(onSaved, 1200);
+    } catch {
+      setSaveError('Lưu thất bại. Thử lại sau.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 p-6 text-white">
       <div className="mx-auto max-w-4xl">
@@ -75,9 +100,23 @@ function ChartDetail({
         <h1 className="text-xl font-bold">{suggestion.title}</h1>
         <p className="mt-1 text-sm text-gray-400">{suggestion.description}</p>
         <div className="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-4">
-          <ChartView option={buildChartOption(suggestion, data.rows)} height={480} />
+          <ChartView option={option} height={480} />
         </div>
         <p className="mt-3 text-xs text-gray-500">{data.rows.length} dòng dữ liệu</p>
+
+        <div className="mt-6 flex items-center gap-4">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || saved}
+            className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium transition hover:bg-blue-500 disabled:opacity-60"
+          >
+            {saving ? 'Đang lưu…' : saved ? '✓ Đã lưu!' : 'Lưu vào dashboard'}
+          </button>
+          {saveError && (
+            <p className="text-sm text-red-400">{saveError}</p>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { DatasetsModule } from './datasets/datasets.module';
+import { ChartsModule } from './charts/charts.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { DatasetsModule } from './datasets/datasets.module';
     PrismaModule,
     AuthModule,
     DatasetsModule,
+    ChartsModule,
   ],
   controllers: [AppController],
 })

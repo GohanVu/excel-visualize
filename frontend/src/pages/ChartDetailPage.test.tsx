@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -9,6 +9,10 @@ vi.mock('../api/datasets', () => ({
   fetchRows: vi.fn(),
 }));
 
+vi.mock('../api/charts', () => ({
+  saveChart: vi.fn(),
+}));
+
 vi.mock('../components/ChartView', () => ({
   default: ({ option }: { option: unknown }) => (
     <div data-testid="chart-view" data-option={JSON.stringify(option)} />
@@ -16,8 +20,10 @@ vi.mock('../components/ChartView', () => ({
 }));
 
 import { fetchRows } from '../api/datasets';
+import { saveChart } from '../api/charts';
 
 const mockFetchRows = fetchRows as ReturnType<typeof vi.fn>;
+const mockSaveChart = saveChart as ReturnType<typeof vi.fn>;
 
 const suggestion = {
   type: 'line' as const,
@@ -42,14 +48,9 @@ function renderPage(state?: object) {
       >
         <Routes>
           <Route path="/datasets/:id/chart" element={<ChartDetailPage />} />
-          <Route
-            path="/datasets/:id/columns"
-            element={<div>columns page</div>}
-          />
-          <Route
-            path="/datasets/:id/charts"
-            element={<div>charts page</div>}
-          />
+          <Route path="/datasets/:id/columns" element={<div>columns page</div>} />
+          <Route path="/datasets/:id/charts" element={<div>charts page</div>} />
+          <Route path="/dashboard" element={<div>dashboard page</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -58,6 +59,7 @@ function renderPage(state?: object) {
 
 describe('ChartDetailPage', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockFetchRows.mockResolvedValue({
       datasetId: 'ds-1',
       rows: [
@@ -65,6 +67,7 @@ describe('ChartDetailPage', () => {
         { Ngày: '2024-01-02', 'Doanh thu': '200' },
       ],
     });
+    mockSaveChart.mockResolvedValue({ chart: { id: 'c-1' }, dashboardId: 'd-1' });
   });
 
   it('redirects to columns page when there is no state', () => {
@@ -103,8 +106,45 @@ describe('ChartDetailPage', () => {
   it('shows error message when fetch fails', async () => {
     mockFetchRows.mockRejectedValue(new Error('network'));
     renderPage();
-    expect(
-      await screen.findByText(/Không tải được dữ liệu/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Không tải được dữ liệu/)).toBeInTheDocument();
+  });
+
+  it('calls saveChart with correct args on save button click', async () => {
+    renderPage();
+    await screen.findByText('Xu hướng theo thời gian');
+    await userEvent.click(screen.getByRole('button', { name: /Lưu vào dashboard/ }));
+    expect(mockSaveChart).toHaveBeenCalledWith(
+      'ds-1',
+      'line',
+      'Xu hướng theo thời gian',
+      expect.objectContaining({ series: expect.any(Array) }),
+    );
+  });
+
+  it('shows "Đã lưu!" feedback after successful save', async () => {
+    renderPage();
+    await screen.findByText('Xu hướng theo thời gian');
+    await userEvent.click(screen.getByRole('button', { name: /Lưu vào dashboard/ }));
+    expect(await screen.findByRole('button', { name: /Đã lưu/ })).toBeInTheDocument();
+  });
+
+  it('navigates to /dashboard after save', async () => {
+    renderPage();
+    await screen.findByText('Xu hướng theo thời gian');
+    await userEvent.click(screen.getByRole('button', { name: /Lưu vào dashboard/ }));
+    await screen.findByRole('button', { name: /Đã lưu/ });
+    // setTimeout 1200ms — waitFor với timeout 2500ms để đợi navigation thật
+    await waitFor(
+      () => expect(screen.getByText('dashboard page')).toBeInTheDocument(),
+      { timeout: 2500 },
+    );
+  }, 6000);
+
+  it('shows error message when save fails', async () => {
+    mockSaveChart.mockRejectedValue(new Error('server error'));
+    renderPage();
+    await screen.findByText('Xu hướng theo thời gian');
+    await userEvent.click(screen.getByRole('button', { name: /Lưu vào dashboard/ }));
+    expect(await screen.findByText(/Lưu thất bại/)).toBeInTheDocument();
   });
 });
