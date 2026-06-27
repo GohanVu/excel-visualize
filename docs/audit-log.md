@@ -343,4 +343,28 @@ make up      # chạy stack
 ### Tasks liên quan
 - P0-T7 ✅, P0-T8 ✅, P1-T1 ✅, P1-T2 ✅ (P1-T3 vẫn Todo)
 
+## [2026-06-27] Session 8 — Column type detection (P1-T3)
+
+### Yêu cầu
+- Phân loại cột: date / number / string / category (rule-based)
+
+### Công việc đã làm
+- `ColumnTypeService` trong parser module: `detect(values)` → ColumnType
+- Tích hợp vào `datasets.service.parseDataset` — mỗi column có thêm `type`
+- ParserModule export ColumnTypeService
+
+### Quyết định quan trọng
+- **Ngưỡng khớp 80%**: cột được coi là 1 kiểu nếu ≥80% giá trị non-empty khớp — chịu được vài ô lỗi/N/A
+- **Thứ tự ưu tiên**: number → date → category → string (number check chặt nhất trước)
+- **number bỏ dấu phẩy nghìn**: "1,000" → hợp lệ
+- **category vs string**: category nếu distinct ≤20 và ≤50% tổng số dòng
+- **date regex**: bắt cả ISO datetime ("...T00:00:00.000Z") vì parser trả Date cells dạng toISOString()
+
+### Test coverage
+- 11 test mới cho ColumnTypeService (number/date/category/string + edge cases)
+- 65/65 backend pass
+
+### Tasks liên quan
+- P1-T3 ✅
+
 <!-- Thêm session mới ở đây -->
