@@ -1,27 +1,37 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
+import PrivateRoute from './components/PrivateRoute';
+import PublicRoute from './components/PublicRoute';
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route
-        path="/dashboard"
-        element={
-          <div className="flex h-screen items-center justify-center bg-gray-950 text-white">
-            Dashboard — coming soon
-          </div>
-        }
-      />
-      <Route
-        path="/admin/*"
-        element={
-          <div className="flex h-screen items-center justify-center bg-gray-950 text-white">
-            Admin panel — coming soon
-          </div>
-        }
-      />
+
+      {/* Public-only routes — redirect to /dashboard if already logged in */}
+      <Route element={<PublicRoute />}>
+        <Route path="/login" element={<LoginPage />} />
+      </Route>
+
+      {/* Protected routes — redirect to /login if not authenticated */}
+      <Route element={<PrivateRoute />}>
+        <Route
+          path="/dashboard"
+          element={
+            <div className="flex h-screen items-center justify-center bg-gray-950 text-white">
+              Dashboard — coming soon
+            </div>
+          }
+        />
+        <Route
+          path="/admin/*"
+          element={
+            <div className="flex h-screen items-center justify-center bg-gray-950 text-white">
+              Admin panel — coming soon
+            </div>
+          }
+        />
+      </Route>
     </Routes>
   );
 }
