@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter } from 'events';
+import { Client } from 'minio';
 import { StorageService } from '../storage.service';
 
 const mockMinioClient = {
@@ -62,13 +63,29 @@ describe('StorageService', () => {
     expect(mockMinioClient.makeBucket).toHaveBeenCalledWith('chartly-datasets');
   });
 
-  it('presignedPutUrl: replaces internal endpoint with public endpoint', async () => {
+  it('presignedPutUrl: returns signed URL as-is (no host string-replace)', async () => {
     mockMinioClient.presignedPutObject.mockResolvedValue(
-      'http://minio:9000/chartly-datasets/user/file.xlsx?sig=abc',
+      'http://localhost:9000/chartly-datasets/user/file.xlsx?sig=abc',
     );
     const url = await service.presignedPutUrl('user/file.xlsx');
-    expect(url).toContain('localhost:9000');
-    expect(url).not.toContain('minio:9000');
+    expect(url).toBe(
+      'http://localhost:9000/chartly-datasets/user/file.xlsx?sig=abc',
+    );
+    expect(mockMinioClient.presignedPutObject).toHaveBeenCalledWith(
+      'chartly-datasets',
+      'user/file.xlsx',
+      300,
+    );
+  });
+
+  it('constructs a presign client using the public host (localhost), not internal host', () => {
+    (Client as unknown as jest.Mock).mockClear();
+    new StorageService(mockConfig as unknown as ConfigService);
+    const endpoints = (Client as unknown as jest.Mock).mock.calls.map(
+      (c) => c[0].endPoint,
+    );
+    expect(endpoints).toContain('minio'); // internal client
+    expect(endpoints).toContain('localhost'); // presign client
   });
 
   it('getObject: collects stream chunks into a Buffer', async () => {

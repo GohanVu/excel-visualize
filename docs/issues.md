@@ -74,4 +74,24 @@
 - **Test added**: `auth.controller.spec.ts` "does not return passwordHash (security)"; `auth.service.spec.ts` "sanitizeUser strips passwordHash and encryptedRefreshToken"
 - **Lesson learned**: Mỗi khi thêm field nhạy cảm vào model, PHẢI rà soát tất cả nơi serialize user ra ngoài. Tốt nhất: 1 hàm `sanitizeUser` duy nhất thay vì destructure rải rác — thêm field mới chỉ sửa 1 chỗ. Khi bcrypt hash lộ ra, kẻ tấn công có thể brute-force offline.
 
+### [Issue-006] Upload MinIO 403 — presigned URL string-replace host làm hỏng chữ ký
+
+- **Status**: 🟢 Fixed
+- **Severity**: High
+- **Phát hiện**: 2026-06-27 — Upload file thật, PUT lên `localhost:9000` trả 403 Forbidden → kéo theo GET columns 500 (file không có trên MinIO)
+- **Root cause**: StorageService presign URL với host nội bộ `minio:9000` rồi `.replace('minio:9000','localhost:9000')`. AWS Sig v4 ký cả host header → đổi host sau khi ký làm chữ ký không khớp → MinIO 403.
+- **Fix**: Tạo `presignClient` riêng cấu hình `endPoint = host công khai` (localhost), `region: 'us-east-1'` (tránh GetBucketLocation). Ký bằng client này → URL dùng trực tiếp từ browser, không string-replace.
+- **Test added**: `storage.service.spec.ts` — "returns signed URL as-is", "constructs presign client using localhost"
+- **Lesson learned**: KHÔNG BAO GIỜ string-replace host/path trên presigned URL — chữ ký Sig v4 phụ thuộc host. Phải presign đúng host mà client sẽ gọi. Verify end-to-end bằng PUT thật, không chỉ unit test.
+
+### [Issue-007] CSV: date bị convert thành Excel serial number
+
+- **Status**: 🟢 Fixed
+- **Severity**: Medium
+- **Phát hiện**: 2026-06-27 — Sau khi upload chạy, cột "Ngày" (2024-01-01) bị detect là `number` với giá trị `45292`
+- **Root cause**: Path đọc CSV (`XLSX.read(str, { type:'string', raw:false })`) thiếu `cellDates: true` → SheetJS convert "2024-01-01" thành Excel serial number 45292 → ColumnTypeService thấy số → number. Hệ quả: chart suggester không nhận ra date+number → gợi ý sai.
+- **Fix**: Thêm `cellDates: true` vào path CSV (path xlsx đã có sẵn). Date thành Date object → toISOString → detect đúng `date`.
+- **Test added**: `parser.service.spec.ts` — "keeps date strings as dates, not Excel serial numbers"
+- **Lesson learned**: SheetJS auto-convert date khác nhau giữa buffer (xlsx) và string (csv). Mọi path đọc phải set `cellDates: true` nhất quán. Bug này chỉ lộ khi test bằng data thật có cột ngày.
+
 <!-- Thêm issues ở đây -->

@@ -85,6 +85,17 @@ describe('ParserService', () => {
       expect(rows).toHaveLength(2);
       expect(rows[0][1]).toBe('100');
     });
+
+    it('keeps date strings as dates, not Excel serial numbers', () => {
+      const buf = makeCsvBuffer([
+        ['Ngày', 'Giá trị'],
+        ['2024-01-01', '100'],
+      ]);
+      const { rows } = service.parse(buf, CSV_MIME);
+      // KHÔNG được ra "45292" (serial). Phải chứa năm 2024 (ISO date)
+      expect(rows[0][0]).toContain('2024');
+      expect(rows[0][0]).not.toBe('45292');
+    });
   });
 
   describe('parse — error cases', () => {

@@ -17,8 +17,9 @@ export class ParserService {
     try {
       // CSV: decode UTF-8 string trước để giữ đúng dấu tiếng Việt
       // (SheetJS đọc buffer CSV mặc định không phải UTF-8)
+      // cellDates: true để "2024-01-01" thành Date, không bị convert sang serial number
       workbook = isCsv
-        ? XLSX.read(buffer.toString('utf-8'), { type: 'string', raw: false })
+        ? XLSX.read(buffer.toString('utf-8'), { type: 'string', cellDates: true, raw: false })
         : XLSX.read(buffer, { type: 'buffer', cellDates: true, raw: false });
     } catch {
       throw new BadRequestException('Không thể đọc file. File bị lỗi hoặc không đúng định dạng.');
