@@ -391,4 +391,30 @@ make up      # chạy stack
 ### Tasks liên quan
 - P1-T4 ✅
 
+## [2026-06-27] Session 10 — Rule-based chart suggester (P1-T5)
+
+### Yêu cầu
+- Backend nhận cột đã chọn → trả danh sách chart types hợp lệ + mô tả tiếng Việt
+
+### Công việc đã làm
+- `ChartSuggesterService` (suggester module): rule-based theo tổ hợp kiểu cột
+- DTO `SuggestChartsDto` (columns: number[], validate)
+- `datasets.service.suggestCharts`: parse dataset → map index→type → gọi suggester
+- Endpoint `POST /datasets/:id/suggest`
+- SuggesterModule wired vào DatasetsModule
+
+### Quyết định quan trọng
+- **Rules**: date+number→line/bar; category+number→bar(+pie nếu 1 số liệu); number+number→scatter
+- **pie chỉ khi 1 số liệu**: pie nhiều series không có nghĩa
+- **Tối đa 4 gợi ý** (MAX_SUGGESTIONS), khớp giới hạn UI P1-T6
+- **suggestCharts reuse parseDataset**: không lặp logic đọc file + detect type
+- **Encoding {x, y[]}**: chuẩn bị sẵn cho ECharts render (P1-T7)
+
+### Test coverage
+- 11 test mới: 8 suggester (mỗi tổ hợp + edge + cap 4 + tiếng Việt) + 2 suggestCharts + 1 update
+- 76/76 backend pass
+
+### Tasks liên quan
+- P1-T5 ✅
+
 <!-- Thêm session mới ở đây -->
