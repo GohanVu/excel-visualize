@@ -105,7 +105,7 @@
 |---------|--------|--------|--------------|-------|
 | P1.5-T1 | Dò dòng header thật + trả `headerRowIndex` & cờ `headerConfident`; `parse()` nhận optional headerRow để re-parse khi user đổi | ✅ Done | P1-T2 | Bỏ dòng chỉ 1 ô non-empty (banner gộp ô); header = dòng đầu có ≥2 ô non-empty |
 | P1.5-T2 | Loại cột rỗng/gần rỗng khỏi overview | ⬜ Todo | P1-T3 | Cột 0% dữ liệu (vd cột ảnh) → không đưa lên UI |
-| P1.5-T3 | Min fill-ratio guard + trả `confidence` mỗi cột — hết date/number giả | ⬜ Todo | P1-T3 | Cột quá thưa → string. confidence = ratio khớp, để FE biết khi nào nhắc |
+| P1.5-T3 | Min fill-ratio guard + trả `confidence` mỗi cột — hết date/number giả | ✅ Done | P1-T3 | Cột quá thưa → string. confidence = ratio khớp, để FE biết khi nào nhắc |
 | P1.5-T4 | Forward-fill ô gộp dọc (vertical merge) | ⬜ Todo | P1.5-T1 | Ưu tiên thấp — defer nếu T1-T3 đã đủ sạch |
 
 ### Nhóm B — Assisted correction (confidence-gated, FE + API)

@@ -604,4 +604,33 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.5-T1 ✅ → tiếp theo P1.5-T3 (min fill-ratio guard + confidence mỗi cột)
 
+## [2026-06-28] Session 17 — Fill-ratio guard + confidence mỗi cột (P1.5-T3)
+
+### Yêu cầu
+- Sửa bug "date/number giả" (cột "Ngày bắt đầu" trong file HSK) + trả confidence mỗi cột
+
+### Công việc đã làm
+- `column-type.service.ts`:
+  - `MIN_FILL_RATIO = 0.3`: cột phải có ≥30% ô (trên TỔNG dòng) có dữ liệu mới được gán number/date
+  - `detect()` đổi return từ `ColumnType` → `ColumnDetection { type, confidence }`
+  - Công thức confidence: number/date = match ratio; category = 1 − distinctRatio; string = 1 − max(number,date) ratio
+- `datasets.service.parseDataset`: mỗi column expose thêm `confidence`
+
+### Quyết định quan trọng
+- **Guard trên TỔNG dòng, không phải nonEmpty**: bug cũ tính ratio chỉ trên ô non-empty → cột 2/500 ô vẫn 100% khớp. Giờ fillRatio = nonEmpty/total chặn cột thưa
+- **Guard chỉ áp cho number/date, KHÔNG cho category**: category sparse vẫn hợp lệ (vd cột nhãn thưa)
+- **string confidence = 1 − max ratio**: cột 60% số (chưa đủ 80%) → string confidence 0.4 → thấp → FE sẽ hỏi user. Đây là tín hiệu "mơ hồ, cần xác nhận" đúng tinh thần confidence-gated
+- **detect() đổi return shape**: cập nhật caller (parseDataset) + toàn bộ test cũ sang `.type`
+
+### Test coverage
+- 6 tests mới: sparse không thành date, sparse không thành number, đủ fill (≥30%) vẫn date, confidence cao cho number sạch, confidence thấp cho cột mơ hồ, confidence cao cho category rõ
+- Cập nhật ~10 test cũ sang `.type`
+- 102 backend tests pass
+
+### Kết quả
+- Commit `6aadcf6` push lên https://github.com/GohanVu/excel-visualize
+
+### Tasks liên quan
+- P1.5-T3 ✅ → tiếp theo P1.5-T2 (loại cột rỗng khỏi overview)
+
 <!-- Thêm session mới ở đây -->
