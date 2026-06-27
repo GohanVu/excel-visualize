@@ -4,6 +4,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
+import { DatasetsModule } from './datasets/datasets.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     PrismaModule,
     AuthModule,
+    DatasetsModule,
   ],
   controllers: [AppController],
 })
