@@ -367,4 +367,28 @@ make up      # chạy stack
 ### Tasks liên quan
 - P1-T3 ✅
 
+## [2026-06-27] Session 9 — Column overview screen (P1-T4)
+
+### Yêu cầu
+- Màn FE hiện 3 nhóm cột, preview 3 dòng đầu, auto pre-select cột date đầu + number đầu
+
+### Công việc đã làm
+- `ColumnOverviewPage` (route `/datasets/:id/columns`, protected): 3 nhóm cột, toggle chọn, preview table, nút Tiếp tục
+- `lib/columnGrouping.ts`: helper thuần `groupColumns` + `autoSelectColumns`
+- `api/datasets.ts`: `fetchColumns` + types `DatasetOverview`, `DatasetColumn`
+- Route mới trong App.tsx
+
+### Quyết định quan trọng
+- **Gộp 4 type backend → 3 nhóm UI**: category + string → "Phân loại" (user không cần phân biệt 2 loại này)
+- **Tách logic ra helper thuần**: groupColumns/autoSelectColumns test riêng, component gọn hơn
+- **Fallback auto-select**: không có date thì lấy cột label đầu làm trục + number đầu
+- **Nút Tiếp tục truyền selectedColumns qua router state** → sẵn cho P1-T6 (chart suggestion)
+
+### Test coverage
+- 12 test mới: 6 helper (group/auto-select + edge cases) + 6 page (render, auto-select, toggle, preview, loading)
+- 37/37 frontend pass
+
+### Tasks liên quan
+- P1-T4 ✅
+
 <!-- Thêm session mới ở đây -->
