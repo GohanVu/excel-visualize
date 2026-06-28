@@ -909,4 +909,34 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.6-T1 ✅ → tiếp theo P1.6-T2 (LearnPage: chọn cột front/back + flashcard lật/shuffle)
 
+## [2026-06-28] Session 27 — Flashcard (P1.6-T2)
+
+### Yêu cầu
+- Màn học bằng thẻ: chọn cột mặt trước/sau, lật thẻ, next/prev, shuffle
+
+### Công việc đã làm
+- `LearnPage` tại `/datasets/:id/learn`:
+  - Fetch columns + rows theo `sheet`/`headerRow` (từ router state khi bấm "Học")
+  - Chọn **Mặt trước** (select 1 cột) + **Mặt sau** (toggle nhiều cột)
+  - Thẻ: nhấn để lật; ← Trước / Sau → (vòng tròn); đếm i/N; 🔀 Trộn thẻ (Fisher-Yates)
+  - Fallback khi data < 2 cột hoặc 0 dòng
+- `App.tsx`: route /learn dùng LearnPage thật (thay placeholder T1)
+
+### Quyết định quan trọng
+- **Thuần client, tái dùng `/rows`**: không endpoint mới — mỗi dòng = 1 thẻ. Đúng nhận định brainstorm "chi phí biên thấp vì pipeline đã có"
+- **Mặt sau nhiều cột** (toggle): flashcard giá trị nhất khi back = phiên âm + nghĩa (Bính âm + Nghĩa), không chỉ 1
+- **Không có bước "Bắt đầu" riêng**: đổi front/back cập nhật thẻ live → mượt, ít quyết định
+- **Order array + shuffle**: giữ rows gốc, chỉ hoán vị index → shuffle không phá data; đổi front/back/flip reset về mặt trước
+- **State sheet/headerRow truyền vào /learn**: học đúng tab + header user đã chọn
+
+### Test coverage
+- 7 FE tests: front mặc định + đếm, lật ra sau, next sang thẻ 2, đổi front cập nhật, thêm cột mặt sau, shuffle control, fallback thiếu data
+- 89 frontend tests pass (backend không đổi: 118)
+
+### Kết quả
+- Commit `7db0e46` push lên https://github.com/GohanVu/excel-visualize
+
+### Tasks liên quan
+- P1.6-T2 ✅ → tiếp theo P1.6-T3 (đánh dấu đã thuộc/chưa thuộc mỗi thẻ — local trước)
+
 <!-- Thêm session mới ở đây -->
