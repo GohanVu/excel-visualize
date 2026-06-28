@@ -16,6 +16,16 @@ function makeCsvBuffer(data: unknown[][]): Buffer {
   return Buffer.from(csv, 'utf-8');
 }
 
+// Tạo xlsx có ô gộp: data chỉ điền giá trị ở ô trên-trái (đúng như file thật),
+// merges = danh sách range kiểu 'A2:A4'
+function makeMergedXlsxBuffer(data: unknown[][], merges: string[]): Buffer {
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!merges'] = merges.map((ref) => XLSX.utils.decode_range(ref));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+  return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }));
+}
+
 function makeMultiSheetBuffer(sheets: Record<string, unknown[][]>): Buffer {
   const wb = XLSX.utils.book_new();
   for (const [name, data] of Object.entries(sheets)) {
@@ -151,6 +161,39 @@ describe('ParserService', () => {
       ]);
       const result = service.parse(buf, XLSX_MIME, { headerRow: 99 });
       expect(result.headerRowIndex).toBe(1); // clamp về dòng cuối
+    });
+  });
+
+  describe('parse — vertical merged cells (forward-fill)', () => {
+    it('forward-fills a vertical merge so lower rows are not empty', () => {
+      // Cột "Nhóm" gộp dọc A2:A3 → "Bò Úc" chỉ ở dòng đầu, dòng sau rỗng trong file
+      const buf = makeMergedXlsxBuffer(
+        [
+          ['Nhóm', 'Tên', 'Giá'],
+          ['Bò Úc', 'Thăn', '500'],
+          ['', 'Sườn', '300'],
+          ['Bò Mỹ', 'Ba chỉ', '400'],
+        ],
+        ['A2:A3'],
+      );
+      const { rows } = service.parse(buf, XLSX_MIME);
+      expect(rows.map((r) => r[0])).toEqual(['Bò Úc', 'Bò Úc', 'Bò Mỹ']);
+    });
+
+    it('does NOT fill a horizontal merge, so a merged banner is still skipped', () => {
+      // Banner gộp NGANG A1:C1 — phải giữ 1 ô non-empty để header detect ở dòng 2
+      const buf = makeMergedXlsxBuffer(
+        [
+          ['BÁO GIÁ THỊT BÒ', '', ''],
+          ['Nhóm', 'Tên', 'Giá'],
+          ['Bò Úc', 'Thăn', '500'],
+        ],
+        ['A1:C1'],
+      );
+      const result = service.parse(buf, XLSX_MIME);
+      expect(result.headers).toEqual(['Nhóm', 'Tên', 'Giá']);
+      expect(result.headerRowIndex).toBe(1);
+      expect(result.headerConfident).toBe(false);
     });
   });
 

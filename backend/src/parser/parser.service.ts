@@ -30,6 +30,7 @@ export class ParserService {
     const sheetName = this.resolveSheet(sheets, opts.sheetName);
 
     const sheet = workbook.Sheets[sheetName];
+    this.fillVerticalMerges(sheet);
     const raw: unknown[][] = XLSX.utils.sheet_to_json(sheet, {
       header: 1,
       defval: '',
@@ -69,6 +70,25 @@ export class ParserService {
       sheets,
       sheetName,
     };
+  }
+
+  // Forward-fill ô gộp DỌC (vertical merge): trong xlsx, ô gộp chỉ giữ giá trị ở
+  // ô trên-trái, các ô còn lại rỗng. Người Việt hay gộp dọc 1 cột phân loại
+  // (vd "Bò Úc" gộp 5 dòng) → nếu không fill, 4 dòng dưới bị rỗng → group/đếm sai.
+  // CHỈ fill merge dọc (cùng cột, nhiều dòng) — KHÔNG fill merge ngang để banner
+  // gộp ô (1 ô non-empty) vẫn được detectHeaderRow bỏ qua đúng. CSV không có !merges.
+  private fillVerticalMerges(sheet: XLSX.WorkSheet): void {
+    const merges = sheet['!merges'];
+    if (!merges) return;
+    for (const m of merges) {
+      const isVertical = m.s.c === m.e.c && m.e.r > m.s.r;
+      if (!isVertical) continue;
+      const topCell = sheet[XLSX.utils.encode_cell({ r: m.s.r, c: m.s.c })];
+      if (topCell == null) continue;
+      for (let r = m.s.r + 1; r <= m.e.r; r++) {
+        sheet[XLSX.utils.encode_cell({ r, c: m.s.c })] = { ...topCell };
+      }
+    }
   }
 
   private readWorkbook(buffer: Buffer, mimeType: string): XLSX.WorkBook {
