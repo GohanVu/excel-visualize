@@ -787,4 +787,38 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.5-T5 ✅ → tiếp theo P1.5-T6 (chip đổi kiểu cột + /suggest type override + thread sheet vào chart pages)
 
+## [2026-06-28] Session 23 — Sửa kiểu cột + thread sheet/header vào chart (P1.5-T6)
+
+### Yêu cầu
+- User sửa kiểu cột (gated) → gợi ý chart dùng kiểu mới; đổi tab/header → chart dùng đúng view
+
+### Công việc đã làm
+- Backend:
+  - `SuggestChartsDto`: thêm `headerRow` + `typeOverrides: [{index, type}]` (nested `@ValidateNested` + `@Type`, dựa `transform:true`)
+  - `suggestCharts(opts)`: áp `typeOverrides` (Map index→type) trước khi gọi suggester; nhận `sheetName`+`headerRow` → parseDataset đúng view
+- FE api: `suggestCharts(id, cols, { sheet, headerRow, typeOverrides })`; `fetchRows(id, sheet?)`
+- `ColumnOverviewPage`: `TypeReview` panel — CHỈ hiện cột `confidence < 0.8`, dropdown đổi kiểu; `effectiveColumns` áp override → re-group live; reset override khi đổi tab/header; "Tiếp tục" truyền `typeOverrides`
+- `ChartSuggestionPage`: đọc sheet/headerRow/typeOverrides từ state → fetchColumns + suggestCharts; truyền `sheet` sang ChartDetailPage
+- `ChartDetailPage`: `fetchRows` theo `sheet` → chart full dùng đúng tab
+- `api.md`: /suggest body thêm headerRow + typeOverrides
+
+### Quyết định quan trọng
+- **TypeReview panel thay vì chip inline editable**: chip hiện là `<button>` toggle chọn cột — nhét `<select>` vào trong gây nested-interactive + xung đột click. Panel riêng (gated theo confidence<0.8) sạch hơn, không refactor chip
+- **effectiveColumns = columns áp override**: group + suggest đều dùng kiểu đã sửa → đổi kiểu thì cột tự nhảy nhóm đúng (feedback trực quan)
+- **Reset typeOverrides khi đổi tab/header**: index cột là per-view, override cũ vô nghĩa khi view đổi
+- **opts object cho suggestCharts**: param phình (sheet+headerRow+overrides) → gom vào opts, test cũ `(…, [0,1])` vẫn chạy
+- **Hoàn tất thread multi-tab → chart**: ChartSuggestion + ChartDetail giờ nhận sheet → đổi tab rồi vẽ chart không còn lệch (khắc phục caveat ghi ở T5)
+
+### Test coverage
+- 2 BE tests: override áp dụng (date→category đổi gợi ý), truyền sheet+headerRow vào parseDataset
+- 3 FE tests: type selector chỉ hiện cột low-confidence, panel ẩn khi tự tin, đổi kiểu có hiệu lực; + forward sheet/overrides ở ChartSuggestionPage; sửa assertion suggestCharts cũ
+- 113 backend + 76 frontend = 189 tests pass
+
+### Kết quả
+- Commit `c4f5a67` push lên https://github.com/GohanVu/excel-visualize
+- **Nhóm B (assisted correction) xong**: T5 (tab+header) + T6 (kiểu cột + thread). Tiếp theo Nhóm C aggregation (T7).
+
+### Tasks liên quan
+- P1.5-T6 ✅ → tiếp theo P1.5-T7 (suggester: rule đếm theo category + field aggregation)
+
 <!-- Thêm session mới ở đây -->
