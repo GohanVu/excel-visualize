@@ -968,4 +968,33 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - Issue-008 (fix). Sau đó tiếp P1.6-T3 (đánh dấu thuộc/chưa thuộc)
 
+## [2026-06-28] Session 29 — Trang chủ "Sheet của tôi" (P1.7-T1, kéo lên sớm)
+
+### Yêu cầu
+- User vẽ mockup: trang chủ hiện các sheet (file) đã load + ô "+" để thêm; đăng nhập lại vẫn thấy
+
+### Quyết định sắp xếp
+- **Kéo P1.7-T1 lên trước** (xen vào giữa Learning Mode): lỗ hổng điều hướng nền tảng — trước đây đăng nhập lại KHÔNG mở lại được file đã upload (Dashboard chỉ hiện chart đã lưu). Quick win vì `GET /datasets` + lưu DB theo account đã có sẵn, chỉ thiếu UI
+
+### Công việc đã làm
+- Viết lại `DashboardPage`:
+  - Section chính "Sheet của tôi": card mỗi dataset (tên + ngày), click → `/datasets/:id/columns` (mở lại); ô "+" → `/upload`
+  - Section phụ "Biểu đồ đã lưu" xuống dưới (chỉ hiện nếu có)
+  - Bỏ EmptyState cũ — ô "+" tự là empty state
+- Dùng `fetchDatasets` (GET /datasets) đã có, không đụng backend
+
+### Quyết định quan trọng
+- **Sheet làm trung tâm trang chủ**: dataset là entry point (từ đó vẽ chart / học), nên home ưu tiên list sheet hơn list chart
+- **Không đụng backend**: persistence đã xong từ Phase 1 (Dataset.userId). Đúng nhận định lúc brainstorm Session 19 "lưu theo account phần lớn đã có"
+
+### Test coverage
+- 8 FE tests: section luôn hiện + nút thêm, list sheet + count, mở sheet → columns, "+" → upload, chart phụ hiện/ẩn
+- 90 frontend tests pass (backend 120 không đổi)
+
+### Kết quả
+- Commit `94f616a` push. Đăng nhập lại giờ thấy + mở lại được file đã load
+
+### Tasks liên quan
+- P1.7-T1 ✅ (kéo sớm) → quay lại Learning Mode P1.6-T3; phần còn lại Phase 1.7 (quota/xoá) sau
+
 <!-- Thêm session mới ở đây -->

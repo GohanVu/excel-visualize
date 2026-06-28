@@ -213,7 +213,7 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
-| P1.7-T1 | Trang "File của tôi": list dataset (GET /datasets đã có) + mở lại file | ⬜ Todo | P1-T1 | FE; mỗi file: tên, ngày, số tab |
+| P1.7-T1 | Trang "File của tôi": list dataset (GET /datasets đã có) + mở lại file | ✅ Done | P1-T1 | Kéo lên làm sớm (Session 29). DashboardPage "Sheet của tôi" + nút "+"; click → /columns |
 | P1.7-T2 | Enforce quota upload: Free=2, Pro=5–10 (config) — chặn khi đầy | ⬜ Todo | P1.7-T1 | Đếm dataset của user trong presign/confirm |
 | P1.7-T3 | `DELETE /datasets/:id`: thêm `StorageService.removeObject` + xử lý Chart.Restrict | ⬜ Todo | P1.7-T1 | File có chart đã lưu → cảnh báo, xoá kèm chart hoặc chặn (chốt khi làm) |
 | P1.7-T4 | UX đầy quota: "Đã đạt N/N — xoá bớt để thêm" + nút xoá, cảnh báo nếu có chart | ⬜ Todo | P1.7-T2, P1.7-T3 | Không tự xoá, user chọn |
