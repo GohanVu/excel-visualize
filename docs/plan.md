@@ -112,7 +112,7 @@
 
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
-| P1.5-T5 | ColumnOverviewPage: chip kiểu cột **editable** + nút **đổi header row** — CHỈ hiện khi confidence thấp | ⬜ Todo | P1.5-T1, P1.5-T3 | File sạch: 0 nhắc. File rác: icon "?" + dropdown đổi kiểu, dải "đọc từ dòng N ✎" |
+| P1.5-T5 | ColumnOverviewPage: chip kiểu cột **editable** + nút **đổi header row** (gated) + **thanh đổi tab** (multi-sheet) | ⬜ Todo | P1.5-T1, P1.5-T3, P1.5-T10 | File sạch: 0 nhắc. File rác: icon "?" + dropdown đổi kiểu, dải "đọc từ dòng N ✎". Tab switcher dùng /sheets |
 | P1.5-T6 | API `/suggest` nhận type override `{index, type}[]` thay `number[]` | ⬜ Todo | P1.5-T5, P1-T5 | Override từ request (mức gọn, không đụng DB). Persist vào `DatasetColumn` để sau |
 
 ### Nhóm C — Aggregation charts (mở khoá dữ liệu toàn chữ)
@@ -122,6 +122,12 @@
 | P1.5-T7 | Suggester: rule "đếm số dòng theo category" + field `aggregation` trên ChartSuggestion | ⬜ Todo | P1.5-T6 | Category (không cần cột số) → bar/pie đếm. `aggregation: 'count'`, y rỗng. Target type=category, KHÔNG string nhiều distinct |
 | P1.5-T8 | buildChartOption (FE): hỗ trợ `aggregation: 'count'` — group-by x + đếm | ⬜ Todo | P1.5-T7 | Group rows theo x, value = số lượng |
 | P1.5-T9 | Verify end-to-end với file HSK thật | ⬜ Todo | P1.5-T1..T8 | "Từ loại" → đếm Danh từ/Động từ/Số từ; "Nhóm" → đếm theo nhóm nét |
+
+### Nhóm D — Multi-sheet (đọc nhiều tab trong 1 file)
+
+| Task ID | Mô tả | Status | Dependencies | Notes |
+|---------|--------|--------|--------------|-------|
+| P1.5-T10 | Backend đọc nhiều tab: `parse()` nhận `sheetName`; `GET /datasets/:id/sheets` liệt kê tab; `/columns` & `/rows` nhận `?sheet=`; lưu `activeSheet` trên Dataset | ⬜ Todo | P1.5-T1 | 1 file = 1 Dataset, nhiều tab bên trong. Không truyền → tab đầu. FE tab switcher gộp vào T5 |
 
 ### Tính năng tương lai (Pro, không làm v1)
 
@@ -140,11 +146,35 @@
 ### Thứ tự đề xuất
 
 ```
-A: T1 (header+confidence) → T3 (fill guard+confidence) → T2 (drop empty)
-B: T5 (UI sửa, gated) → T6 (API override)
-C: T7 (suggester count) → T8 (buildChartOption count) → T9 (verify)
-T4 (merged cells) nếu còn cần
+A (xong T1,T3,T2)
+  → D: T10 (multi-tab backend)
+  → B: T5 (UI sửa cột + tab switcher, gated) → T6 (API type override)
+  → C: T7 (suggester count) → T8 (buildChartOption count) → T9 (verify e2e file HSK)
+  → T4 (merged cells) nếu còn cần
+Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 ```
+
+---
+
+## Phase 1.7 — Dataset Management & Quota
+
+> Mục tiêu: User quản lý các file đã upload (xem, mở lại, xoá) + enforce giới hạn số file theo plan.
+> Quyết định (Session 19): đầy quota → **CHẶN + user tự chọn xoá** (KHÔNG tự xoá để tránh mất data).
+> Lưu ý ràng buộc: `Chart.datasetId` đang `onDelete: Restrict`; MinIO chưa có hàm xoá object.
+
+| Task ID | Mô tả | Status | Dependencies | Notes |
+|---------|--------|--------|--------------|-------|
+| P1.7-T1 | Trang "File của tôi": list dataset (GET /datasets đã có) + mở lại file | ⬜ Todo | P1-T1 | FE; mỗi file: tên, ngày, số tab |
+| P1.7-T2 | Enforce quota upload: Free=2, Pro=5–10 (config) — chặn khi đầy | ⬜ Todo | P1.7-T1 | Đếm dataset của user trong presign/confirm |
+| P1.7-T3 | `DELETE /datasets/:id`: thêm `StorageService.removeObject` + xử lý Chart.Restrict | ⬜ Todo | P1.7-T1 | File có chart đã lưu → cảnh báo, xoá kèm chart hoặc chặn (chốt khi làm) |
+| P1.7-T4 | UX đầy quota: "Đã đạt N/N — xoá bớt để thêm" + nút xoá, cảnh báo nếu có chart | ⬜ Todo | P1.7-T2, P1.7-T3 | Không tự xoá, user chọn |
+
+### Test cases P1.7
+
+- [ ] Free user có 2 file, upload file 3 → bị chặn, hiện nhắc xoá bớt
+- [ ] Xoá file → MinIO object cũng bị xoá (không để rác)
+- [ ] Xoá file có chart đã lưu → cảnh báo trước khi xoá
+- [ ] Pro user upload tới giới hạn cao hơn (5–10)
 
 ---
 

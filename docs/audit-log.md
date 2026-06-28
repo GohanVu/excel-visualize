@@ -661,4 +661,34 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.5-T2 ✅ → tiếp theo Nhóm B: P1.5-T5 (UI sửa header/kiểu cột, confidence-gated)
 
+## [2026-06-28] Session 19 — Brainstorm multi-tab + dataset quota
+
+### Yêu cầu
+- User: file có nhiều tab → cho chọn qua lại; mỗi "sheet" là 1 phần riêng; free 2 sheet, đầy thì xoá cũ; pro 5-10; lưu theo tài khoản
+
+### Phân tích — tách 2 khái niệm bị gộp
+- **"tab"** = worksheet trong 1 file (HSK 1, 214 bộ thủ) → sub-navigation
+- **"sheet"** = 1 file upload = `Dataset` → đơn vị quota
+- → Chốt: **quota đếm theo FILE (Dataset)**, tab là điều hướng con miễn phí. File 2 tab vẫn = 1 sheet
+
+### Gap phát hiện
+- Parser chỉ đọc `SheetNames[0]` → tab "214 bộ thủ" đang **bị bỏ hoàn toàn** (mất data)
+- Quota chưa enforce (presign chỉ check dung lượng, chưa đếm số dataset)
+- "Lưu theo tài khoản" phần lớn ĐÃ CÓ (`Dataset.userId` + MinIO)
+
+### Quyết định quan trọng
+- **Đầy quota → CHẶN + user tự chọn xoá** (user chốt), KHÔNG tự xoá FIFO. Lý do: tránh mất data, vướng `Chart.datasetId onDelete: Restrict` (file có chart không xoá được tự động), và MinIO chưa có hàm xoá object
+- **Thứ tự (Claude tự sắp, user uỷ quyền)**:
+  - Multi-tab làm trước trong Phase 1.5 (đụng lại `parse()` — context nóng; đang mất data thật; đổi contract /columns mà T5 sẽ build lên → tránh rework UI 2 lần)
+  - Gộp tab-switcher vào T5 (cùng sửa ColumnOverviewPage 1 lần)
+  - Quota/quản lý file tách Phase 1.7 riêng (tầng freemium, độc lập, làm sau khi luồng lõi xong)
+- **1 file = 1 Dataset, nhiều tab bên trong**; tab truy cập qua `?sheet=`, lưu `activeSheet`
+
+### Kết quả
+- Plan: thêm Nhóm D (P1.5-T10 multi-tab backend) vào Phase 1.5; cập nhật T5 (thêm tab switcher); thêm Phase 1.7 (4 task quota + quản lý file)
+- Chưa code — phiên sau bắt đầu P1.5-T10
+
+### Tasks liên quan
+- P1.5-T10 (mới), Phase 1.7 T1-T4 (mới)
+
 <!-- Thêm session mới ở đây -->
