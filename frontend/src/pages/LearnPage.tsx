@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchColumns, fetchRows } from '../api/datasets';
@@ -89,16 +89,48 @@ function FlashcardDeck({
 
   const [front, setFront] = useState(defaultFront);
   const [back, setBack] = useState<string[]>([defaultBack]);
-  const [order, setOrder] = useState<number[]>(() => rows.map((_, i) => i));
   const [pos, setPos] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  // index dòng đã thuộc (theo index gốc của rows — giữ qua shuffle/đổi front)
+  const [known, setKnown] = useState<Set<number>>(new Set());
 
-  const total = rows.length;
-  const card = rows[order[pos]];
+  // Bỏ qua thẻ rỗng mặt trước (dòng nhóm/trống không có gì để học)
+  const deck = useMemo(
+    () =>
+      rows
+        .map((_, i) => i)
+        .filter((i) => (rows[i][front] ?? '').toString().trim() !== ''),
+    [rows, front],
+  );
+
+  const [order, setOrder] = useState<number[]>(deck);
+  // Đổi front → deck đổi → reset thứ tự + vị trí (known giữ nguyên)
+  useEffect(() => {
+    setOrder(deck);
+    setPos(0);
+    setFlipped(false);
+  }, [deck]);
+
+  const total = order.length;
+  const card = total > 0 ? rows[order[pos]] : null;
+  const knownCount = deck.filter((i) => known.has(i)).length;
+  const isKnown = card != null && known.has(order[pos]);
 
   function go(delta: number) {
+    if (total === 0) return;
     setPos((p) => (p + delta + total) % total);
     setFlipped(false);
+  }
+
+  function mark(isKnownNow: boolean) {
+    if (total === 0) return;
+    const idx = order[pos];
+    setKnown((prev) => {
+      const next = new Set(prev);
+      isKnownNow ? next.add(idx) : next.delete(idx);
+      return next;
+    });
+    go(1);
   }
 
   function shuffle() {
@@ -115,7 +147,6 @@ function FlashcardDeck({
   function chooseFront(name: string) {
     setFront(name);
     setBack((b) => b.filter((x) => x !== name));
-    setFlipped(false);
   }
 
   function toggleBack(name: string) {
@@ -135,7 +166,16 @@ function FlashcardDeck({
         >
           ← Quay lại
         </button>
-        <h1 className="text-2xl font-bold">🎴 Học bằng thẻ</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">🎴 Học bằng thẻ</h1>
+          <span className="text-sm text-gray-400">
+            Đã thuộc{' '}
+            <strong data-testid="known-count" className="text-green-400">
+              {knownCount}
+            </strong>{' '}
+            / {total}
+          </span>
+        </div>
 
         <div className="mt-4 grid gap-3 rounded-xl border border-gray-800 bg-gray-900 p-4 sm:grid-cols-2">
           <label className="text-sm">
@@ -181,9 +221,15 @@ function FlashcardDeck({
           type="button"
           aria-label="Lật thẻ"
           onClick={() => setFlipped((f) => !f)}
-          className="mt-6 flex min-h-[220px] w-full flex-col items-center justify-center rounded-2xl border border-gray-700 bg-gray-900 p-6 text-center"
+          className={`mt-6 flex min-h-[220px] w-full flex-col items-center justify-center rounded-2xl border bg-gray-900 p-6 text-center ${
+            isKnown ? 'border-green-600/50' : 'border-gray-700'
+          }`}
         >
-          {!flipped ? (
+          {card == null ? (
+            <span className="text-gray-500">
+              Cột mặt trước không có dữ liệu — chọn cột khác
+            </span>
+          ) : !flipped ? (
             <>
               <span className="text-3xl font-bold">{card[front] || '—'}</span>
               <span className="mt-3 text-xs text-gray-500">Nhấn để lật</span>
@@ -202,6 +248,23 @@ function FlashcardDeck({
           )}
         </button>
 
+        <div className="mt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={() => mark(false)}
+            className="flex-1 rounded-lg bg-gray-800 py-2.5 text-sm hover:bg-gray-700"
+          >
+            ↻ Chưa thuộc
+          </button>
+          <button
+            type="button"
+            onClick={() => mark(true)}
+            className="flex-1 rounded-lg bg-green-600 py-2.5 text-sm font-medium hover:bg-green-500"
+          >
+            ✓ Đã thuộc
+          </button>
+        </div>
+
         <div className="mt-4 flex items-center justify-between">
           <button
             type="button"
@@ -212,7 +275,7 @@ function FlashcardDeck({
             ← Trước
           </button>
           <span className="text-sm text-gray-400">
-            {pos + 1} / {total}
+            {total === 0 ? '0 / 0' : `${pos + 1} / ${total}`}
           </span>
           <button
             type="button"

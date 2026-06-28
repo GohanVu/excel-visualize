@@ -90,6 +90,37 @@ describe('LearnPage', () => {
     expect(await screen.findByRole('button', { name: /Trộn thẻ/ })).toBeInTheDocument();
   });
 
+  it('marks a card as known: progress increments and advances', async () => {
+    renderPage();
+    await screen.findByText('八');
+    expect(screen.getByTestId('known-count')).toHaveTextContent('0');
+    fireEvent.click(screen.getByRole('button', { name: /Đã thuộc/ }));
+    expect(screen.getByText('好')).toBeInTheDocument(); // đã sang thẻ 2
+    expect(screen.getByTestId('known-count')).toHaveTextContent('1');
+  });
+
+  it('"Chưa thuộc" advances without incrementing progress', async () => {
+    renderPage();
+    await screen.findByText('八');
+    fireEvent.click(screen.getByRole('button', { name: /Chưa thuộc/ }));
+    expect(screen.getByText('好')).toBeInTheDocument();
+    expect(screen.getByTestId('known-count')).toHaveTextContent('0');
+  });
+
+  it('skips cards whose front value is empty (section/blank rows)', async () => {
+    mockRows.mockResolvedValue({
+      datasetId: 'ds-1',
+      rows: [
+        { 'Chữ Hán': '八', 'Bính âm': 'bā', Nghĩa: 'tám' },
+        { 'Chữ Hán': '', 'Bính âm': '', Nghĩa: 'nhóm' }, // dòng trống mặt trước
+        { 'Chữ Hán': '好', 'Bính âm': 'hǎo', Nghĩa: 'tốt' },
+      ],
+    });
+    renderPage();
+    expect(await screen.findByText('八')).toBeInTheDocument();
+    expect(screen.getByText('1 / 2')).toBeInTheDocument(); // 3 dòng → 2 thẻ hợp lệ
+  });
+
   it('shows a fallback when data is insufficient', async () => {
     mockCols.mockResolvedValue({ datasetId: 'ds-1', columns: [columns[0]] });
     mockRows.mockResolvedValue({ datasetId: 'ds-1', rows: [] });
