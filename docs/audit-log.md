@@ -633,4 +633,32 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.5-T3 ✅ → tiếp theo P1.5-T2 (loại cột rỗng khỏi overview)
 
+## [2026-06-28] Session 18 — Loại cột rỗng + tên fallback (P1.5-T2)
+
+### Yêu cầu
+- Bỏ cột rỗng hoàn toàn (cột ảnh K/L/M, cột tách trống `, ,`) khỏi overview
+
+### Công việc đã làm
+- `datasets.service.parseDataset`:
+  - Filter bỏ cột mọi giá trị đều rỗng — không đưa lên UI
+  - **Giữ nguyên `index` gốc** trên cột còn lại → `/suggest` map đúng cột
+  - Header trống → tên hiển thị `Cột N` (fallback)
+  - `previewRows` build từ cột đã giữ, key theo tên hiển thị (không còn cột rỗng + không trùng key)
+
+### Quyết định quan trọng
+- **Chỉ bỏ cột 0% dữ liệu**, không bỏ cột thưa có data → bảo toàn cột nhãn ít giá trị
+- **Index gốc bất biến**: FE chọn cột theo `index` (không phải vị trí mảng), nên giữ index gốc để selection + /suggest không lệch sau khi filter
+- **displayNames tính 1 lần, dùng chung columns + previewRows**: tránh key rỗng trùng nhau (2 cột header '' → Object.fromEntries nuốt mất 1) — đây là lý do phải đặt tên fallback trước khi build preview
+
+### Test coverage
+- 2 tests mới: drop cột rỗng nhưng giữ index gốc + preview sạch, fallback name "Cột 2" cho header trống
+- 104 backend tests pass
+
+### Kết quả
+- Commit `c578bee` push lên https://github.com/GohanVu/excel-visualize
+- **Nhóm A (parsing robustness) xong phần lõi**: T1 header + T3 fill-guard + T2 drop-empty. T4 (merged cells) để defer.
+
+### Tasks liên quan
+- P1.5-T2 ✅ → tiếp theo Nhóm B: P1.5-T5 (UI sửa header/kiểu cột, confidence-gated)
+
 <!-- Thêm session mới ở đây -->
