@@ -70,6 +70,28 @@ describe('ChartSuggesterService', () => {
     });
   });
 
+  describe('category only — count aggregation', () => {
+    it('suggests count bar + pie when category and no number', () => {
+      const result = service.suggest([col('Từ loại', ColumnType.category)]);
+      expect(result.map((s) => s.type)).toEqual(['bar', 'pie']);
+      expect(result.every((s) => s.aggregation === 'count')).toBe(true);
+      expect(result[0].encoding).toEqual({ x: 'Từ loại', y: [] });
+    });
+
+    it('does NOT add count when a number column is present', () => {
+      const result = service.suggest([
+        col('Khu vực', ColumnType.category),
+        col('Doanh thu', ColumnType.number),
+      ]);
+      expect(result.some((s) => s.aggregation === 'count')).toBe(false);
+    });
+
+    it('does NOT count a string column (too many distinct)', () => {
+      const result = service.suggest([col('Chữ Hán', ColumnType.string)]);
+      expect(result).toEqual([]);
+    });
+  });
+
   describe('edge cases', () => {
     it('returns empty when only one number, no axis', () => {
       expect(service.suggest([col('Doanh thu', ColumnType.number)])).toEqual([]);

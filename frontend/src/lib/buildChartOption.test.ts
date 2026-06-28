@@ -70,4 +70,42 @@ describe('buildChartOption', () => {
     ) as any;
     expect(opt.series[0].data).toEqual([1500]);
   });
+
+  describe('aggregation: count', () => {
+    const vocab = [
+      { 'Từ loại': 'Danh từ' },
+      { 'Từ loại': 'Danh từ' },
+      { 'Từ loại': 'Động từ' },
+    ];
+
+    it('count bar: distinct x with counts', () => {
+      const opt = buildChartOption(
+        suggestion({ type: 'bar', aggregation: 'count', encoding: { x: 'Từ loại', y: [] } }),
+        vocab,
+      ) as any;
+      expect(opt.xAxis.data).toEqual(['Danh từ', 'Động từ']);
+      expect(opt.series[0].type).toBe('bar');
+      expect(opt.series[0].data).toEqual([2, 1]);
+    });
+
+    it('count pie: {name, value} per distinct x', () => {
+      const opt = buildChartOption(
+        suggestion({ type: 'pie', aggregation: 'count', encoding: { x: 'Từ loại', y: [] } }),
+        vocab,
+      ) as any;
+      expect(opt.series[0].type).toBe('pie');
+      expect(opt.series[0].data).toEqual([
+        { name: 'Danh từ', value: 2 },
+        { name: 'Động từ', value: 1 },
+      ]);
+    });
+
+    it('empty values become "(trống)"', () => {
+      const opt = buildChartOption(
+        suggestion({ type: 'bar', aggregation: 'count', encoding: { x: 'Từ loại', y: [] } }),
+        [{ 'Từ loại': '' }, { 'Từ loại': 'Danh từ' }],
+      ) as any;
+      expect(opt.xAxis.data).toEqual(['(trống)', 'Danh từ']);
+    });
+  });
 });

@@ -108,6 +108,7 @@ export interface ChartSuggestion {
   title: string;
   description: string;
   encoding: { x: string; y: string[] };
+  aggregation?: 'count';
 }
 
 export interface SuggestResponse {

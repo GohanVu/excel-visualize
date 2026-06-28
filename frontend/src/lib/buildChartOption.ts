@@ -11,13 +11,42 @@ function num(value: string | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+// Đếm số dòng theo giá trị cột x, giữ thứ tự xuất hiện đầu tiên
+function countBy(rows: Row[], xKey: string): { name: string; value: number }[] {
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    const key = (r[xKey] ?? '').toString().trim() || '(trống)';
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts].map(([name, value]) => ({ name, value }));
+}
+
 /** Dựng ECharts option từ 1 gợi ý chart + data rows (dùng cho cả thumbnail và full) */
 export function buildChartOption(
   suggestion: ChartSuggestion,
   rows: Row[],
 ): ChartOption {
-  const { type, encoding } = suggestion;
+  const { type, encoding, aggregation } = suggestion;
   const { x, y } = encoding;
+
+  // Đếm số dòng theo x (data toàn chữ, không có cột số)
+  if (aggregation === 'count') {
+    const data = countBy(rows, x);
+    if (type === 'pie') {
+      return {
+        color: PALETTE,
+        tooltip: { trigger: 'item' },
+        series: [{ type: 'pie', radius: '70%', data }],
+      };
+    }
+    return {
+      color: PALETTE,
+      tooltip: { trigger: 'axis' },
+      xAxis: { type: 'category', data: data.map((d) => d.name) },
+      yAxis: { type: 'value' },
+      series: [{ type: 'bar', data: data.map((d) => d.value) }],
+    };
+  }
 
   if (type === 'pie') {
     return {

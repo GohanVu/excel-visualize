@@ -13,6 +13,8 @@ export interface ChartSuggestion {
   title: string; // tiếng Việt, plain — không dùng tên kỹ thuật
   description: string;
   encoding: { x: string; y: string[] };
+  // 'count' = đếm số dòng theo x (cho data toàn chữ, không có cột số). y rỗng.
+  aggregation?: 'count';
 }
 
 // Pie chỉ hợp lý khi số nhóm không quá nhiều
@@ -29,6 +31,7 @@ export class ChartSuggesterService {
   suggest(columns: SuggesterColumn[]): ChartSuggestion[] {
     const dates = columns.filter((c) => c.type === ColumnType.date);
     const numbers = columns.filter((c) => c.type === ColumnType.number);
+    const categories = columns.filter((c) => c.type === ColumnType.category);
     const labels = columns.filter(
       (c) => c.type === ColumnType.category || c.type === ColumnType.string,
     );
@@ -67,6 +70,27 @@ export class ChartSuggesterService {
           encoding: { x, y },
         });
       }
+    }
+
+    // Data toàn chữ (không có cột số) nhưng có cột phân loại → ĐẾM số dòng theo nhóm.
+    // VD file từ vựng: đếm số từ theo "Từ loại". Chỉ dùng category (string nhiều
+    // distinct thì đếm vô nghĩa — 500 nhóm). Đếm cho phép visualize data học tập.
+    if (numbers.length === 0 && categories.length >= 1) {
+      const x = categories[0].name;
+      suggestions.push({
+        type: 'bar',
+        title: `Số lượng theo ${x}`,
+        description: `Đếm số mục theo từng ${x}`,
+        encoding: { x, y: [] },
+        aggregation: 'count',
+      });
+      suggestions.push({
+        type: 'pie',
+        title: `Tỷ trọng theo ${x}`,
+        description: `Phần trăm số lượng mỗi ${x}`,
+        encoding: { x, y: [] },
+        aggregation: 'count',
+      });
     }
 
     if (numbers.length >= 2) {
