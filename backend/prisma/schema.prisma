@@ -30,6 +30,12 @@ enum ColumnType {
   category
 }
 
+enum StudyStatus {
+  new
+  learning
+  known
+}
+
 // ─── Users ───────────────────────────────────────────────────────────────────
 
 model User {
@@ -49,6 +55,7 @@ model User {
   dashboards    Dashboard[]
   subscription  Subscription?
   auditLogs     AuditLog[]
+  studyProgress StudyProgress[]
 
   @@map("users")
 }
@@ -69,9 +76,10 @@ model Dataset {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  columns DatasetColumn[]
-  charts  Chart[]
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  columns       DatasetColumn[]
+  charts        Chart[]
+  studyProgress StudyProgress[]
 
   @@map("datasets")
 }
@@ -120,6 +128,29 @@ model Chart {
   dataset   Dataset   @relation(fields: [datasetId], references: [id], onDelete: Restrict)
 
   @@map("charts")
+}
+
+// ─── Study Progress (Learning Mode) ──────────────────────────────────────────
+
+model StudyProgress {
+  id        String      @id @default(cuid())
+  userId    String
+  datasetId String
+  sheet     String      @default("") // tab (worksheet); "" = tab mặc định/đầu
+  cardKey   String // định danh thẻ (vd hash giá trị dòng) — ổn định qua re-parse
+  status    StudyStatus @default(new)
+  seenCount Int         @default(0)
+  lastReviewedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dataset Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  // Mỗi user × dataset × tab × thẻ chỉ 1 bản ghi tiến độ
+  @@unique([userId, datasetId, sheet, cardKey])
+  @@map("study_progress")
 }
 
 // ─── Subscriptions ────────────────────────────────────────────────────────────
