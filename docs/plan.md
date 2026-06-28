@@ -156,6 +156,55 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 
 ---
 
+## Phase 1.6 — Learning Mode (Flashcard + Quiz + Progress)
+
+> Mục tiêu: Data toàn chữ (từ vựng, kiến thức) KHÔNG vẽ chart được → biến thành công cụ HỌC.
+> Triết lý: **output thích nghi theo data** — số/thời gian → chart; chữ/kiến thức → học.
+> Đây là tổng quát hoá engine "gợi ý": app suggest cả KIỂU output, không chỉ loại chart.
+> Bối cảnh: file HSK 501 dòng toàn chữ — xem brainstorm Session 21. v1 user chốt: cả flashcard + quiz + theo dõi tiến độ.
+
+### Nhóm A — Output routing (tổng quát hoá suggestion)
+
+| Task ID | Mô tả | Status | Dependencies | Notes |
+|---------|--------|--------|--------------|-------|
+| P1.6-T1 | Bước gợi ý phát hiện "data hợp để học" (≥2 cột text/category, ít/không cột số) → đề xuất **Học** song song với chart | ⬜ Todo | P1.5-T7 | BE rule + FE entry. File số → chart; file chữ → học nổi lên trước |
+
+### Nhóm B — Flashcard
+
+| Task ID | Mô tả | Status | Dependencies | Notes |
+|---------|--------|--------|--------------|-------|
+| P1.6-T2 | Chọn cột **mặt trước / mặt sau** (tái dùng column selection) + màn flashcard: lật thẻ, next/prev, shuffle | ⬜ Todo | P1.6-T1 | Mỗi dòng = 1 thẻ. Thuần client, data từ /rows. VD front=Chữ Hán, back=Bính âm+Nghĩa |
+| P1.6-T3 | Đánh dấu **đã thuộc / chưa thuộc** mỗi thẻ | ⬜ Todo | P1.6-T2 | Local state trước, persist ở T6 |
+
+### Nhóm C — Quiz
+
+| Task ID | Mô tả | Status | Dependencies | Notes |
+|---------|--------|--------|--------------|-------|
+| P1.6-T4 | Sinh quiz trắc nghiệm từ data (đáp án đúng + 3 distractor random từ dòng khác) + chấm điểm | ⬜ Todo | P1.6-T2 | "八 nghĩa là gì?" + 4 lựa chọn. Thuần client |
+
+### Nhóm D — Progress (DB, cần migration)
+
+| Task ID | Mô tả | Status | Dependencies | Notes |
+|---------|--------|--------|--------------|-------|
+| P1.6-T5 | Schema `StudyProgress` (per user/dataset/sheet/card: known/seen, lastReviewedAt) + migration | ⬜ Todo | P0-T3 | Track thuộc/chưa thuộc. SRS (lặp ngắt quãng) để Pro/sau |
+| P1.6-T6 | API lưu/đọc tiến độ học | ⬜ Todo | P1.6-T5 | POST/GET progress theo dataset |
+| P1.6-T7 | Wire flashcard + quiz vào progress; hiện "đã thuộc X/Y"; verify e2e file HSK | ⬜ Todo | P1.6-T3, P1.6-T4, P1.6-T6 | |
+
+### Gating (định hướng)
+
+- Flashcard cơ bản: **Free** (hút người dùng)
+- Quiz + theo dõi tiến độ + SRS + AI sinh câu hỏi/mnemonic: **Pro** (Phase 4/5). Cột "Câu chuyện bộ thủ" hợp AI enhance
+
+### Test cases P1.6
+
+- [ ] File HSK (toàn chữ) → app đề xuất "Học", không ép vẽ chart
+- [ ] Chọn front=Chữ Hán, back=Nghĩa → flashcard lật đúng nội dung
+- [ ] Quiz: 1 đáp án đúng + 3 nhiễu khác nhau, không trùng
+- [ ] Đánh dấu thuộc 1 thẻ → reload vẫn nhớ (progress persist trong DB)
+- [ ] Học tab "214 bộ thủ" (multi-sheet) → flashcard từ đúng tab
+
+---
+
 ## Phase 1.7 — Dataset Management & Quota
 
 > Mục tiêu: User quản lý các file đã upload (xem, mở lại, xoá) + enforce giới hạn số file theo plan.

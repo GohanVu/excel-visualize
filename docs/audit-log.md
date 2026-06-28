@@ -722,4 +722,38 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.5-T10 ✅ → tiếp theo P1.5-T5 (FE: ColumnOverviewPage — tab switcher + correction UI gated)
 
+## [2026-06-28] Session 21 — Brainstorm Learning Mode (flashcard + quiz)
+
+### Yêu cầu
+- User nhận ra file HSK (toàn chữ, không số) không visualize được, nhưng hợp để tạo flashcard/quiz giúp học
+
+### Phân tích & quyết định
+- **Reframe quan trọng**: KHÔNG coi là sản phẩm thứ 2. Vẫn 1 sản phẩm "Excel → thứ hữu ích", **output thích nghi theo data**: số→chart, chữ→học. Là tổng quát hoá nguyên tắc "đừng hỏi user, app suggest" — giờ suggest cả KIỂU output
+- **Rẻ hơn tưởng**: hạ tầng parse + column-selection + /rows đã có; flashcard MVP thuần client, tái dùng ColumnOverviewPage
+- **Rủi ro cảnh báo**: focus (đừng bỏ dở luồng đang làm); learning PHỤ THUỘC parsing đang hoàn thiện → làm sau Phase 1.5. Tên "ChartLy" có thể phải đổi nếu learning thành trụ cột — defer
+- **Thị trường**: HSK/TOEIC/vocab qua Excel rất phổ biến ở VN — tiềm năng lớn, ứng viên Pro tốt
+
+### Quyết định (user)
+- v1 scope: **cả flashcard + quiz + theo dõi tiến độ** (cần schema + migration)
+- Thứ tự: user uỷ quyền Claude tự sắp "miễn là phải làm"
+
+### Quyết định sắp xếp (Claude, có lý do)
+- **Learning Mode = Phase 1.6**, thực thi: Phase 1.5 → 1.6 (Learning) → 1.7 (quota)
+- Learning ĐẶT TRÊN quota: là tính năng user muốn + cứu bế tắc file chữ; quota là cổng chặn vô hình, chưa launch nên chưa gấp
+- Vẫn xong 1.5 trước: tab switcher (T5) phục vụ cả học (chọn tab); không phí
+- Phase number khớp thứ tự (1.6 < 1.7)
+
+### Cấu trúc Phase 1.6 (7 task)
+- A: T1 output routing (phát hiện data hợp học → đề xuất Học song song chart)
+- B: T2 flashcard (chọn front/back + lật/shuffle), T3 đánh dấu thuộc/chưa
+- C: T4 quiz trắc nghiệm (đáp án + 3 distractor)
+- D: T5 schema StudyProgress + migration, T6 API progress, T7 wire + verify HSK
+
+### Kết quả
+- Plan: thêm Phase 1.6 đầy đủ giữa 1.5 và 1.7
+- Chưa code — luồng hiện tại vẫn là P1.5-T5 (tiếp tục Phase 1.5)
+
+### Tasks liên quan
+- Phase 1.6 (mới) T1-T7
+
 <!-- Thêm session mới ở đây -->
