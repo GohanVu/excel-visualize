@@ -58,15 +58,21 @@ export class DatasetsService {
     });
   }
 
-  async parseDataset(userId: string, datasetId: string) {
+  async parseDataset(userId: string, datasetId: string, sheetName?: string) {
     const dataset = await this.prisma.dataset.findFirst({
       where: { id: datasetId, userId },
     });
     if (!dataset) throw new NotFoundException('Dataset không tồn tại.');
 
     const buffer = await this.storage.getObject(dataset.minioKey);
-    const { headers, rows, headerRowIndex, headerConfident } =
-      this.parser.parse(buffer, dataset.mimeType);
+    const {
+      headers,
+      rows,
+      headerRowIndex,
+      headerConfident,
+      sheets,
+      sheetName: activeSheet,
+    } = this.parser.parse(buffer, dataset.mimeType, { sheetName });
 
     // Tên hiển thị: header trống → "Cột N" (tránh chip rỗng + key trùng ở preview)
     const displayNames = headers.map((h, i) => h.trim() || `Cột ${i + 1}`);
@@ -99,6 +105,8 @@ export class DatasetsService {
       datasetId: dataset.id,
       name: dataset.name,
       totalRows: rows.length,
+      sheets,
+      activeSheet,
       headerRowIndex,
       headerConfident,
       columns,
@@ -106,8 +114,13 @@ export class DatasetsService {
     };
   }
 
-  async suggestCharts(userId: string, datasetId: string, columnIndexes: number[]) {
-    const { columns } = await this.parseDataset(userId, datasetId);
+  async suggestCharts(
+    userId: string,
+    datasetId: string,
+    columnIndexes: number[],
+    sheetName?: string,
+  ) {
+    const { columns } = await this.parseDataset(userId, datasetId, sheetName);
 
     const selected = columnIndexes
       .map((i) => columns.find((c) => c.index === i))
@@ -121,17 +134,21 @@ export class DatasetsService {
     return { datasetId, suggestions: this.suggester.suggest(selected) };
   }
 
-  async getRows(userId: string, datasetId: string) {
+  async getRows(userId: string, datasetId: string, sheetName?: string) {
     const dataset = await this.prisma.dataset.findFirst({
       where: { id: datasetId, userId },
     });
     if (!dataset) throw new NotFoundException('Dataset không tồn tại.');
 
     const buffer = await this.storage.getObject(dataset.minioKey);
-    const { headers, rows } = this.parser.parse(buffer, dataset.mimeType);
+    const { headers, rows } = this.parser.parse(buffer, dataset.mimeType, {
+      sheetName,
+    });
 
+    // Key theo tên hiển thị (header trống → "Cột N") để khớp encoding của chart
+    const displayNames = headers.map((h, i) => h.trim() || `Cột ${i + 1}`);
     const allRows = rows.map((row) =>
-      Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ''])),
+      Object.fromEntries(displayNames.map((name, i) => [name, row[i] ?? ''])),
     );
 
     return { datasetId, rows: allRows };

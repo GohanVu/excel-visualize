@@ -59,22 +59,36 @@ describe('DatasetsController', () => {
     expect(mockService.findAllByUser).toHaveBeenCalledWith('user-1');
   });
 
-  it('GET /datasets/:id/columns → delegates to service.parseDataset with userId and id', async () => {
+  it('GET /datasets/:id/columns → delegates to service.parseDataset with userId, id and sheet', async () => {
     const expected = { datasetId: 'ds-1', totalRows: 3, columns: [], previewRows: [] };
     mockService.parseDataset.mockResolvedValue(expected);
-    const result = await controller.columns(mockUser, 'ds-1');
-    expect(mockService.parseDataset).toHaveBeenCalledWith('user-1', 'ds-1');
+    const result = await controller.columns(mockUser, 'ds-1', '214 bộ thủ');
+    expect(mockService.parseDataset).toHaveBeenCalledWith(
+      'user-1',
+      'ds-1',
+      '214 bộ thủ',
+    );
     expect(result).toEqual(expected);
   });
 
-  it('GET /datasets/:id/rows → delegates to service.getRows with userId and id', async () => {
+  it('GET /datasets/:id/columns → defaults sheet to undefined', async () => {
+    mockService.parseDataset.mockResolvedValue({});
+    await controller.columns(mockUser, 'ds-1');
+    expect(mockService.parseDataset).toHaveBeenCalledWith(
+      'user-1',
+      'ds-1',
+      undefined,
+    );
+  });
+
+  it('GET /datasets/:id/rows → delegates to service.getRows with userId, id and sheet', async () => {
     const expected = {
       datasetId: 'ds-1',
       rows: [{ Ngày: '2024-01-01', 'Doanh thu': '100' }],
     };
     mockService.getRows.mockResolvedValue(expected);
-    const result = await controller.rows(mockUser, 'ds-1');
-    expect(mockService.getRows).toHaveBeenCalledWith('user-1', 'ds-1');
+    const result = await controller.rows(mockUser, 'ds-1', 'HSK 1');
+    expect(mockService.getRows).toHaveBeenCalledWith('user-1', 'ds-1', 'HSK 1');
     expect(result).toEqual(expected);
   });
 });

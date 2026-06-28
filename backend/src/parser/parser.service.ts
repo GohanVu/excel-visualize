@@ -8,6 +8,15 @@ export interface ParsedDataset {
   headerRowIndex: number;
   // false khi phải bỏ qua banner/title gộp ô để tìm header → FE nên gợi ý user xác nhận
   headerConfident: boolean;
+  // Tất cả tab (worksheet) trong file
+  sheets: string[];
+  // Tab đang được đọc
+  sheetName: string;
+}
+
+export interface ParseOptions {
+  sheetName?: string; // tab cần đọc; không có / không tồn tại → tab đầu tiên
+  headerRow?: number; // ép dòng header (user override sau khi sửa tay)
 }
 
 @Injectable()
@@ -15,25 +24,10 @@ export class ParserService {
   // Số dòng đầu tối đa quét để tìm header (banner/title thường chỉ 1-3 dòng)
   private readonly MAX_HEADER_SCAN = 10;
 
-  parse(buffer: Buffer, mimeType: string, headerRow?: number): ParsedDataset {
-    const isCsv = mimeType === 'text/csv' || mimeType === 'application/csv';
-
-    if (!isCsv) this.assertBinarySpreadsheet(buffer);
-
-    let workbook: XLSX.WorkBook;
-    try {
-      // CSV: decode UTF-8 string trước để giữ đúng dấu tiếng Việt
-      // (SheetJS đọc buffer CSV mặc định không phải UTF-8)
-      // cellDates: true để "2024-01-01" thành Date, không bị convert sang serial number
-      workbook = isCsv
-        ? XLSX.read(buffer.toString('utf-8'), { type: 'string', cellDates: true, raw: false })
-        : XLSX.read(buffer, { type: 'buffer', cellDates: true, raw: false });
-    } catch {
-      throw new BadRequestException('Không thể đọc file. File bị lỗi hoặc không đúng định dạng.');
-    }
-
-    const sheetName = workbook.SheetNames[0];
-    if (!sheetName) throw new BadRequestException('File không có sheet nào.');
+  parse(buffer: Buffer, mimeType: string, opts: ParseOptions = {}): ParsedDataset {
+    const workbook = this.readWorkbook(buffer, mimeType);
+    const sheets = workbook.SheetNames;
+    const sheetName = this.resolveSheet(sheets, opts.sheetName);
 
     const sheet = workbook.Sheets[sheetName];
     const raw: unknown[][] = XLSX.utils.sheet_to_json(sheet, {
@@ -43,14 +37,21 @@ export class ParserService {
     });
 
     if (raw.length === 0) {
-      return { headers: [], rows: [], headerRowIndex: 0, headerConfident: true };
+      return {
+        headers: [],
+        rows: [],
+        headerRowIndex: 0,
+        headerConfident: true,
+        sheets,
+        sheetName,
+      };
     }
 
     // User ép header row (sau khi sửa thủ công) → tin tưởng tuyệt đối.
     // Ngược lại tự dò: bỏ qua banner gộp ô (dòng chỉ 1 ô có dữ liệu).
     const header =
-      headerRow != null
-        ? { index: this.clampHeaderRow(headerRow, raw.length), confident: true }
+      opts.headerRow != null
+        ? { index: this.clampHeaderRow(opts.headerRow, raw.length), confident: true }
         : this.detectHeaderRow(raw);
 
     const headers = (raw[header.index] as unknown[]).map((h) =>
@@ -65,7 +66,32 @@ export class ParserService {
       rows,
       headerRowIndex: header.index,
       headerConfident: header.confident,
+      sheets,
+      sheetName,
     };
+  }
+
+  private readWorkbook(buffer: Buffer, mimeType: string): XLSX.WorkBook {
+    const isCsv = mimeType === 'text/csv' || mimeType === 'application/csv';
+    if (!isCsv) this.assertBinarySpreadsheet(buffer);
+    try {
+      // CSV: decode UTF-8 string trước để giữ đúng dấu tiếng Việt
+      // (SheetJS đọc buffer CSV mặc định không phải UTF-8)
+      // cellDates: true để "2024-01-01" thành Date, không bị convert sang serial number
+      return isCsv
+        ? XLSX.read(buffer.toString('utf-8'), { type: 'string', cellDates: true, raw: false })
+        : XLSX.read(buffer, { type: 'buffer', cellDates: true, raw: false });
+    } catch {
+      throw new BadRequestException('Không thể đọc file. File bị lỗi hoặc không đúng định dạng.');
+    }
+  }
+
+  // Chọn tab: ưu tiên tab user yêu cầu (nếu tồn tại trong file), không thì tab đầu
+  private resolveSheet(sheetNames: string[], requested?: string): string {
+    if (requested && sheetNames.includes(requested)) return requested;
+    const first = sheetNames[0];
+    if (!first) throw new BadRequestException('File không có sheet nào.');
+    return first;
   }
 
   // Header = dòng đầu tiên có ≥2 ô non-empty (banner gộp ô chỉ có 1 ô).

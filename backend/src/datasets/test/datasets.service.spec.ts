@@ -54,6 +54,8 @@ describe('DatasetsService', () => {
       ],
       headerRowIndex: 0,
       headerConfident: true,
+      sheets: ['Sheet1'],
+      sheetName: 'Sheet1',
     });
   });
 
@@ -196,6 +198,8 @@ describe('DatasetsService', () => {
         ],
         headerRowIndex: 0,
         headerConfident: true,
+        sheets: ['Sheet1'],
+        sheetName: 'Sheet1',
       });
       const result = await service.parseDataset('user-1', 'ds-1');
       expect(result.columns.map((c) => c.name)).toEqual(['STT', 'Tên']);
@@ -215,9 +219,31 @@ describe('DatasetsService', () => {
         ],
         headerRowIndex: 0,
         headerConfident: true,
+        sheets: ['Sheet1'],
+        sheetName: 'Sheet1',
       });
       const result = await service.parseDataset('user-1', 'ds-1');
       expect(result.columns.map((c) => c.name)).toEqual(['STT', 'Cột 2']);
+    });
+
+    it('returns the sheet list + active sheet and passes sheetName to parser', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue(mockDataset);
+      mockParser.parse.mockReturnValue({
+        headers: ['A', 'B'],
+        rows: [['1', '2']],
+        headerRowIndex: 0,
+        headerConfident: true,
+        sheets: ['Tab1', 'Tab2'],
+        sheetName: 'Tab2',
+      });
+      const result = await service.parseDataset('user-1', 'ds-1', 'Tab2');
+      expect(result.sheets).toEqual(['Tab1', 'Tab2']);
+      expect(result.activeSheet).toBe('Tab2');
+      expect(mockParser.parse).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        expect.any(String),
+        { sheetName: 'Tab2' },
+      );
     });
   });
 

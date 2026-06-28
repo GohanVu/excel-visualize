@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -28,13 +28,21 @@ export class DatasetsController {
   }
 
   @Get(':id/columns')
-  columns(@CurrentUser() user: User, @Param('id') id: string) {
-    return this.datasetsService.parseDataset(user.id, id);
+  columns(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Query('sheet') sheet?: string,
+  ) {
+    return this.datasetsService.parseDataset(user.id, id, sheet);
   }
 
   @Get(':id/rows')
-  rows(@CurrentUser() user: User, @Param('id') id: string) {
-    return this.datasetsService.getRows(user.id, id);
+  rows(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Query('sheet') sheet?: string,
+  ) {
+    return this.datasetsService.getRows(user.id, id, sheet);
   }
 
   @Post(':id/suggest')
@@ -43,6 +51,6 @@ export class DatasetsController {
     @Param('id') id: string,
     @Body() dto: SuggestChartsDto,
   ) {
-    return this.datasetsService.suggestCharts(user.id, id, dto.columns);
+    return this.datasetsService.suggestCharts(user.id, id, dto.columns, dto.sheet);
   }
 }

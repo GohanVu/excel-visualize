@@ -16,6 +16,14 @@ function makeCsvBuffer(data: unknown[][]): Buffer {
   return Buffer.from(csv, 'utf-8');
 }
 
+function makeMultiSheetBuffer(sheets: Record<string, unknown[][]>): Buffer {
+  const wb = XLSX.utils.book_new();
+  for (const [name, data] of Object.entries(sheets)) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), name);
+  }
+  return Buffer.from(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }));
+}
+
 const XLSX_MIME =
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const CSV_MIME = 'text/csv';
@@ -129,7 +137,7 @@ describe('ParserService', () => {
         ['C', 'D'], // nhưng ép dùng dòng index 1
         ['x', 'y'],
       ]);
-      const result = service.parse(buf, XLSX_MIME, 1);
+      const result = service.parse(buf, XLSX_MIME, { headerRow: 1 });
       expect(result.headers).toEqual(['C', 'D']);
       expect(result.headerRowIndex).toBe(1);
       expect(result.headerConfident).toBe(true);
@@ -141,8 +149,51 @@ describe('ParserService', () => {
         ['A', 'B'],
         ['x', 'y'],
       ]);
-      const result = service.parse(buf, XLSX_MIME, 99);
+      const result = service.parse(buf, XLSX_MIME, { headerRow: 99 });
       expect(result.headerRowIndex).toBe(1); // clamp về dòng cuối
+    });
+  });
+
+  describe('parse — multi-sheet', () => {
+    const build = () =>
+      makeMultiSheetBuffer({
+        'HSK 1': [
+          ['STT', 'Chữ Hán'],
+          ['1', '八'],
+        ],
+        '214 bộ thủ': [
+          ['Bộ', 'Nghĩa'],
+          ['一', 'một'],
+        ],
+      });
+
+    it('lists all sheet names', () => {
+      expect(service.parse(build(), XLSX_MIME).sheets).toEqual([
+        'HSK 1',
+        '214 bộ thủ',
+      ]);
+    });
+
+    it('reads the first sheet by default', () => {
+      const result = service.parse(build(), XLSX_MIME);
+      expect(result.sheetName).toBe('HSK 1');
+      expect(result.headers).toEqual(['STT', 'Chữ Hán']);
+    });
+
+    it('reads a specific sheet by name', () => {
+      const result = service.parse(build(), XLSX_MIME, {
+        sheetName: '214 bộ thủ',
+      });
+      expect(result.sheetName).toBe('214 bộ thủ');
+      expect(result.headers).toEqual(['Bộ', 'Nghĩa']);
+      expect(result.rows[0]).toEqual(['一', 'một']);
+    });
+
+    it('falls back to the first sheet when requested sheet does not exist', () => {
+      const result = service.parse(build(), XLSX_MIME, {
+        sheetName: 'Không tồn tại',
+      });
+      expect(result.sheetName).toBe('HSK 1');
     });
   });
 

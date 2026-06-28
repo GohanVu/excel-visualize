@@ -119,6 +119,87 @@ Lấy danh sách datasets của user hiện tại.
 
 ---
 
+### GET /datasets/:id/columns
+Parse file → trả tổng quan cột (kiểu, confidence), preview, danh sách tab.  
+**Auth**: JWT  
+**Query**: `sheet` (optional) — tên tab cần đọc; không truyền → tab đầu tiên  
+**Response**:
+```json
+{
+  "datasetId": "cuid",
+  "name": "report",
+  "totalRows": 500,
+  "sheets": ["HSK 1", "214 bộ thủ"],
+  "activeSheet": "HSK 1",
+  "headerRowIndex": 1,
+  "headerConfident": false,
+  "columns": [
+    { "name": "STT", "index": 0, "type": "number", "confidence": 1, "sampleValues": ["1", "2", "3"] }
+  ],
+  "previewRows": [ { "STT": "1" } ]
+}
+```
+**Ghi chú**: `headerConfident=false` / `confidence` thấp → FE gợi ý user xác nhận. Cột rỗng hoàn toàn bị loại; header trống → tên `Cột N`.
+
+---
+
+### GET /datasets/:id/rows
+Trả toàn bộ dòng (key theo tên hiển thị) để render chart full.  
+**Auth**: JWT  
+**Query**: `sheet` (optional) — tên tab; không truyền → tab đầu  
+**Response**:
+```json
+{ "datasetId": "cuid", "rows": [ { "STT": "1", "Chữ Hán": "八" } ] }
+```
+
+---
+
+### POST /datasets/:id/suggest
+Nhận cột đã chọn → trả danh sách chart gợi ý (tối đa 4, mô tả tiếng Việt).  
+**Auth**: JWT  
+**Body**:
+```json
+{ "columns": [0, 1], "sheet": "HSK 1" }
+```
+`columns`: mảng index cột (≥1). `sheet` (optional): tab đang chọn.  
+**Response**:
+```json
+{
+  "datasetId": "cuid",
+  "suggestions": [
+    { "type": "line", "title": "Xu hướng theo thời gian", "description": "...", "encoding": { "x": "Ngày", "y": ["Doanh thu"] } }
+  ]
+}
+```
+
+---
+
+## Charts
+
+> Tất cả endpoints `/charts/*` đều yêu cầu JWT.
+
+### POST /charts
+Lưu chart vào dashboard mặc định (tự tạo nếu chưa có).  
+**Auth**: JWT  
+**Body**:
+```json
+{ "datasetId": "cuid", "type": "line", "title": "Doanh thu", "config": { } }
+```
+`config`: ECharts option (JSONB).  
+**Response**: `{ "chart": { "id": "cuid", ... }, "dashboardId": "cuid" }`
+
+---
+
+### GET /charts
+Lấy các chart đã lưu của user (qua dashboard), cũ → mới.  
+**Auth**: JWT  
+**Response**:
+```json
+{ "charts": [ { "id": "cuid", "type": "line", "title": "...", "config": { }, "createdAt": "ISO date" } ] }
+```
+
+---
+
 ## Upload Flow (end-to-end)
 
 ```
