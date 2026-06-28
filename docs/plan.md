@@ -127,7 +127,7 @@
 
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
-| P1.5-T10 | Backend đọc nhiều tab: `parse()` nhận `sheetName`; `GET /datasets/:id/sheets` liệt kê tab; `/columns` & `/rows` nhận `?sheet=`; lưu `activeSheet` trên Dataset | ⬜ Todo | P1.5-T1 | 1 file = 1 Dataset, nhiều tab bên trong. Không truyền → tab đầu. FE tab switcher gộp vào T5 |
+| P1.5-T10 | Backend đọc nhiều tab: `parse()` nhận `sheetName`; `/columns` trả `sheets[]`+`activeSheet`; `/columns`,`/rows`,`/suggest` nhận `sheet` | ✅ Done | P1.5-T1 | 1 file = 1 Dataset. KHÔNG làm endpoint /sheets riêng (gộp vào /columns — 1 round-trip). activeSheet persist defer. FE tab switcher = T5 |
 
 ### Tính năng tương lai (Pro, không làm v1)
 

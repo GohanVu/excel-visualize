@@ -691,4 +691,35 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.5-T10 (mới), Phase 1.7 T1-T4 (mới)
 
+## [2026-06-28] Session 20 — Đọc nhiều tab / multi-sheet (P1.5-T10)
+
+### Yêu cầu
+- File Excel có nhiều tab (HSK 1, 214 bộ thủ) — parser chỉ đọc tab đầu → mất data tab 2
+
+### Công việc đã làm
+- `parser.service.ts`:
+  - `parse()` đổi signature: `(buffer, mime, opts: { sheetName?, headerRow? })` — gom param thay vì positional
+  - Trả thêm `sheets[]` (mọi tab) + `sheetName` (tab đang đọc)
+  - Tách `readWorkbook()` + `resolveSheet()` (ưu tiên tab yêu cầu nếu tồn tại, fallback tab đầu)
+- `datasets.service`: `parseDataset/getRows/suggestCharts` nhận `sheetName`; overview expose `sheets` + `activeSheet`; `getRows` key theo displayName cho khớp encoding
+- Controller: `/columns` & `/rows` nhận `?sheet=`; `/suggest` nhận `sheet` trong body; `SuggestChartsDto` thêm `sheet` optional
+- `docs/api.md`: bổ sung /columns, /rows, /suggest (param sheet) + /charts (vốn đang thiếu trong doc)
+
+### Quyết định quan trọng
+- **KHÔNG làm `GET /datasets/:id/sheets` riêng** (dù plan ghi vậy): `parse()` đã trả `sheets[]` nên gộp luôn vào response `/columns` — 1 round-trip, không đọc workbook 2 lần. FE lấy danh sách tab từ chính overview
+- **`parse()` dùng options object**: chuẩn bị mở rộng (sheetName + headerRow + sau này thêm), tránh positional param khó đọc. Cập nhật test cũ `parse(buf, mime, 1)` → `{ headerRow: 1 }`
+- **`/suggest` cần `sheet`**: column index là per-tab, suggest phải parse đúng tab user đang xem → thêm vào DTO
+- **`activeSheet` persist DEFER**: stateless (FE truyền `?sheet=` mỗi request) đủ cho MVP, tránh migration. Persist để chung với lưu column-selection sau
+- **1 file = 1 Dataset**, tab là sub-navigation — không đụng quota
+
+### Test coverage
+- 6 tests mới: list tab, đọc tab mặc định, đọc theo tên, fallback khi tab không tồn tại, service truyền sheetName + trả sheets/activeSheet, controller default sheet=undefined
+- 110 backend tests pass
+
+### Kết quả
+- Commit `4db5165` push lên https://github.com/GohanVu/excel-visualize
+
+### Tasks liên quan
+- P1.5-T10 ✅ → tiếp theo P1.5-T5 (FE: ColumnOverviewPage — tab switcher + correction UI gated)
+
 <!-- Thêm session mới ở đây -->
