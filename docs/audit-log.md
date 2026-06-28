@@ -1080,4 +1080,37 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.6-T5 ✅ → tiếp theo P1.6-T6 (API lưu/đọc tiến độ — StudyProgress module)
 
+## [2026-06-28] Session 33 — Xoá sheet (P1.7-T3, kéo lên sớm)
+
+### Yêu cầu
+- User: 17 sheet trùng (upload thử nhiều lần), chưa có nút xoá
+
+### Quyết định sắp xếp
+- **Kéo P1.7-T3 lên** (xen giữa Learning Mode): user đang cần dọn file rác ngay, lại là phần còn thiếu của trang chủ vừa làm (P1.7-T1)
+
+### Công việc đã làm
+- Backend:
+  - `StorageService.removeObject()` — xoá object MinIO
+  - `DatasetsService.deleteDataset()`: verify owner; `$transaction` xoá charts (Chart.datasetId Restrict) + dataset; columns/study_progress tự cascade; `removeObject` best-effort (catch → không chặn)
+  - `DELETE /datasets/:id`
+- FE: `deleteDataset()`; `DashboardPage` tách `SheetCard` có nút ✕ → **xác nhận 2 bước** (Xoá/Huỷ); `useMutation` + invalidate `['datasets']`
+- `api.md`: DELETE endpoint
+
+### Quyết định quan trọng
+- **Xoá kèm charts trong transaction**: Chart→Dataset là Restrict (chặn xoá). Chart dựng từ data này, data mất thì chart vô nghĩa → xoá cùng. studyProgress/columns cascade tự động
+- **MinIO best-effort**: xoá DB record trước (transaction), removeObject sau với `.catch()` — nếu MinIO lỗi vẫn coi như xoá thành công (tránh record mồ côi)
+- **Xác nhận 2 bước inline** thay vì window.confirm: sạch + testable, đúng nguyên tắc confirm trước hành động phá huỷ
+- **Quota (T2) chưa làm**: xoá giải quyết file rác hiện tại; quota chặn tích luỹ tương lai — làm sau
+
+### Test coverage
+- 4 BE: NotFound, xoá charts+dataset+object đúng, best-effort khi MinIO lỗi, controller delegate
+- 2 FE: xoá sau xác nhận 2 bước (waitFor vì mutation async), huỷ không gọi delete
+- 124 backend + 98 frontend = 222 tests pass
+
+### Kết quả
+- Commit `65ef746` push. User hard refresh → mỗi card có nút ✕ để xoá
+
+### Tasks liên quan
+- P1.7-T3 ✅ (kéo sớm) → quay lại Learning Mode P1.6-T6 (API progress). Còn P1.7-T2 (quota) + T4 (UX đầy quota)
+
 <!-- Thêm session mới ở đây -->
