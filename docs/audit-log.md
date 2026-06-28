@@ -1026,4 +1026,33 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.6-T3 ✅ → tiếp theo P1.6-T4 (quiz trắc nghiệm)
 
+## [2026-06-28] Session 31 — Quiz trắc nghiệm + chế độ Thẻ/Quiz (P1.6-T4)
+
+### Yêu cầu
+- Sinh quiz trắc nghiệm từ data + chấm điểm
+
+### Công việc đã làm
+- Refactor `LearnPage`: tách shell (back + `ModeTabs` "🎴 Thẻ / 📝 Quiz"); `FlashcardDeck` thành body fragment (bỏ page-shell riêng)
+- `QuizMode` (file mới):
+  - Chọn cột **Câu hỏi** + **Đáp án** (single, smart default text col)
+  - `buildOptions`: đáp án đúng + tối đa 3 nhiễu (distinct từ dòng khác, != đúng), xáo trộn
+  - Chấm điểm "Đúng X / Y"; chọn xong tô xanh đáp án đúng / đỏ nếu sai; "Câu tiếp"
+  - deck lọc dòng có cả câu hỏi + đáp án; reset khi đổi cột
+
+### Quyết định quan trọng
+- **Chế độ Thẻ/Quiz dùng chung setup pattern nhưng tách component**: QuizMode setup khác (1 cột đáp án thay vì multi-back) → tách file riêng, không nhồi vào FlashcardDeck (tránh vượt 400 dòng + isolation)
+- **Refactor shell lên LearnPage**: cả 2 mode share back button + tabs; deck con chỉ render body → DRY, mode switch mượt. Test cũ không query shell nên an toàn
+- **options xáo trộn qua useMemo([pos])**: ổn định trong 1 câu, đổi câu mới tính lại — tránh re-shuffle mỗi render
+- **Thuần client**: tái dùng /rows, không endpoint mới (như flashcard)
+
+### Test coverage
+- 3 FE tests mới: switch sang quiz + hiện options, chấm đúng (+1), chấm sai (0)
+- 96 frontend tests pass (backend 120 không đổi)
+
+### Kết quả
+- Commit `3d740ce` push lên https://github.com/GohanVu/excel-visualize
+
+### Tasks liên quan
+- P1.6-T4 ✅ → tiếp theo P1.6-T5 (schema StudyProgress + migration) — bắt đầu phần persist tiến độ
+
 <!-- Thêm session mới ở đây -->

@@ -180,7 +180,7 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
-| P1.6-T4 | Sinh quiz trắc nghiệm từ data (đáp án đúng + 3 distractor random từ dòng khác) + chấm điểm | ⬜ Todo | P1.6-T2 | "八 nghĩa là gì?" + 4 lựa chọn. Thuần client |
+| P1.6-T4 | Sinh quiz trắc nghiệm từ data (đáp án đúng + 3 distractor random từ dòng khác) + chấm điểm | ✅ Done | P1.6-T2 | QuizMode + chế độ Thẻ/Quiz trên LearnPage. Chọn cột câu hỏi/đáp án, chấm Đúng X/Y |
 
 ### Nhóm D — Progress (DB, cần migration)
 
