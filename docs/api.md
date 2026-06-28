@@ -136,13 +136,14 @@ Parse file → trả tổng quan cột (kiểu, confidence), preview, danh sách
   "activeSheet": "HSK 1",
   "headerRowIndex": 1,
   "headerConfident": false,
+  "learnable": true,
   "columns": [
     { "name": "STT", "index": 0, "type": "number", "confidence": 1, "sampleValues": ["1", "2", "3"] }
   ],
   "previewRows": [ { "STT": "1" } ]
 }
 ```
-**Ghi chú**: `headerConfident=false` / `confidence` thấp → FE gợi ý user xác nhận. Cột rỗng hoàn toàn bị loại; header trống → tên `Cột N`.
+**Ghi chú**: `headerConfident=false` / `confidence` thấp → FE gợi ý user xác nhận. Cột rỗng hoàn toàn bị loại; header trống → tên `Cột N`. `learnable=true` khi ≥2 cột chữ (string/category) → FE hiện lối vào "Học" (flashcard/quiz).
 
 ---
 

@@ -155,7 +155,20 @@ export default function ColumnOverviewPage() {
           rows={data.previewRows.slice(0, 3)}
         />
 
-        <div className="mt-8 flex justify-end">
+        <div className="mt-8 flex flex-wrap justify-end gap-3">
+          {data.learnable && (
+            <button
+              type="button"
+              onClick={() =>
+                navigate(`/datasets/${id}/learn`, {
+                  state: { sheet: data.activeSheet, headerRow },
+                })
+              }
+              className="rounded-lg bg-purple-600 px-6 py-2.5 text-sm font-medium transition hover:bg-purple-500"
+            >
+              🎴 Học với dữ liệu này
+            </button>
+          )}
           <button
             type="button"
             disabled={selected.size === 0}

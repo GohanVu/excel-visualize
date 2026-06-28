@@ -26,6 +26,14 @@ export default function App() {
         <Route path="/datasets/:id/charts" element={<ChartSuggestionPage />} />
         <Route path="/datasets/:id/chart" element={<ChartDetailPage />} />
         <Route
+          path="/datasets/:id/learn"
+          element={
+            <div className="flex h-screen items-center justify-center bg-gray-950 text-white">
+              🎴 Học — flashcard/quiz đang xây dựng (P1.6-T2)
+            </div>
+          }
+        />
+        <Route
           path="/admin/*"
           element={
             <div className="flex h-screen items-center justify-center bg-gray-950 text-white">

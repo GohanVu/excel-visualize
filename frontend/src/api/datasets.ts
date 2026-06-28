@@ -83,6 +83,7 @@ export interface DatasetOverview {
   activeSheet: string;
   headerRowIndex: number;
   headerConfident: boolean;
+  learnable: boolean;
   columns: DatasetColumn[];
   previewRows: Record<string, string>[];
 }

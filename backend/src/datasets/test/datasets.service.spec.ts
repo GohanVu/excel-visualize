@@ -209,6 +209,30 @@ describe('DatasetsService', () => {
       expect(result.previewRows[0]).toEqual({ STT: '1', Tên: 'Alice' });
     });
 
+    it('flags learnable data (>= 2 text columns)', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue(mockDataset);
+      mockParser.parse.mockReturnValue({
+        headers: ['Chữ Hán', 'Nghĩa'],
+        rows: [
+          ['八', 'tám'],
+          ['好', 'tốt'],
+        ],
+        headerRowIndex: 0,
+        headerConfident: true,
+        sheets: ['Sheet1'],
+        sheetName: 'Sheet1',
+      });
+      const result = await service.parseDataset('user-1', 'ds-1');
+      expect(result.learnable).toBe(true);
+    });
+
+    it('does not flag numeric data as learnable', async () => {
+      // mock mặc định: Ngày(date) + Doanh thu(number) → 0 cột chữ
+      mockPrisma.dataset.findFirst.mockResolvedValue(mockDataset);
+      const result = await service.parseDataset('user-1', 'ds-1');
+      expect(result.learnable).toBe(false);
+    });
+
     it('gives a fallback name to a column with empty header but data', async () => {
       mockPrisma.dataset.findFirst.mockResolvedValue(mockDataset);
       mockParser.parse.mockReturnValue({

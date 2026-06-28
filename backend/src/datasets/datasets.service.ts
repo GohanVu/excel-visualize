@@ -106,6 +106,13 @@ export class DatasetsService {
       Object.fromEntries(columns.map((c) => [c.name, row[c.index] ?? ''])),
     );
 
+    // Data "hợp để học" (flashcard/quiz): ≥2 cột chữ (string/category) để ghép
+    // mặt trước/sau. VD bảng từ vựng. Số ít/không có → thiên về học hơn là chart.
+    const textColumns = columns.filter(
+      (c) => c.type === ColumnType.string || c.type === ColumnType.category,
+    ).length;
+    const learnable = textColumns >= 2;
+
     return {
       datasetId: dataset.id,
       name: dataset.name,
@@ -114,6 +121,7 @@ export class DatasetsService {
       activeSheet,
       headerRowIndex,
       headerConfident,
+      learnable,
       columns,
       previewRows,
     };

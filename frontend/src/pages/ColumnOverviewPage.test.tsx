@@ -16,6 +16,7 @@ const overview: datasetsApi.DatasetOverview = {
   activeSheet: 'Sheet1',
   headerRowIndex: 0,
   headerConfident: true,
+  learnable: false,
   columns: [
     { name: 'Ngày', index: 0, type: 'date', confidence: 1, sampleValues: ['2024-01-01', '2024-01-02'] },
     { name: 'Khu vực', index: 1, type: 'category', confidence: 0.9, sampleValues: ['HN', 'HCM'] },
@@ -34,6 +35,7 @@ function renderPage() {
       <MemoryRouter initialEntries={['/datasets/ds-1/columns']}>
         <Routes>
           <Route path="/datasets/:id/columns" element={<ColumnOverviewPage />} />
+          <Route path="/datasets/:id/learn" element={<div>Trang học</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -90,6 +92,29 @@ describe('ColumnOverviewPage', () => {
   it('shows loading spinner initially', () => {
     const { container } = renderPage();
     expect(container.querySelector('.animate-spin')).toBeInTheDocument();
+  });
+
+  describe('learning entry (output routing)', () => {
+    it('hides the "Học" button for non-learnable data', async () => {
+      renderPage();
+      await screen.findByText('Báo cáo doanh thu');
+      expect(screen.queryByRole('button', { name: /Học với dữ liệu/ })).not.toBeInTheDocument();
+    });
+
+    it('shows the "Học" button when data is learnable', async () => {
+      mockedFetch.mockResolvedValue({ ...overview, learnable: true });
+      renderPage();
+      expect(
+        await screen.findByRole('button', { name: /Học với dữ liệu/ }),
+      ).toBeInTheDocument();
+    });
+
+    it('navigates to the learn page when clicking "Học"', async () => {
+      mockedFetch.mockResolvedValue({ ...overview, learnable: true });
+      renderPage();
+      fireEvent.click(await screen.findByRole('button', { name: /Học với dữ liệu/ }));
+      expect(screen.getByText('Trang học')).toBeInTheDocument();
+    });
   });
 
   describe('multi-sheet tabs', () => {
