@@ -1,13 +1,16 @@
 import { useParams, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchColumns, suggestCharts } from '../api/datasets';
-import type { ChartSuggestion } from '../api/datasets';
+import type { ChartSuggestion, TypeOverride } from '../api/datasets';
 
 import { buildChartOption } from '../lib/buildChartOption';
 import ChartView from '../components/ChartView';
 
 interface LocationState {
   selectedColumns?: number[];
+  sheet?: string;
+  headerRow?: number;
+  typeOverrides?: TypeOverride[];
 }
 
 export default function ChartSuggestionPage() {
@@ -25,6 +28,9 @@ export default function ChartSuggestionPage() {
     <SuggestionContent
       datasetId={id}
       selectedColumns={selectedColumns}
+      sheet={state?.sheet}
+      headerRow={state?.headerRow}
+      typeOverrides={state?.typeOverrides}
       onBack={() => navigate(`/datasets/${id}/columns`)}
     />
   );
@@ -33,20 +39,39 @@ export default function ChartSuggestionPage() {
 function SuggestionContent({
   datasetId,
   selectedColumns,
+  sheet,
+  headerRow,
+  typeOverrides,
   onBack,
 }: {
   datasetId: string;
   selectedColumns: number[];
+  sheet?: string;
+  headerRow?: number;
+  typeOverrides?: TypeOverride[];
   onBack: () => void;
 }) {
   const overview = useQuery({
-    queryKey: ['dataset', datasetId, 'columns'],
-    queryFn: () => fetchColumns(datasetId),
+    queryKey: ['dataset', datasetId, 'columns', sheet, headerRow],
+    queryFn: () => fetchColumns(datasetId, { sheet, headerRow }),
   });
 
   const suggest = useQuery({
-    queryKey: ['dataset', datasetId, 'suggest', selectedColumns],
-    queryFn: () => suggestCharts(datasetId, selectedColumns),
+    queryKey: [
+      'dataset',
+      datasetId,
+      'suggest',
+      selectedColumns,
+      sheet,
+      headerRow,
+      typeOverrides,
+    ],
+    queryFn: () =>
+      suggestCharts(datasetId, selectedColumns, {
+        sheet,
+        headerRow,
+        typeOverrides,
+      }),
   });
 
   if (overview.isLoading || suggest.isLoading) {
@@ -96,6 +121,7 @@ function SuggestionContent({
                 rows={rows}
                 datasetId={datasetId}
                 selectedColumns={selectedColumns}
+                sheet={sheet}
               />
             ))}
           </div>
@@ -110,11 +136,13 @@ function SuggestionCard({
   rows,
   datasetId,
   selectedColumns,
+  sheet,
 }: {
   suggestion: ChartSuggestion;
   rows: Record<string, string>[];
   datasetId: string;
   selectedColumns: number[];
+  sheet?: string;
 }) {
   const navigate = useNavigate();
 
@@ -129,7 +157,7 @@ function SuggestionCard({
         type="button"
         onClick={() =>
           navigate(`/datasets/${datasetId}/chart`, {
-            state: { suggestion, selectedColumns },
+            state: { suggestion, selectedColumns, sheet },
           })
         }
         className="mt-4 w-full rounded-lg bg-blue-600 py-2 text-sm font-medium transition hover:bg-blue-500"

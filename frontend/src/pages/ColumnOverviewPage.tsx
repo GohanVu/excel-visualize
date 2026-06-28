@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchColumns } from '../api/datasets';
-import type { DatasetColumn } from '../api/datasets';
+import type { DatasetColumn, ColumnType } from '../api/datasets';
 import { groupColumns, autoSelectColumns } from '../lib/columnGrouping';
 
 const GROUP_META = [
@@ -11,6 +11,16 @@ const GROUP_META = [
   { key: 'label', label: 'Phân loại', icon: '🏷️', hint: 'Nhãn, danh mục' },
 ] as const;
 
+// Dưới ngưỡng này → cột "chưa chắc kiểu" → hiện ô cho user xác nhận
+const LOW_CONFIDENCE = 0.8;
+
+const TYPE_OPTIONS: { value: ColumnType; label: string }[] = [
+  { value: 'date', label: 'Thời gian' },
+  { value: 'number', label: 'Số liệu' },
+  { value: 'category', label: 'Phân loại' },
+  { value: 'string', label: 'Văn bản' },
+];
+
 export default function ColumnOverviewPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
@@ -18,6 +28,10 @@ export default function ColumnOverviewPage() {
   // Tab đang chọn + dòng header user ép (override). undefined = để backend tự quyết.
   const [sheet, setSheet] = useState<string | undefined>(undefined);
   const [headerRow, setHeaderRow] = useState<number | undefined>(undefined);
+  // Kiểu cột user sửa tay (index → kiểu)
+  const [typeOverrides, setTypeOverrides] = useState<Map<number, ColumnType>>(
+    new Map(),
+  );
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dataset', id, 'columns', sheet, headerRow],
@@ -30,9 +44,24 @@ export default function ColumnOverviewPage() {
     if (data) setSelected(new Set(autoSelectColumns(data.columns)));
   }, [data]);
 
+  // Cột với kiểu đã áp override của user
+  const effectiveColumns = useMemo(
+    () =>
+      (data?.columns ?? []).map((c) => ({
+        ...c,
+        type: typeOverrides.get(c.index) ?? c.type,
+      })),
+    [data, typeOverrides],
+  );
+
   const groups = useMemo(
-    () => groupColumns(data?.columns ?? []),
-    [data],
+    () => groupColumns(effectiveColumns),
+    [effectiveColumns],
+  );
+
+  const uncertain = useMemo(
+    () => effectiveColumns.filter((c) => c.confidence < LOW_CONFIDENCE),
+    [effectiveColumns],
   );
 
   if (isLoading) {
@@ -62,6 +91,16 @@ export default function ColumnOverviewPage() {
   function changeSheet(name: string) {
     setSheet(name);
     setHeaderRow(undefined); // tab khác → bỏ override header cũ
+    setTypeOverrides(new Map()); // cột khác tab → override kiểu cũ vô nghĩa
+  }
+
+  function changeHeaderRow(n: number) {
+    setHeaderRow(n);
+    setTypeOverrides(new Map()); // header đổi → cột đổi → bỏ override kiểu
+  }
+
+  function setType(index: number, type: ColumnType) {
+    setTypeOverrides((prev) => new Map(prev).set(index, type));
   }
 
   // Confidence-gated: chỉ hiện control sửa header khi auto không chắc,
@@ -89,8 +128,12 @@ export default function ColumnOverviewPage() {
           <HeaderControl
             rowIndex={data.headerRowIndex}
             confident={data.headerConfident}
-            onChange={setHeaderRow}
+            onChange={changeHeaderRow}
           />
+        )}
+
+        {uncertain.length > 0 && (
+          <TypeReview columns={uncertain} onChange={setType} />
         )}
 
         <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -122,6 +165,10 @@ export default function ColumnOverviewPage() {
                   selectedColumns: [...selected],
                   sheet: data.activeSheet,
                   headerRow,
+                  typeOverrides: [...typeOverrides].map(([index, type]) => ({
+                    index,
+                    type,
+                  })),
                 },
               })
             }
@@ -210,6 +257,42 @@ function HeaderControl({
         >
           ▼
         </button>
+      </div>
+    </div>
+  );
+}
+
+function TypeReview({
+  columns,
+  onChange,
+}: {
+  columns: DatasetColumn[];
+  onChange: (index: number, type: ColumnType) => void;
+}) {
+  return (
+    <div className="mt-4 rounded-lg border border-amber-600/40 bg-amber-500/5 p-4">
+      <h2 className="text-sm font-medium text-amber-200">Xác nhận kiểu cột</h2>
+      <p className="mt-0.5 text-xs text-amber-200/70">
+        Một số cột chưa chắc kiểu — chỉnh lại nếu sai:
+      </p>
+      <div className="mt-3 space-y-2">
+        {columns.map((col) => (
+          <div key={col.index} className="flex items-center gap-3 text-sm">
+            <span className="min-w-0 flex-1 truncate">{col.name}</span>
+            <select
+              aria-label={`Kiểu cột ${col.name}`}
+              value={col.type}
+              onChange={(e) => onChange(col.index, e.target.value as ColumnType)}
+              className="rounded bg-gray-800 px-2 py-1 text-xs text-white"
+            >
+              {TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        ))}
       </div>
     </div>
   );

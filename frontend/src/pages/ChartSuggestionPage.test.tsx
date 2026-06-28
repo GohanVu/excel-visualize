@@ -76,7 +76,26 @@ describe('ChartSuggestionPage', () => {
   it('calls suggestCharts with the selected columns', async () => {
     renderAt({ selectedColumns: [0, 1] });
     await screen.findByText('Xu hướng theo thời gian');
-    expect(mockedSuggest).toHaveBeenCalledWith('ds-1', [0, 1]);
+    expect(mockedSuggest).toHaveBeenCalledWith('ds-1', [0, 1], {
+      sheet: undefined,
+      headerRow: undefined,
+      typeOverrides: undefined,
+    });
+  });
+
+  it('forwards sheet, headerRow and typeOverrides to suggestCharts', async () => {
+    renderAt({
+      selectedColumns: [0, 1],
+      sheet: '214 bộ thủ',
+      headerRow: 1,
+      typeOverrides: [{ index: 0, type: 'category' }],
+    });
+    await screen.findByText('Xu hướng theo thời gian');
+    expect(mockedSuggest).toHaveBeenCalledWith('ds-1', [0, 1], {
+      sheet: '214 bộ thủ',
+      headerRow: 1,
+      typeOverrides: [{ index: 0, type: 'category' }],
+    });
   });
 
   it('shows empty message when no suggestions', async () => {

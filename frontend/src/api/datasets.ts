@@ -120,18 +120,39 @@ export interface DatasetRows {
   rows: Record<string, string>[];
 }
 
-export async function fetchRows(datasetId: string): Promise<DatasetRows> {
-  const { data } = await client.get<DatasetRows>(`/datasets/${datasetId}/rows`);
+export async function fetchRows(
+  datasetId: string,
+  sheet?: string,
+): Promise<DatasetRows> {
+  const { data } = await client.get<DatasetRows>(
+    `/datasets/${datasetId}/rows`,
+    { params: sheet != null ? { sheet } : {} },
+  );
   return data;
+}
+
+export interface TypeOverride {
+  index: number;
+  type: ColumnType;
 }
 
 export async function suggestCharts(
   datasetId: string,
   columns: number[],
+  opts: {
+    sheet?: string;
+    headerRow?: number;
+    typeOverrides?: TypeOverride[];
+  } = {},
 ): Promise<SuggestResponse> {
   const { data } = await client.post<SuggestResponse>(
     `/datasets/${datasetId}/suggest`,
-    { columns },
+    {
+      columns,
+      sheet: opts.sheet,
+      headerRow: opts.headerRow,
+      typeOverrides: opts.typeOverrides,
+    },
   );
   return data;
 }

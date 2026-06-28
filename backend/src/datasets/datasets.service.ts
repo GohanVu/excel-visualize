@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { User, ColumnType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ParserService } from '../parser/parser.service';
@@ -123,14 +123,28 @@ export class DatasetsService {
     userId: string,
     datasetId: string,
     columnIndexes: number[],
-    sheetName?: string,
+    opts: {
+      sheetName?: string;
+      headerRow?: number;
+      typeOverrides?: { index: number; type: ColumnType }[];
+    } = {},
   ) {
-    const { columns } = await this.parseDataset(userId, datasetId, sheetName);
+    const { columns } = await this.parseDataset(
+      userId,
+      datasetId,
+      opts.sheetName,
+      opts.headerRow,
+    );
+
+    // Áp kiểu cột user đã sửa tay (override) trước khi gợi ý
+    const overrides = new Map(
+      (opts.typeOverrides ?? []).map((o) => [o.index, o.type]),
+    );
 
     const selected = columnIndexes
       .map((i) => columns.find((c) => c.index === i))
       .filter((c): c is (typeof columns)[number] => c != null)
-      .map((c) => ({ name: c.name, type: c.type }));
+      .map((c) => ({ name: c.name, type: overrides.get(c.index) ?? c.type }));
 
     if (selected.length === 0) {
       throw new BadRequestException('Cột đã chọn không hợp lệ.');

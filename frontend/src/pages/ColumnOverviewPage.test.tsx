@@ -121,6 +121,41 @@ describe('ColumnOverviewPage', () => {
     });
   });
 
+  describe('column type correction (confidence-gated)', () => {
+    const lowConf = {
+      ...overview,
+      columns: [
+        { name: 'Cột mơ hồ', index: 0, type: 'string' as const, confidence: 0.4, sampleValues: ['a', 'b'] },
+        { name: 'Doanh thu', index: 1, type: 'number' as const, confidence: 1, sampleValues: ['1', '2'] },
+      ],
+      previewRows: [{ 'Cột mơ hồ': 'a', 'Doanh thu': '1' }],
+    };
+
+    it('shows a type selector only for low-confidence columns', async () => {
+      mockedFetch.mockResolvedValue(lowConf);
+      renderPage();
+      expect(await screen.findByLabelText('Kiểu cột Cột mơ hồ')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Kiểu cột Doanh thu')).not.toBeInTheDocument();
+    });
+
+    it('hides the type-review panel when all columns are confident', async () => {
+      renderPage();
+      await screen.findByText('Báo cáo doanh thu');
+      expect(screen.queryByText('Xác nhận kiểu cột')).not.toBeInTheDocument();
+    });
+
+    it('changing a column type takes effect (override applied)', async () => {
+      mockedFetch.mockResolvedValue(lowConf);
+      renderPage();
+      const select = (await screen.findByLabelText(
+        'Kiểu cột Cột mơ hồ',
+      )) as HTMLSelectElement;
+      expect(select.value).toBe('string');
+      fireEvent.change(select, { target: { value: 'number' } });
+      await waitFor(() => expect(select.value).toBe('number'));
+    });
+  });
+
   describe('header correction (confidence-gated)', () => {
     it('hides the header control when detection is confident', async () => {
       renderPage();

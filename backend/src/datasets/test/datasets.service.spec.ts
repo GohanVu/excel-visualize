@@ -295,5 +295,26 @@ describe('DatasetsService', () => {
         service.suggestCharts('user-1', 'ds-1', [99]),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('applies type overrides before suggesting', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue(mockDataset);
+      // Mặc định Ngày(date)+Doanh thu(number) → line,bar
+      // Override Ngày → category ⇒ category+number → bar,pie
+      const result = await service.suggestCharts('user-1', 'ds-1', [0, 1], {
+        typeOverrides: [{ index: 0, type: ColumnType.category }],
+      });
+      expect(result.suggestions.map((s) => s.type)).toEqual(['bar', 'pie']);
+    });
+
+    it('passes sheetName + headerRow to parseDataset', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue(mockDataset);
+      const spy = jest.spyOn(service, 'parseDataset');
+      await service.suggestCharts('user-1', 'ds-1', [0, 1], {
+        sheetName: 'Tab2',
+        headerRow: 1,
+      });
+      expect(spy).toHaveBeenCalledWith('user-1', 'ds-1', 'Tab2', 1);
+      spy.mockRestore();
+    });
   });
 });

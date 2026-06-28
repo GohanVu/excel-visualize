@@ -58,6 +58,10 @@ export class DatasetsController {
     @Param('id') id: string,
     @Body() dto: SuggestChartsDto,
   ) {
-    return this.datasetsService.suggestCharts(user.id, id, dto.columns, dto.sheet);
+    return this.datasetsService.suggestCharts(user.id, id, dto.columns, {
+      sheetName: dto.sheet,
+      headerRow: dto.headerRow,
+      typeOverrides: dto.typeOverrides,
+    });
   }
 }

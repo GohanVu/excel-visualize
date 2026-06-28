@@ -10,6 +10,7 @@ import ChartView from '../components/ChartView';
 interface LocationState {
   suggestion?: ChartSuggestion;
   selectedColumns?: number[];
+  sheet?: string;
 }
 
 export default function ChartDetailPage() {
@@ -18,6 +19,7 @@ export default function ChartDetailPage() {
   const state = useLocation().state as LocationState | null;
   const suggestion = state?.suggestion;
   const selectedColumns = state?.selectedColumns;
+  const sheet = state?.sheet;
 
   if (!suggestion || !selectedColumns) {
     return <Navigate to={`/datasets/${id}/columns`} replace />;
@@ -27,8 +29,11 @@ export default function ChartDetailPage() {
     <ChartDetail
       datasetId={id}
       suggestion={suggestion}
+      sheet={sheet}
       onBack={() =>
-        navigate(`/datasets/${id}/charts`, { state: { selectedColumns } })
+        navigate(`/datasets/${id}/charts`, {
+          state: { selectedColumns, sheet },
+        })
       }
       onSaved={() => navigate('/dashboard')}
     />
@@ -38,11 +43,13 @@ export default function ChartDetailPage() {
 function ChartDetail({
   datasetId,
   suggestion,
+  sheet,
   onBack,
   onSaved,
 }: {
   datasetId: string;
   suggestion: ChartSuggestion;
+  sheet?: string;
   onBack: () => void;
   onSaved: () => void;
 }) {
@@ -51,8 +58,8 @@ function ChartDetail({
   const [saveError, setSaveError] = useState('');
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['dataset', datasetId, 'rows'],
-    queryFn: () => fetchRows(datasetId),
+    queryKey: ['dataset', datasetId, 'rows', sheet],
+    queryFn: () => fetchRows(datasetId, sheet),
   });
 
   if (isLoading) {

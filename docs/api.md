@@ -162,9 +162,14 @@ Nhận cột đã chọn → trả danh sách chart gợi ý (tối đa 4, mô t
 **Auth**: JWT  
 **Body**:
 ```json
-{ "columns": [0, 1], "sheet": "HSK 1" }
+{
+  "columns": [0, 1],
+  "sheet": "HSK 1",
+  "headerRow": 1,
+  "typeOverrides": [{ "index": 0, "type": "category" }]
+}
 ```
-`columns`: mảng index cột (≥1). `sheet` (optional): tab đang chọn.  
+`columns`: mảng index cột (≥1). `sheet`/`headerRow` (optional): khớp view ở /columns. `typeOverrides` (optional): kiểu cột user sửa tay (`date|number|string|category`).  
 **Response**:
 ```json
 {
