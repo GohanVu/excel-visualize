@@ -1140,4 +1140,30 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.7-T2 ✅, P1.7-T4 ✅ → Phase 1.7 done. Quay lại Learning Mode P1.6-T6 (API progress)
 
+## [2026-06-28] Session 35 — Fix Issue-009: sheet mới không hiện tới khi F5
+
+### Yêu cầu
+- Upload sheet mới → quay lại trang chủ chưa thấy, phải F5
+
+### Chẩn đoán
+- QueryClient `staleTime: 30_000` → query `['datasets']` "fresh" 30s sau upload → Dashboard không refetch khi mount → file mới ẩn
+
+### Công việc đã làm
+- `UploadPage.handleSuccess`: `queryClient.invalidateQueries({ queryKey: ['datasets'] })` trước navigate
+- Test: invalidate + navigate on success
+- Ghi Issue-009
+
+### Quyết định quan trọng
+- **Lesson**: với `staleTime > 0`, mutation THÊM/XOÁ/SỬA list phải invalidate thủ công query đọc list đó. Delete đã invalidate (DashboardPage), thiếu cho create (UploadPage) — giờ đủ
+- **invalidate ở UploadPage** (nguồn tạo dataset) thay vì refetchOnMount toàn cục: chỉ refresh khi thực sự có thay đổi, không phá staleTime cache cho điều hướng thường
+
+### Test coverage
+- 1 FE test; 126 backend + 100 frontend = 226 tests pass
+
+### Kết quả
+- Commit `60c2b84` push
+
+### Tasks liên quan
+- Issue-009 (fix) → tiếp tục Learning Mode P1.6-T6
+
 <!-- Thêm session mới ở đây -->
