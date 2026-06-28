@@ -185,6 +185,40 @@ describe('DatasetsService', () => {
         'Doanh thu': '100',
       });
     });
+
+    it('drops fully-empty columns (e.g. image columns) but keeps original index', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue(mockDataset);
+      mockParser.parse.mockReturnValue({
+        headers: ['STT', 'Ảnh', 'Tên'],
+        rows: [
+          ['1', '', 'Alice'],
+          ['2', '', 'Bob'],
+        ],
+        headerRowIndex: 0,
+        headerConfident: true,
+      });
+      const result = await service.parseDataset('user-1', 'ds-1');
+      expect(result.columns.map((c) => c.name)).toEqual(['STT', 'Tên']);
+      // index gốc giữ nguyên để /suggest map đúng cột
+      expect(result.columns.find((c) => c.name === 'Tên')?.index).toBe(2);
+      // preview không còn cột rỗng
+      expect(result.previewRows[0]).toEqual({ STT: '1', Tên: 'Alice' });
+    });
+
+    it('gives a fallback name to a column with empty header but data', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue(mockDataset);
+      mockParser.parse.mockReturnValue({
+        headers: ['STT', ''],
+        rows: [
+          ['1', 'Nhóm 5'],
+          ['2', 'Nhóm 5'],
+        ],
+        headerRowIndex: 0,
+        headerConfident: true,
+      });
+      const result = await service.parseDataset('user-1', 'ds-1');
+      expect(result.columns.map((c) => c.name)).toEqual(['STT', 'Cột 2']);
+    });
   });
 
   describe('getRows', () => {

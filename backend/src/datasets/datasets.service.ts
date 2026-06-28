@@ -68,20 +68,31 @@ export class DatasetsService {
     const { headers, rows, headerRowIndex, headerConfident } =
       this.parser.parse(buffer, dataset.mimeType);
 
-    const columns = headers.map((name, index) => {
-      const allValues = rows.map((row) => row[index] ?? '');
-      const { type, confidence } = this.columnType.detect(allValues);
-      return {
-        name,
-        index,
-        type,
-        confidence,
-        sampleValues: allValues.slice(0, 3),
-      };
-    });
+    // Tên hiển thị: header trống → "Cột N" (tránh chip rỗng + key trùng ở preview)
+    const displayNames = headers.map((h, i) => h.trim() || `Cột ${i + 1}`);
 
+    const columns = headers
+      .map((_, index) => ({
+        index,
+        allValues: rows.map((row) => row[index] ?? ''),
+      }))
+      // Bỏ cột rỗng hoàn toàn (cột ảnh, cột tách trống) — không đưa lên UI.
+      // Giữ nguyên `index` gốc để /suggest map cột đúng.
+      .filter((c) => c.allValues.some((v) => v.toString().trim().length > 0))
+      .map(({ index, allValues }) => {
+        const { type, confidence } = this.columnType.detect(allValues);
+        return {
+          name: displayNames[index],
+          index,
+          type,
+          confidence,
+          sampleValues: allValues.slice(0, 3),
+        };
+      });
+
+    // Preview chỉ gồm các cột được giữ, key theo tên hiển thị
     const previewRows = rows.slice(0, 10).map((row) =>
-      Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ''])),
+      Object.fromEntries(columns.map((c) => [c.name, row[c.index] ?? ''])),
     );
 
     return {
