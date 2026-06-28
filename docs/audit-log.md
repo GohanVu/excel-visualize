@@ -849,4 +849,36 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.5-T7 ✅, P1.5-T8 ✅ → P1.5-T9 (user verify trên browser)
 
+## [2026-06-28] Session 25 — Brainstorm aggregation suite (đầy đủ phép gộp)
+
+### Yêu cầu
+- User: bảng báo giá có nhiều phép tính (median, percent, mean, total, count). Hiện chỉ có count
+
+### Phân tích
+- **Phát hiện lỗi ẩn**: category+number hiện vẽ raw (mỗi dòng 1 cột) → nhóm bị LẶP ("Bò Úc" 5 dòng) hiển thị 5 cột trùng tên, SAI. Aggregation không chỉ là feature mà là sửa đúng đắn
+- **Tách 3 trục bị gộp**: GỘP THẾ NÀO (count/sum/avg/median/min/max) · HIỂN THỊ (bar/pie/% toggle) · GỘP CÁI GÌ (cột số)
+- **"percent" = hiển thị, không phải phép gộp**: pie "Tỷ trọng" vốn đã là %
+- **median khó hiểu với người không chuyên** → để power-user/Pro; sum+average là core
+- **Bẫy UX**: mỗi agg × mỗi chart = bùng nổ card → phá "ít quyết định". Giải: 1 default thông minh + switcher trên chart
+- **Default thông minh**: heuristic theo tên cột (giá→TB, số lượng→Tổng); AI (Phase 4) làm tốt hơn
+
+### Quyết định
+- **Scope (user)**: TẤT CẢ phép gộp + step verify giá trị từ user (= switcher để đổi/xác nhận)
+- **Sắp xếp (Claude, user uỷ quyền)**: Phase 1.8 mới, thực thi **1.5 → 1.6 (Learning) → 1.7 (Quota) → 1.8 (Aggregation)**. Learning vẫn next (khác biệt lớn nhất); quota nhỏ dọn trước; aggregation là khối lớn cohesive làm tập trung sau
+- **switcher = bước verify**: user thấy default, đổi phép gộp được → vừa power vừa giữ wow-moment
+
+### Cấu trúc Phase 1.8 (5 task)
+- T1 generalize aggregation enum + groupAggregate (sửa nhóm-lặp)
+- T2 suggester default agg thông minh theo tên cột
+- T3 switcher verify/đổi trên ChartDetailPage
+- T4 toggle % tổng cho bar
+- T5 verify e2e
+
+### Kết quả
+- Plan: thêm Phase 1.8 trước Phase 2
+- Chưa code — next coding task vẫn là Phase 1.6-T1 (Learning Mode)
+
+### Tasks liên quan
+- Phase 1.8 (mới) T1-T5
+
 <!-- Thêm session mới ở đây -->

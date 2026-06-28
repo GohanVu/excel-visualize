@@ -227,6 +227,31 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 
 ---
 
+## Phase 1.8 — Aggregation Suite (phép gộp đầy đủ cho data số)
+
+> Mục tiêu: Đủ phép gộp (Đếm/Tổng/Trung bình/Trung vị/Min/Max) + **switcher để user verify/đổi**
+> + toggle % tổng. Đồng thời SỬA lỗi: hiện category+number vẽ raw (mỗi dòng = 1 cột) → nhóm bị
+> lặp (vd "Bò Úc" 5 dòng) hiển thị sai nhiều cột trùng tên. Gộp mới đúng.
+> Bối cảnh: brainstorm Session 25 (bảng báo giá thịt bò). Thực thi sau Phase 1.6 + 1.7.
+>
+> **3 trục tách bạch**: GỘP THẾ NÀO (agg) · HIỂN THỊ (bar/pie/% toggle) · GỘP CÁI GÌ (cột số).
+> "percent" = cách hiển thị, KHÔNG phải phép gộp (pie vốn đã là %).
+
+| Task ID | Mô tả | Status | Dependencies | Notes |
+|---------|--------|--------|--------------|-------|
+| P1.8-T1 | Generalize `aggregation` enum (count\|sum\|average\|median\|min\|max) + `groupAggregate(rows,x,yCol,fn)` trong buildChartOption; sửa lỗi nhóm-lặp | ⬜ Todo | P1.5-T8 | count là case riêng đã có. Group theo x rồi áp hàm |
+| P1.8-T2 | Suggester: category+number → default agg thông minh theo tên cột (giá→Trung bình; số lượng/doanh thu/thành tiền→Tổng); encoding mang yCol + aggregation | ⬜ Todo | P1.8-T1 | Heuristic tên cột (rẻ); AI chọn tốt hơn ở Phase 4 |
+| P1.8-T3 | Switcher trên ChartDetailPage — user **verify/đổi** phép gộp (Đếm/Tổng/TB/Trung vị/Min/Max) → chart re-render | ⬜ Todo | P1.8-T2 | Đây là "step verify giá trị" user yêu cầu |
+| P1.8-T4 | Toggle "% tổng" cho bar (pie đã sẵn %) | ⬜ Todo | P1.8-T3 | Hiển thị, không phải phép gộp |
+| P1.8-T5 | Verify e2e + test với bảng báo giá (nhóm lặp + các phép gộp) | ⬜ Todo | P1.8-T1..T4 | |
+
+### Gating (định hướng)
+
+- Đếm / Tổng / Trung bình: **Free** (cơ bản, ai cũng hiểu)
+- Trung vị / Min / Max / toggle % tổng: cân nhắc **Pro** (power-user)
+
+---
+
 ## Phase 2 — Dashboard Builder
 
 > Mục tiêu: User tạo được dashboard nhiều chart, kéo thả, resize. Enforce free tier gate.
