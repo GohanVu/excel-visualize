@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
-import { fetchDatasets } from '../api/datasets';
+import { fetchDatasets, deleteDataset } from '../api/datasets';
 import type { Dataset } from '../api/datasets';
 import { listCharts } from '../api/charts';
 import type { DashboardChart } from '../api/charts';
@@ -12,8 +13,15 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const queryClient = useQueryClient();
   const datasetsQ = useQuery({ queryKey: ['datasets'], queryFn: fetchDatasets });
   const chartsQ = useQuery({ queryKey: ['charts'], queryFn: listCharts });
+
+  const deleteMut = useMutation({
+    mutationFn: deleteDataset,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ['datasets'] }),
+  });
 
   async function handleLogout() {
     try {
@@ -47,6 +55,7 @@ export default function DashboardPage() {
           loading={datasetsQ.isLoading}
           onOpen={(id) => navigate(`/datasets/${id}/columns`)}
           onAdd={() => navigate('/upload')}
+          onDelete={(id) => deleteMut.mutate(id)}
         />
         {chartsQ.data && chartsQ.data.length > 0 && (
           <SavedCharts charts={chartsQ.data} />
@@ -61,11 +70,13 @@ function SheetsSection({
   loading,
   onOpen,
   onAdd,
+  onDelete,
 }: {
   datasets: Dataset[];
   loading: boolean;
   onOpen: (id: string) => void;
   onAdd: () => void;
+  onDelete: (id: string) => void;
 }) {
   return (
     <section>
@@ -81,17 +92,12 @@ function SheetsSection({
       ) : (
         <div className="mt-5 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
           {datasets.map((d) => (
-            <button
+            <SheetCard
               key={d.id}
-              type="button"
-              onClick={() => onOpen(d.id)}
-              className="flex flex-col rounded-xl border border-gray-800 bg-gray-900 p-4 text-left transition hover:border-gray-600"
-            >
-              <span className="truncate font-medium">📄 {d.name}</span>
-              <span className="mt-1 text-xs text-gray-500">
-                {formatDate(d.createdAt)}
-              </span>
-            </button>
+              dataset={d}
+              onOpen={onOpen}
+              onDelete={onDelete}
+            />
           ))}
           <button
             type="button"
@@ -105,6 +111,62 @@ function SheetsSection({
         </div>
       )}
     </section>
+  );
+}
+
+function SheetCard({
+  dataset,
+  onOpen,
+  onDelete,
+}: {
+  dataset: Dataset;
+  onOpen: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+
+  return (
+    <div className="relative flex flex-col rounded-xl border border-gray-800 bg-gray-900 p-4">
+      <button
+        type="button"
+        onClick={() => onOpen(dataset.id)}
+        className="flex flex-col text-left transition hover:opacity-80"
+      >
+        <span className="truncate pr-6 font-medium">📄 {dataset.name}</span>
+        <span className="mt-1 text-xs text-gray-500">
+          {formatDate(dataset.createdAt)}
+        </span>
+      </button>
+
+      {confirming ? (
+        <div className="mt-3 flex items-center gap-2 text-xs">
+          <span className="text-gray-400">Xoá sheet này?</span>
+          <button
+            type="button"
+            onClick={() => onDelete(dataset.id)}
+            className="rounded bg-red-600 px-2 py-1 hover:bg-red-500"
+          >
+            Xoá
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirming(false)}
+            className="rounded bg-gray-700 px-2 py-1 hover:bg-gray-600"
+          >
+            Huỷ
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          aria-label={`Xoá ${dataset.name}`}
+          onClick={() => setConfirming(true)}
+          className="absolute right-2 top-2 rounded p-1 text-gray-500 transition hover:bg-gray-800 hover:text-red-400"
+        >
+          ✕
+        </button>
+      )}
+    </div>
   );
 }
 

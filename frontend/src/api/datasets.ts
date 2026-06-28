@@ -65,6 +65,10 @@ export async function fetchDatasets(): Promise<Dataset[]> {
   return data;
 }
 
+export async function deleteDataset(datasetId: string): Promise<void> {
+  await client.delete(`/datasets/${datasetId}`);
+}
+
 export type ColumnType = 'date' | 'number' | 'string' | 'category';
 
 export interface DatasetColumn {

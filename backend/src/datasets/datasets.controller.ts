@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Body, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { User } from '@prisma/client';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -25,6 +34,11 @@ export class DatasetsController {
   @Get()
   findAll(@CurrentUser() user: User) {
     return this.datasetsService.findAllByUser(user.id);
+  }
+
+  @Delete(':id')
+  remove(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.datasetsService.deleteDataset(user.id, id);
   }
 
   @Get(':id/columns')

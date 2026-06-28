@@ -9,6 +9,7 @@ const mockService = {
   parseDataset: jest.fn(),
   getRows: jest.fn(),
   suggestCharts: jest.fn(),
+  deleteDataset: jest.fn(),
 };
 
 const mockUser = { id: 'user-1' } as any;
@@ -57,6 +58,13 @@ describe('DatasetsController', () => {
     mockService.findAllByUser.mockResolvedValue([]);
     await controller.findAll(mockUser);
     expect(mockService.findAllByUser).toHaveBeenCalledWith('user-1');
+  });
+
+  it('DELETE /datasets/:id → delegates to service.deleteDataset', async () => {
+    mockService.deleteDataset.mockResolvedValue({ id: 'ds-1', deleted: true });
+    const result = await controller.remove(mockUser, 'ds-1');
+    expect(mockService.deleteDataset).toHaveBeenCalledWith('user-1', 'ds-1');
+    expect(result).toEqual({ id: 'ds-1', deleted: true });
   });
 
   it('GET /datasets/:id/columns → delegates to service.parseDataset with userId, id and sheet', async () => {

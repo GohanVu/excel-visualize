@@ -139,6 +139,15 @@ Lấy danh sách datasets của user hiện tại.
 
 ---
 
+### DELETE /datasets/:id
+Xoá dataset (file) của user.  
+**Auth**: JWT  
+**Side effects**: xoá kèm charts của dataset (Chart.datasetId là Restrict) + columns + study_progress (cascade) + object trên MinIO (best-effort)  
+**Response**: `{ "id": "...", "deleted": true }`  
+**Errors**: `404` nếu không phải của user
+
+---
+
 ### GET /datasets/:id/columns
 Parse file → trả tổng quan cột (kiểu, confidence), preview, danh sách tab.  
 **Auth**: JWT  

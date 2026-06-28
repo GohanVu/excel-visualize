@@ -10,12 +10,20 @@ import { ColumnType } from '@prisma/client';
 
 const mockPrisma = {
   subscription: { findUnique: jest.fn() },
-  dataset: { create: jest.fn(), findMany: jest.fn(), findFirst: jest.fn() },
+  dataset: {
+    create: jest.fn(),
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
+    delete: jest.fn(),
+  },
+  chart: { deleteMany: jest.fn() },
+  $transaction: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockStorage = {
   presignedPutUrl: jest.fn().mockResolvedValue('https://minio/presigned'),
   getObject: jest.fn(),
+  removeObject: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockParser = {
@@ -134,6 +142,46 @@ describe('DatasetsService', () => {
       expect(mockPrisma.dataset.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { userId: 'user-1' } }),
       );
+    });
+  });
+
+  describe('deleteDataset', () => {
+    it('throws NotFoundException when dataset does not belong to user', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue(null);
+      await expect(service.deleteDataset('user-1', 'ds-x')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('deletes charts + dataset and removes the MinIO object', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue({
+        id: 'ds-1',
+        userId: 'user-1',
+        minioKey: 'user-1/file.xlsx',
+      });
+      const result = await service.deleteDataset('user-1', 'ds-1');
+
+      expect(mockPrisma.chart.deleteMany).toHaveBeenCalledWith({
+        where: { datasetId: 'ds-1' },
+      });
+      expect(mockPrisma.dataset.delete).toHaveBeenCalledWith({
+        where: { id: 'ds-1' },
+      });
+      expect(mockStorage.removeObject).toHaveBeenCalledWith('user-1/file.xlsx');
+      expect(result).toEqual({ id: 'ds-1', deleted: true });
+    });
+
+    it('still succeeds if MinIO removal fails (best-effort)', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue({
+        id: 'ds-1',
+        userId: 'user-1',
+        minioKey: 'k',
+      });
+      mockStorage.removeObject.mockRejectedValueOnce(new Error('minio down'));
+      await expect(service.deleteDataset('user-1', 'ds-1')).resolves.toEqual({
+        id: 'ds-1',
+        deleted: true,
+      });
     });
   });
 

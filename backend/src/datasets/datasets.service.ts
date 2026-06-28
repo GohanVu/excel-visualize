@@ -194,6 +194,25 @@ export class DatasetsService {
     });
   }
 
+  async deleteDataset(userId: string, datasetId: string) {
+    const dataset = await this.prisma.dataset.findFirst({
+      where: { id: datasetId, userId },
+    });
+    if (!dataset) throw new NotFoundException('Dataset không tồn tại.');
+
+    // Chart.datasetId là onDelete:Restrict → xoá chart của dataset này trước.
+    // columns + studyProgress tự cascade khi xoá dataset.
+    await this.prisma.$transaction([
+      this.prisma.chart.deleteMany({ where: { datasetId } }),
+      this.prisma.dataset.delete({ where: { id: datasetId } }),
+    ]);
+
+    // Dọn file trên MinIO (best-effort — record đã xoá, không chặn nếu lỗi)
+    await this.storage.removeObject(dataset.minioKey).catch(() => undefined);
+
+    return { id: datasetId, deleted: true };
+  }
+
   private async isProUser(userId: string): Promise<boolean> {
     const sub = await this.prisma.subscription.findUnique({
       where: { userId },

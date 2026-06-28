@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -9,7 +9,7 @@ vi.mock('../hooks/useAuth', () => ({
 }));
 vi.mock('../api/client', () => ({ default: { post: vi.fn() } }));
 vi.mock('../api/charts', () => ({ listCharts: vi.fn() }));
-vi.mock('../api/datasets', () => ({ fetchDatasets: vi.fn() }));
+vi.mock('../api/datasets', () => ({ fetchDatasets: vi.fn(), deleteDataset: vi.fn() }));
 vi.mock('../components/ChartView', () => ({
   default: ({ option }: { option: unknown }) => (
     <div data-testid="chart-view" data-option={JSON.stringify(option)} />
@@ -17,10 +17,11 @@ vi.mock('../components/ChartView', () => ({
 }));
 
 import { listCharts } from '../api/charts';
-import { fetchDatasets } from '../api/datasets';
+import { fetchDatasets, deleteDataset } from '../api/datasets';
 
 const mockListCharts = listCharts as ReturnType<typeof vi.fn>;
 const mockFetchDatasets = fetchDatasets as ReturnType<typeof vi.fn>;
+const mockDeleteDataset = deleteDataset as ReturnType<typeof vi.fn>;
 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -52,6 +53,7 @@ describe('DashboardPage', () => {
     vi.clearAllMocks();
     mockFetchDatasets.mockResolvedValue([]);
     mockListCharts.mockResolvedValue([]);
+    mockDeleteDataset.mockResolvedValue(undefined);
   });
 
   it('renders user name in header', () => {
@@ -89,6 +91,28 @@ describe('DashboardPage', () => {
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: 'Thêm sheet' }));
     expect(screen.getByText('Trang upload')).toBeInTheDocument();
+  });
+
+  it('deletes a sheet after the two-step confirm', async () => {
+    mockFetchDatasets.mockResolvedValue(datasets);
+    renderPage();
+    await screen.findByText(/Từ vựng HSK/);
+    // bước 1: mở xác nhận
+    fireEvent.click(screen.getByRole('button', { name: 'Xoá Từ vựng HSK' }));
+    // bước 2: xác nhận
+    fireEvent.click(screen.getByRole('button', { name: 'Xoá' }));
+    await waitFor(() =>
+      expect(mockDeleteDataset).toHaveBeenCalledWith('ds-1'),
+    );
+  });
+
+  it('cancel keeps the sheet (no delete call)', async () => {
+    mockFetchDatasets.mockResolvedValue(datasets);
+    renderPage();
+    await screen.findByText(/Từ vựng HSK/);
+    fireEvent.click(screen.getByRole('button', { name: 'Xoá Từ vựng HSK' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Huỷ' }));
+    expect(mockDeleteDataset).not.toHaveBeenCalled();
   });
 
   it('renders saved charts below when present', async () => {

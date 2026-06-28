@@ -67,4 +67,8 @@ export class StorageService implements OnModuleInit {
       stream.on('error', reject);
     });
   }
+
+  async removeObject(objectKey: string): Promise<void> {
+    await this.client.removeObject(this.bucket, objectKey);
+  }
 }
