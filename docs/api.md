@@ -7,6 +7,26 @@
 
 ## Auth
 
+### POST /auth/register
+Đăng ký bằng email + mật khẩu.  
+**Auth**: không cần  
+**Body**: `{ "email": "...", "password": "≥6 ký tự", "name": "..." }`  
+**Set cookies**: `access_token` + `refresh_token` (như Google callback)  
+**Response**: user đã sanitize (không có passwordHash / encryptedRefreshToken)  
+**Errors**: `409` nếu email đã tồn tại
+
+---
+
+### POST /auth/login
+Đăng nhập bằng email + mật khẩu.  
+**Auth**: không cần  
+**Body**: `{ "email": "...", "password": "..." }`  
+**Set cookies**: `access_token` + `refresh_token`  
+**Response**: user đã sanitize  
+**Errors**: `401` nếu sai email/mật khẩu
+
+---
+
 ### GET /auth/google
 Bắt đầu Google OAuth2 flow.  
 **Auth**: không cần  
