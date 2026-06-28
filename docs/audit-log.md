@@ -756,4 +756,35 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - Phase 1.6 (mới) T1-T7
 
+## [2026-06-28] Session 22 — Tab switcher + sửa header (P1.5-T5)
+
+### Yêu cầu
+- FE: thanh đổi tab (multi-sheet) + cho user sửa dòng header khi auto không chắc (confidence-gated)
+
+### Công việc đã làm
+- Backend: `/columns` nhận `?headerRow=` (parseInt + clamp); `parseDataset` nhận `headerRow`
+- FE `api/datasets.ts`: `DatasetOverview` thêm sheets/activeSheet/headerRowIndex/headerConfident + `column.confidence`; `fetchColumns(id, { sheet?, headerRow? })` (axios params)
+- `ColumnOverviewPage`:
+  - `SheetTabs`: hiện khi >1 tab, đổi tab → refetch `?sheet=`, reset header override
+  - `HeaderControl`: CHỈ hiện khi `!headerConfident` (hoặc đã chỉnh) — nudge ▲▼ dòng header → refetch `?headerRow=`, preview cập nhật live (chính nó là feedback)
+  - "Tiếp tục" truyền `sheet` + `headerRow` qua router state cho T6
+- `api.md`: thêm `?headerRow`
+
+### Quyết định quan trọng
+- **Regroup T5/T6**: T5 = tab + header (functional e2e); chip đổi KIỂU cột dời sang T6 (cùng phần API /suggest override) → mỗi task ship trọn vẹn, tránh UI "đổi mà không tác dụng"
+- **Header override = nudge ▲▼ thay vì picker**: không cần lộ raw rows; preview table + tên cột cập nhật live khi nudge = feedback trực quan, MVP gọn
+- **showHeaderControl = !headerConfident || headerRow != null**: file sạch im lặng; đã chỉnh thì giữ control để chỉnh tiếp (vì backend trả confident=true sau override)
+- **Chưa thread sheet/headerRow vào ChartSuggestionPage/Detail** (chỉ truyền qua state): để T6 — chấp nhận tạm: đổi tab rồi vẽ chart vẫn dùng tab mặc định cho tới T6
+
+### Test coverage
+- 6 FE tests mới: tab show/hide/click-refetch, header gated hide/show/nudge-refetch
+- 1 BE test: parse headerRow query thành number
+- 111 backend + 72 frontend = 183 tests pass
+
+### Kết quả
+- Commit `829e316` push lên https://github.com/GohanVu/excel-visualize
+
+### Tasks liên quan
+- P1.5-T5 ✅ → tiếp theo P1.5-T6 (chip đổi kiểu cột + /suggest type override + thread sheet vào chart pages)
+
 <!-- Thêm session mới ở đây -->

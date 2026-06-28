@@ -112,8 +112,8 @@
 
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
-| P1.5-T5 | ColumnOverviewPage: chip kiểu cột **editable** + nút **đổi header row** (gated) + **thanh đổi tab** (multi-sheet) | ⬜ Todo | P1.5-T1, P1.5-T3, P1.5-T10 | File sạch: 0 nhắc. File rác: icon "?" + dropdown đổi kiểu, dải "đọc từ dòng N ✎". Tab switcher dùng /sheets |
-| P1.5-T6 | API `/suggest` nhận type override `{index, type}[]` thay `number[]` | ⬜ Todo | P1.5-T5, P1-T5 | Override từ request (mức gọn, không đụng DB). Persist vào `DatasetColumn` để sau |
+| P1.5-T5 | ColumnOverviewPage: **thanh đổi tab** (multi-sheet) + **sửa dòng header** (confidence-gated, nudge ▲▼) | ✅ Done | P1.5-T1, P1.5-T10 | Backend /columns nhận ?headerRow=. Tab+header functional e2e. Chip đổi kiểu chuyển sang T6 |
+| P1.5-T6 | Chip **đổi kiểu cột** (FE) + `/suggest` nhận type override + thread sheet/headerRow vào chart pages | ⬜ Todo | P1.5-T5, P1-T5 | Gộp UI chip + API override (mỗi task ship trọn). ChartSuggestionPage/Detail dùng sheet từ router state |
 
 ### Nhóm C — Aggregation charts (mở khoá dữ liệu toàn chữ)
 
