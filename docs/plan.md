@@ -119,9 +119,9 @@
 
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
-| P1.5-T7 | Suggester: rule "đếm số dòng theo category" + field `aggregation` trên ChartSuggestion | ⬜ Todo | P1.5-T6 | Category (không cần cột số) → bar/pie đếm. `aggregation: 'count'`, y rỗng. Target type=category, KHÔNG string nhiều distinct |
-| P1.5-T8 | buildChartOption (FE): hỗ trợ `aggregation: 'count'` — group-by x + đếm | ⬜ Todo | P1.5-T7 | Group rows theo x, value = số lượng |
-| P1.5-T9 | Verify end-to-end với file HSK thật | ⬜ Todo | P1.5-T1..T8 | "Từ loại" → đếm Danh từ/Động từ/Số từ; "Nhóm" → đếm theo nhóm nét |
+| P1.5-T7 | Suggester: rule "đếm số dòng theo category" + field `aggregation` trên ChartSuggestion | ✅ Done | P1.5-T6 | numbers=0 + category≥1 → bar/pie đếm. `aggregation:'count'`, y rỗng. Chỉ category |
+| P1.5-T8 | buildChartOption (FE): hỗ trợ `aggregation: 'count'` — group-by x + đếm | ✅ Done | P1.5-T7 | Làm gộp với T7 (dính chặt). countBy(); ô trống → "(trống)" |
+| P1.5-T9 | Verify end-to-end với file HSK thật (browser) | ⬜ Todo | P1.5-T1..T8 | User test: "Từ loại" → đếm; multi-tab; sửa header/kiểu. Logic đã phủ unit test |
 
 ### Nhóm D — Multi-sheet (đọc nhiều tab trong 1 file)
 

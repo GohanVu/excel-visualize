@@ -821,4 +821,32 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.5-T6 ✅ → tiếp theo P1.5-T7 (suggester: rule đếm theo category + field aggregation)
 
+## [2026-06-28] Session 24 — Aggregation charts: đếm theo category (P1.5-T7+T8)
+
+### Yêu cầu
+- Biến data toàn chữ (không có cột số) thành chart vẽ được bằng cách ĐẾM số dòng theo nhóm
+
+### Công việc đã làm
+- Suggester (T7): rule mới — `numbers.length===0 && categories.length>=1` → "Số lượng theo X" (bar) + "Tỷ trọng theo X" (pie); field `aggregation:'count'`, `encoding.y=[]`
+- buildChartOption (T8): nhánh `aggregation==='count'` — `countBy()` group rows theo x; bar = trục x distinct + counts; pie = `{name,value}`; ô trống → "(trống)"
+- `ChartSuggestion` type (BE interface + FE) thêm `aggregation?: 'count'`
+
+### Quyết định quan trọng
+- **Làm gộp T7+T8 một commit**: emit count (BE) mà FE chưa render thì thumbnail trống → dính chặt, gộp để main luôn chạy
+- **Chỉ đếm theo `category`, KHÔNG `string`**: string nhiều distinct (Chữ Hán unique) → 500 nhóm vô nghĩa. Nếu cột bị detect nhầm string, user sửa qua TypeReview (T6) → category → count hiện ra (synergy với T6)
+- **Count chỉ khi không có cột số**: tránh chclutter case numeric (đã có bar/pie theo số). Đếm là "cứu cánh" cho data toàn chữ
+- **Thumbnail đếm trên previewRows (10 dòng), chart full đếm trên all rows** — nhất quán pattern hiện có (thumbnail là preview)
+
+### Test coverage
+- 3 BE: count bar+pie cho category-only, không count khi có number, không count string
+- 3 FE: count bar (distinct+counts), count pie ({name,value}), ô trống → "(trống)"
+- 116 backend + 79 frontend = 195 tests pass
+
+### Kết quả
+- Commit `265b9d1` push lên https://github.com/GohanVu/excel-visualize
+- **Nhóm C (aggregation) xong**. Còn P1.5-T9 (verify browser — user test) + T4 (merged cells, optional)
+
+### Tasks liên quan
+- P1.5-T7 ✅, P1.5-T8 ✅ → P1.5-T9 (user verify trên browser)
+
 <!-- Thêm session mới ở đây -->
