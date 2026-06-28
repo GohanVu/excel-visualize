@@ -167,7 +167,7 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
-| P1.6-T1 | Bước gợi ý phát hiện "data hợp để học" (≥2 cột text/category, ít/không cột số) → đề xuất **Học** song song với chart | ⬜ Todo | P1.5-T7 | BE rule + FE entry. File số → chart; file chữ → học nổi lên trước |
+| P1.6-T1 | Bước gợi ý phát hiện "data hợp để học" (≥2 cột text/category) → đề xuất **Học** song song với chart | ✅ Done | P1.5-T7 | BE: overview trả `learnable`. FE: nút "🎴 Học" gated trên ColumnOverviewPage → /learn (placeholder) |
 
 ### Nhóm B — Flashcard
 

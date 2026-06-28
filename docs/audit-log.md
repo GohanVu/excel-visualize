@@ -881,4 +881,32 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - Phase 1.8 (mới) T1-T5
 
+## [2026-06-28] Session 26 — Learning Mode: output routing (P1.6-T1)
+
+### Yêu cầu
+- Bắt đầu Phase 1.6. Phát hiện data hợp để học → đề xuất "Học" song song chart
+
+### Công việc đã làm
+- Backend: `parseDataset` trả `learnable` = (số cột string/category ≥ 2) → bảng từ vựng/tra cứu nhận diện được
+- FE: `DatasetOverview` thêm `learnable`; `ColumnOverviewPage` hiện nút "🎴 Học với dữ liệu này" (gated) cạnh "Tiếp tục" → navigate `/datasets/:id/learn`
+- Route `/datasets/:id/learn` (placeholder inline, T2 build LearnPage thật)
+- `api.md`: /columns thêm `learnable`
+
+### Quyết định quan trọng
+- **learnable = ≥2 cột chữ**: đủ để ghép mặt trước/sau flashcard. Heuristic đơn giản; offer "Học" là lựa chọn THỨ HAI (không ép) nên sai chút cũng vô hại — chart CTA vẫn còn
+- **Lối vào ở ColumnOverviewPage** (không phải ChartSuggestion): đây là nơi user hiểu data + chọn hướng. "Tiếp tục"→chart (xanh), "Học"→learning (tím) — output adapts to data đúng triết lý
+- **Placeholder route cho T1**: T1 lo routing/detection/entry; T2 build flashcard thật → tránh tạo file LearnPage rồi viết lại
+- **Học không cần selectedColumns**: learning chọn front/back riêng (T2), nên nút Học enabled bất kể chọn cột; chỉ truyền sheet/headerRow
+
+### Test coverage
+- 2 BE: learnable true (2 cột chữ), false (numeric)
+- 3 FE: nút Học ẩn khi không learnable, hiện khi learnable, navigate /learn
+- 118 backend + 82 frontend = 200 tests pass
+
+### Kết quả
+- Commit `58582d7` push lên https://github.com/GohanVu/excel-visualize
+
+### Tasks liên quan
+- P1.6-T1 ✅ → tiếp theo P1.6-T2 (LearnPage: chọn cột front/back + flashcard lật/shuffle)
+
 <!-- Thêm session mới ở đây -->
