@@ -32,8 +32,15 @@ export class DatasetsController {
     @CurrentUser() user: User,
     @Param('id') id: string,
     @Query('sheet') sheet?: string,
+    @Query('headerRow') headerRow?: string,
   ) {
-    return this.datasetsService.parseDataset(user.id, id, sheet);
+    const hr = headerRow != null ? parseInt(headerRow, 10) : NaN;
+    return this.datasetsService.parseDataset(
+      user.id,
+      id,
+      sheet,
+      Number.isFinite(hr) ? hr : undefined,
+    );
   }
 
   @Get(':id/rows')

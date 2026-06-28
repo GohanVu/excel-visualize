@@ -122,7 +122,10 @@ Lấy danh sách datasets của user hiện tại.
 ### GET /datasets/:id/columns
 Parse file → trả tổng quan cột (kiểu, confidence), preview, danh sách tab.  
 **Auth**: JWT  
-**Query**: `sheet` (optional) — tên tab cần đọc; không truyền → tab đầu tiên  
+**Query**:
+- `sheet` (optional) — tên tab cần đọc; không truyền → tab đầu tiên
+- `headerRow` (optional) — ép dòng header (0-based, user override khi auto sai); clamp trong range
+
 **Response**:
 ```json
 {

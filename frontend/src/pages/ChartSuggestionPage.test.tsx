@@ -18,6 +18,10 @@ const overview = {
   datasetId: 'ds-1',
   name: 'Báo cáo',
   totalRows: 2,
+  sheets: ['Sheet1'],
+  activeSheet: 'Sheet1',
+  headerRowIndex: 0,
+  headerConfident: true,
   columns: [],
   previewRows: [{ Ngày: '2024-01-01', 'Doanh thu': '100' }],
 };

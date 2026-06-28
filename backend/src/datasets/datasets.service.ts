@@ -58,7 +58,12 @@ export class DatasetsService {
     });
   }
 
-  async parseDataset(userId: string, datasetId: string, sheetName?: string) {
+  async parseDataset(
+    userId: string,
+    datasetId: string,
+    sheetName?: string,
+    headerRow?: number,
+  ) {
     const dataset = await this.prisma.dataset.findFirst({
       where: { id: datasetId, userId },
     });
@@ -72,7 +77,7 @@ export class DatasetsService {
       headerConfident,
       sheets,
       sheetName: activeSheet,
-    } = this.parser.parse(buffer, dataset.mimeType, { sheetName });
+    } = this.parser.parse(buffer, dataset.mimeType, { sheetName, headerRow });
 
     // Tên hiển thị: header trống → "Cột N" (tránh chip rỗng + key trùng ở preview)
     const displayNames = headers.map((h, i) => h.trim() || `Cột ${i + 1}`);

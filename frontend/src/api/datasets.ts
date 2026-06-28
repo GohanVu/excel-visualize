@@ -71,6 +71,7 @@ export interface DatasetColumn {
   name: string;
   index: number;
   type: ColumnType;
+  confidence: number;
   sampleValues: string[];
 }
 
@@ -78,13 +79,24 @@ export interface DatasetOverview {
   datasetId: string;
   name: string;
   totalRows: number;
+  sheets: string[];
+  activeSheet: string;
+  headerRowIndex: number;
+  headerConfident: boolean;
   columns: DatasetColumn[];
   previewRows: Record<string, string>[];
 }
 
-export async function fetchColumns(datasetId: string): Promise<DatasetOverview> {
+export async function fetchColumns(
+  datasetId: string,
+  opts: { sheet?: string; headerRow?: number } = {},
+): Promise<DatasetOverview> {
+  const params: Record<string, string> = {};
+  if (opts.sheet != null) params.sheet = opts.sheet;
+  if (opts.headerRow != null) params.headerRow = String(opts.headerRow);
   const { data } = await client.get<DatasetOverview>(
     `/datasets/${datasetId}/columns`,
+    { params },
   );
   return data;
 }

@@ -15,10 +15,13 @@ export default function ColumnOverviewPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  // Tab đang chọn + dòng header user ép (override). undefined = để backend tự quyết.
+  const [sheet, setSheet] = useState<string | undefined>(undefined);
+  const [headerRow, setHeaderRow] = useState<number | undefined>(undefined);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['dataset', id, 'columns'],
-    queryFn: () => fetchColumns(id),
+    queryKey: ['dataset', id, 'columns', sheet, headerRow],
+    queryFn: () => fetchColumns(id, { sheet, headerRow }),
     enabled: !!id,
   });
 
@@ -56,6 +59,15 @@ export default function ColumnOverviewPage() {
     });
   }
 
+  function changeSheet(name: string) {
+    setSheet(name);
+    setHeaderRow(undefined); // tab khác → bỏ override header cũ
+  }
+
+  // Confidence-gated: chỉ hiện control sửa header khi auto không chắc,
+  // hoặc khi user đã từng chỉnh (để còn chỉnh tiếp).
+  const showHeaderControl = !data.headerConfident || headerRow != null;
+
   return (
     <div className="min-h-screen bg-gray-950 p-6 text-white">
       <div className="mx-auto max-w-4xl">
@@ -64,6 +76,22 @@ export default function ColumnOverviewPage() {
           {data.totalRows} dòng · {data.columns.length} cột · chọn cột để tạo
           biểu đồ
         </p>
+
+        {data.sheets.length > 1 && (
+          <SheetTabs
+            sheets={data.sheets}
+            active={data.activeSheet}
+            onChange={changeSheet}
+          />
+        )}
+
+        {showHeaderControl && (
+          <HeaderControl
+            rowIndex={data.headerRowIndex}
+            confident={data.headerConfident}
+            onChange={setHeaderRow}
+          />
+        )}
 
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {GROUP_META.map((meta) => (
@@ -90,7 +118,11 @@ export default function ColumnOverviewPage() {
             disabled={selected.size === 0}
             onClick={() =>
               navigate(`/datasets/${id}/charts`, {
-                state: { selectedColumns: [...selected] },
+                state: {
+                  selectedColumns: [...selected],
+                  sheet: data.activeSheet,
+                  headerRow,
+                },
               })
             }
             className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium transition hover:bg-blue-500 disabled:opacity-40"
@@ -98,6 +130,86 @@ export default function ColumnOverviewPage() {
             Tiếp tục ({selected.size} cột)
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SheetTabs({
+  sheets,
+  active,
+  onChange,
+}: {
+  sheets: string[];
+  active: string;
+  onChange: (name: string) => void;
+}) {
+  return (
+    <div
+      className="mt-4 flex flex-wrap gap-2"
+      role="tablist"
+      aria-label="Chọn trang tính"
+    >
+      {sheets.map((name) => (
+        <button
+          key={name}
+          type="button"
+          role="tab"
+          aria-selected={name === active}
+          onClick={() => onChange(name)}
+          className={`rounded-lg px-3 py-1.5 text-sm transition ${
+            name === active
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+          }`}
+        >
+          {name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function HeaderControl({
+  rowIndex,
+  confident,
+  onChange,
+}: {
+  rowIndex: number;
+  confident: boolean;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <div
+      className={`mt-4 flex items-center gap-3 rounded-lg border px-4 py-3 text-sm ${
+        confident
+          ? 'border-gray-800 bg-gray-900 text-gray-400'
+          : 'border-amber-600/50 bg-amber-500/10 text-amber-200'
+      }`}
+    >
+      <span>
+        {confident
+          ? 'Đang đọc tiêu đề từ '
+          : '⚠️ Tiêu đề có thể chưa đúng — đang đọc từ '}
+        dòng <strong>{rowIndex + 1}</strong>
+      </span>
+      <div className="ml-auto flex items-center gap-1">
+        <button
+          type="button"
+          aria-label="Dòng tiêu đề lên"
+          onClick={() => onChange(Math.max(0, rowIndex - 1))}
+          className="rounded bg-gray-800 px-2 py-1 hover:bg-gray-700"
+        >
+          ▲
+        </button>
+        <button
+          type="button"
+          aria-label="Dòng tiêu đề xuống"
+          onClick={() => onChange(rowIndex + 1)}
+          className="rounded bg-gray-800 px-2 py-1 hover:bg-gray-700"
+        >
+          ▼
+        </button>
       </div>
     </div>
   );

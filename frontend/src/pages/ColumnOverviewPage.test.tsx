@@ -12,10 +12,14 @@ const overview: datasetsApi.DatasetOverview = {
   datasetId: 'ds-1',
   name: 'Báo cáo doanh thu',
   totalRows: 120,
+  sheets: ['Sheet1'],
+  activeSheet: 'Sheet1',
+  headerRowIndex: 0,
+  headerConfident: true,
   columns: [
-    { name: 'Ngày', index: 0, type: 'date', sampleValues: ['2024-01-01', '2024-01-02'] },
-    { name: 'Khu vực', index: 1, type: 'category', sampleValues: ['HN', 'HCM'] },
-    { name: 'Doanh thu', index: 2, type: 'number', sampleValues: ['100', '200'] },
+    { name: 'Ngày', index: 0, type: 'date', confidence: 1, sampleValues: ['2024-01-01', '2024-01-02'] },
+    { name: 'Khu vực', index: 1, type: 'category', confidence: 0.9, sampleValues: ['HN', 'HCM'] },
+    { name: 'Doanh thu', index: 2, type: 'number', confidence: 1, sampleValues: ['100', '200'] },
   ],
   previewRows: [
     { Ngày: '2024-01-01', 'Khu vực': 'HN', 'Doanh thu': '100' },
@@ -86,5 +90,61 @@ describe('ColumnOverviewPage', () => {
   it('shows loading spinner initially', () => {
     const { container } = renderPage();
     expect(container.querySelector('.animate-spin')).toBeInTheDocument();
+  });
+
+  describe('multi-sheet tabs', () => {
+    const multi = { ...overview, sheets: ['HSK 1', '214 bộ thủ'], activeSheet: 'HSK 1' };
+
+    it('shows sheet tabs when the file has multiple sheets', async () => {
+      mockedFetch.mockResolvedValue(multi);
+      renderPage();
+      expect(await screen.findByRole('tab', { name: 'HSK 1' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: '214 bộ thủ' })).toBeInTheDocument();
+    });
+
+    it('does not show tabs for a single-sheet file', async () => {
+      renderPage();
+      await screen.findByText('Báo cáo doanh thu');
+      expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    });
+
+    it('refetches with the chosen sheet when a tab is clicked', async () => {
+      mockedFetch.mockResolvedValue(multi);
+      renderPage();
+      fireEvent.click(await screen.findByRole('tab', { name: '214 bộ thủ' }));
+      await waitFor(() =>
+        expect(mockedFetch).toHaveBeenCalledWith('ds-1', {
+          sheet: '214 bộ thủ',
+          headerRow: undefined,
+        }),
+      );
+    });
+  });
+
+  describe('header correction (confidence-gated)', () => {
+    it('hides the header control when detection is confident', async () => {
+      renderPage();
+      await screen.findByText('Báo cáo doanh thu');
+      expect(screen.queryByLabelText('Dòng tiêu đề xuống')).not.toBeInTheDocument();
+    });
+
+    it('shows the header control when detection is not confident', async () => {
+      mockedFetch.mockResolvedValue({ ...overview, headerConfident: false, headerRowIndex: 1 });
+      renderPage();
+      expect(await screen.findByLabelText('Dòng tiêu đề xuống')).toBeInTheDocument();
+      expect(screen.getByText(/đang đọc từ/i)).toBeInTheDocument();
+    });
+
+    it('refetches with a new headerRow when nudging the header down', async () => {
+      mockedFetch.mockResolvedValue({ ...overview, headerConfident: false, headerRowIndex: 1 });
+      renderPage();
+      fireEvent.click(await screen.findByLabelText('Dòng tiêu đề xuống'));
+      await waitFor(() =>
+        expect(mockedFetch).toHaveBeenCalledWith('ds-1', {
+          sheet: undefined,
+          headerRow: 2,
+        }),
+      );
+    });
   });
 });

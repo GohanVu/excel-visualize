@@ -67,17 +67,30 @@ describe('DatasetsController', () => {
       'user-1',
       'ds-1',
       '214 bộ thủ',
+      undefined,
     );
     expect(result).toEqual(expected);
   });
 
-  it('GET /datasets/:id/columns → defaults sheet to undefined', async () => {
+  it('GET /datasets/:id/columns → defaults sheet & headerRow to undefined', async () => {
     mockService.parseDataset.mockResolvedValue({});
     await controller.columns(mockUser, 'ds-1');
     expect(mockService.parseDataset).toHaveBeenCalledWith(
       'user-1',
       'ds-1',
       undefined,
+      undefined,
+    );
+  });
+
+  it('GET /datasets/:id/columns → parses headerRow query to a number', async () => {
+    mockService.parseDataset.mockResolvedValue({});
+    await controller.columns(mockUser, 'ds-1', undefined, '2');
+    expect(mockService.parseDataset).toHaveBeenCalledWith(
+      'user-1',
+      'ds-1',
+      undefined,
+      2,
     );
   });
 
