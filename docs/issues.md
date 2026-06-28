@@ -104,4 +104,14 @@
 - **Test added**: `datasets.service.spec` — "passes sheetName + headerRow to the parser"; `datasets.controller.spec` — rows truyền headerRow + default undefined
 - **Lesson learned**: Khi thêm 1 tham số ảnh hưởng cách PARSE (sheet, headerRow), phải thread vào MỌI endpoint đọc dữ liệu cùng dataset (`/columns`, `/rows`, `/suggest`) — nếu không các view parse khác nhau → lệch key. Triệu chứng kinh điển: tổng số dòng khác nhau giữa các trang.
 
+### [Issue-009] Sheet mới không hiện ở trang chủ tới khi F5
+
+- **Status**: 🟢 Fixed
+- **Severity**: Medium
+- **Phát hiện**: 2026-06-28 — Upload sheet mới → quay lại trang chủ chưa thấy record, phải F5 mới hiện
+- **Root cause**: QueryClient có `staleTime: 30_000` (30s). Sau upload, query `['datasets']` vẫn "fresh" trong 30s → quay lại Dashboard không refetch → file mới chưa hiện. F5 = full reload nên fetch mới
+- **Fix**: `UploadPage.handleSuccess` gọi `queryClient.invalidateQueries({ queryKey: ['datasets'] })` trước khi navigate → đánh dấu stale → Dashboard refetch khi mount
+- **Test added**: `UploadPage.test.tsx` — "invalidates the datasets list + navigates on upload success"
+- **Lesson learned**: Khi `staleTime > 0`, mọi thao tác THÊM/XOÁ/SỬA làm thay đổi list phải `invalidateQueries` thủ công cho query liên quan (đã làm cho delete ở DashboardPage; thiếu cho create ở UploadPage). Mutation thay đổi data → luôn invalidate query đọc data đó.
+
 <!-- Thêm issues ở đây -->
