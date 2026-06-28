@@ -238,6 +238,36 @@ Lấy các chart đã lưu của user (qua dashboard), cũ → mới.
 
 ---
 
+## Study Progress
+
+> Tiến độ học (flashcard/quiz) per user/dataset/sheet/thẻ. Tất cả yêu cầu JWT.
+> `cardKey` do FE tính (hash giá trị dòng) — ổn định qua re-parse (đổi header/sheet).
+
+### POST /study-progress
+Lưu/cập nhật tiến độ 1 thẻ (upsert theo `userId+datasetId+sheet+cardKey`). seenCount tăng mỗi lần ôn.  
+**Auth**: JWT  
+**Body**:
+```json
+{ "datasetId": "cuid", "sheet": "HSK 1", "cardKey": "hash", "status": "known" }
+```
+`sheet` optional (mặc định `""`). `status`: `new | learning | known`.  
+**Response**: bản ghi `StudyProgress` (id, status, seenCount, lastReviewedAt, ...).  
+**Lỗi**: `404` nếu dataset không thuộc về user.
+
+---
+
+### GET /study-progress/:datasetId
+Đọc tiến độ của 1 dataset (theo tab). FE map theo `cardKey` để hiện "đã thuộc X/Y".  
+**Auth**: JWT  
+**Query**: `sheet` (optional, mặc định `""`)  
+**Response**:
+```json
+{ "items": [ { "cardKey": "hash", "status": "known", "seenCount": 2, "lastReviewedAt": "ISO date" } ] }
+```
+**Lỗi**: `404` nếu dataset không thuộc về user.
+
+---
+
 ## Upload Flow (end-to-end)
 
 ```

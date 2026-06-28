@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { DatasetsModule } from './datasets/datasets.module';
 import { ChartsModule } from './charts/charts.module';
+import { StudyProgressModule } from './study-progress/study-progress.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ChartsModule } from './charts/charts.module';
     AuthModule,
     DatasetsModule,
     ChartsModule,
+    StudyProgressModule,
   ],
   controllers: [AppController],
 })

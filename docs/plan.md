@@ -106,7 +106,7 @@
 | P1.5-T1 | Dò dòng header thật + trả `headerRowIndex` & cờ `headerConfident`; `parse()` nhận optional headerRow để re-parse khi user đổi | ✅ Done | P1-T2 | Bỏ dòng chỉ 1 ô non-empty (banner gộp ô); header = dòng đầu có ≥2 ô non-empty |
 | P1.5-T2 | Loại cột rỗng/gần rỗng khỏi overview | ✅ Done | P1-T3 | Cột 0% dữ liệu (vd cột ảnh) → không đưa lên UI. Bonus: tên "Cột N" cho header trống |
 | P1.5-T3 | Min fill-ratio guard + trả `confidence` mỗi cột — hết date/number giả | ✅ Done | P1-T3 | Cột quá thưa → string. confidence = ratio khớp, để FE biết khi nào nhắc |
-| P1.5-T4 | Forward-fill ô gộp dọc (vertical merge) | ⬜ Todo | P1.5-T1 | Ưu tiên thấp — defer nếu T1-T3 đã đủ sạch |
+| P1.5-T4 | Forward-fill ô gộp dọc (vertical merge) | ✅ Done | P1.5-T1 | fillVerticalMerges trước sheet_to_json. CHỈ merge dọc (giữ banner ngang cho header detect) |
 
 ### Nhóm B — Assisted correction (confidence-gated, FE + API)
 
@@ -187,7 +187,7 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
 | P1.6-T5 | Schema `StudyProgress` (per user/dataset/sheet/card: known/seen, lastReviewedAt) + migration | ✅ Done | P0-T3 | enum StudyStatus + model + unique(user,dataset,sheet,cardKey). Migration applied. cardKey=hash dòng (FE tính ở T7) |
-| P1.6-T6 | API lưu/đọc tiến độ học | ⬜ Todo | P1.6-T5 | POST/GET progress theo dataset |
+| P1.6-T6 | API lưu/đọc tiến độ học | ✅ Done | P1.6-T5 | StudyProgress module: POST upsert + GET theo dataset/sheet. Owner-guard 404 |
 | P1.6-T7 | Wire flashcard + quiz vào progress; hiện "đã thuộc X/Y"; verify e2e file HSK | ⬜ Todo | P1.6-T3, P1.6-T4, P1.6-T6 | |
 
 ### Gating (định hướng)

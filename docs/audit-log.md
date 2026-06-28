@@ -1166,4 +1166,58 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - Issue-009 (fix) → tiếp tục Learning Mode P1.6-T6
 
+## [2026-06-28] Session 36 — Forward-fill ô gộp dọc (P1.5-T4)
+
+### Yêu cầu
+- Làm tiếp Phase 1.5 — task code còn lại: forward-fill vertical merge
+
+### Công việc đã làm
+- `ParserService.fillVerticalMerges(sheet)`: đọc `sheet['!merges']`, với mỗi range gộp DỌC (cùng cột `s.c===e.c`, nhiều dòng `e.r>s.r`) copy ô trên-trái xuống các ô rỗng bên dưới. Gọi trước `sheet_to_json`
+- CSV không có `!merges` → no-op tự nhiên
+
+### Quyết định quan trọng
+- **CHỈ fill merge DỌC, không fill merge ngang**: banner gộp ô ngang phải giữ đúng 1 ô non-empty để `detectHeaderRow` bỏ qua (nếu fill ngang → banner thành nhiều ô → bị nhận nhầm là header). Đây là lý do tách bạch vertical-only
+- **Fill trước sheet_to_json** (mức worksheet, dùng địa chỉ ô tuyệt đối): `blankrows:false` loại dòng trống làm lệch index so với `!merges` (toạ độ tuyệt đối) → phải xử lý trước khi convert
+- **Copy nguyên cell object** (`{...topCell}`): giữ type (date cell `t:'d'` với `cellDates:true`) thay vì chỉ copy value
+
+### Test coverage
+- 2 BE tests mới: fill merge dọc (cột "Nhóm" gộp A2:A3 → dòng dưới = "Bò Úc" không rỗng); merge ngang (banner A1:C1) KHÔNG fill, header vẫn detect ở dòng 2 (confident=false)
+- 128 backend tests pass (126 → +2)
+
+### Kết quả
+- Phase 1.5 nhóm A–D code xong. Còn P1.5-T9 (verify e2e browser — user test)
+
+### Tasks liên quan
+- P1.5-T4 ✅ → còn P1.5-T9 (verify e2e file HSK trên browser). Sau đó quay lại P1.6-T6 (API progress)
+
+## [2026-06-28] Session 37 — API lưu/đọc tiến độ học (P1.6-T6)
+
+### Yêu cầu
+- Task code tiếp: StudyProgress module — POST/GET tiến độ học theo dataset
+
+### Công việc đã làm
+- Module mới `src/study-progress/` (service + controller + dto + tests), đăng ký vào `app.module.ts`
+- `POST /study-progress`: upsert 1 thẻ theo unique `userId_datasetId_sheet_cardKey`; create → seenCount=1, update → increment; set lastReviewedAt
+- `GET /study-progress/:datasetId?sheet=`: trả `{ items: [{cardKey,status,seenCount,lastReviewedAt}] }`
+- Owner-guard `assertDatasetOwner` (dataset.findFirst id+userId → 404) cho cả đọc lẫn ghi
+- `dto/save-progress.dto.ts`: datasetId, sheet?(default ""), cardKey, status(enum StudyStatus)
+- `docs/api.md`: thêm mục Study Progress (POST + GET)
+
+### Quyết định quan trọng
+- **Upsert thay vì create/update tách**: 1 thẻ = 1 record (unique 4 field). Idempotent — FE gọi mỗi lần đánh dấu, không sợ trùng
+- **sheet default ""** ở cả DTO/service/controller: khớp default schema (Session 32), tiến độ tách theo tab
+- **Owner-guard ở service** (không chỉ controller): chặn user ghi/đọc tiến độ dataset người khác — 404 (không lộ tồn tại)
+- **seenCount increment ở update**: đếm số lần ôn để dành SRS sau; status đủ biểu diễn thuộc/chưa
+- **cardKey do FE tính (T7)**: backend chỉ nhận String — ổn định qua re-parse (đổi header/sheet không lệch như rowIndex)
+
+### Test coverage
+- 9 BE tests mới: service (owner 404 cho save+get, upsert đúng compound key + sheet default, sheet override, get trả items + filter, sheet default); controller (delegate save, get có sheet, get default "")
+- 137 backend tests pass (128 → +9). `tsc --noEmit` sạch
+
+### Kết quả
+- Module hoạt động; chờ FE wire ở T7
+
+### Tasks liên quan
+- P1.6-T6 ✅ → tiếp theo P1.6-T7 (wire flashcard+quiz vào API progress; hiện "đã thuộc X/Y"; verify e2e file HSK)
+
 <!-- Thêm session mới ở đây -->
