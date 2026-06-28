@@ -214,9 +214,9 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
 | P1.7-T1 | Trang "File của tôi": list dataset (GET /datasets đã có) + mở lại file | ✅ Done | P1-T1 | Kéo lên làm sớm (Session 29). DashboardPage "Sheet của tôi" + nút "+"; click → /columns |
-| P1.7-T2 | Enforce quota upload: Free=2, Pro=5–10 (config) — chặn khi đầy | ⬜ Todo | P1.7-T1 | Đếm dataset của user trong presign/confirm |
+| P1.7-T2 | Enforce quota upload: Free=2, Pro=5–10 (config) — chặn khi đầy | ✅ Done | P1.7-T1 | presignUpload count dataset; Free=2, Pro=20. Message rõ "xoá bớt" |
 | P1.7-T3 | `DELETE /datasets/:id`: thêm `StorageService.removeObject` + xử lý Chart.Restrict | ✅ Done | P1.7-T1 | Kéo lên sớm (Session 33). Xoá kèm charts (transaction); MinIO best-effort. Nút ✕ + xác nhận 2 bước |
-| P1.7-T4 | UX đầy quota: "Đã đạt N/N — xoá bớt để thêm" + nút xoá, cảnh báo nếu có chart | ⬜ Todo | P1.7-T2, P1.7-T3 | Không tự xoá, user chọn |
+| P1.7-T4 | UX đầy quota: "Đã đạt N/N — xoá bớt để thêm" + nút xoá, cảnh báo nếu có chart | ✅ Done | P1.7-T2, P1.7-T3 | Reactive: FileUpload hiện message backend (xoá bớt). Nút xoá đã có (T3) |
 
 ### Test cases P1.7
 

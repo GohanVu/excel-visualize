@@ -1113,4 +1113,31 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.7-T3 ✅ (kéo sớm) → quay lại Learning Mode P1.6-T6 (API progress). Còn P1.7-T2 (quota) + T4 (UX đầy quota)
 
+## [2026-06-28] Session 34 — Quota số sheet + UX đầy quota (P1.7-T2 + T4)
+
+### Yêu cầu
+- Chặn tích luỹ file rác: enforce giới hạn số sheet; user thấy lý do khi bị chặn
+
+### Công việc đã làm
+- T2: `presignUpload` đếm dataset của user trước khi cấp URL; Free=2, Pro=20 → chặn với message "Đã đạt giới hạn N sheet (gói ...). Xoá bớt sheet để thêm mới."
+- T4: `FileUpload.apiErrorMessage()` lấy `response.data.message` (NestJS) thay vì message axios generic ("Request failed with status code 400") → user thấy đúng lý do quota + cách xử lý
+
+### Quyết định quan trọng
+- **Chặn ở presignUpload** (không phải confirmUpload): chặn sớm nhất trước khi upload file lên MinIO, tránh rác
+- **Free=2, Pro=20**: khớp brainstorm (Free 2) + Session 19 (Pro 5-10+). Constant, có thể chuyển env sau
+- **T4 reactive, không proactive**: hiện message rõ khi bị chặn (đủ "chặn + user tự xoá" của Session 19). Proactive "X/limit" trên Dashboard cần expose limit theo plan → để sau, không cần cho MVP
+- **apiErrorMessage dùng chung**: fix chung cho mọi lỗi upload (không chỉ quota) hiện đúng message backend
+
+### Test coverage
+- 2 BE: free đầy 2 sheet → chặn, pro vượt free quota vẫn ok
+- 1 FE: FileUpload hiện message quota từ response.data.message
+- 126 backend + 99 frontend = 225 tests pass
+
+### Kết quả
+- Commit `c592107` push
+- **Phase 1.7 (Dataset Management & Quota) HOÀN THÀNH**: T1 trang chủ + T2 quota + T3 xoá + T4 UX
+
+### Tasks liên quan
+- P1.7-T2 ✅, P1.7-T4 ✅ → Phase 1.7 done. Quay lại Learning Mode P1.6-T6 (API progress)
+
 <!-- Thêm session mới ở đây -->
