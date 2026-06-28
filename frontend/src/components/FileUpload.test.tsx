@@ -1,10 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import FileUpload from './FileUpload';
+import { uploadFile } from '../api/datasets';
 
 vi.mock('../api/datasets', () => ({
   uploadFile: vi.fn(),
 }));
+
+const mockUploadFile = uploadFile as ReturnType<typeof vi.fn>;
 
 const XLSX_MIME =
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -54,5 +57,18 @@ describe('FileUpload', () => {
       target: { files: [makeFile('data.csv', 'text/csv')] },
     });
     expect(screen.getByRole('button', { name: 'Upload file' })).toBeInTheDocument();
+  });
+
+  it('shows the backend error message (e.g. quota) on upload failure', async () => {
+    // Lỗi kiểu axios: message thật nằm ở response.data.message
+    mockUploadFile.mockRejectedValue({
+      response: { data: { message: 'Đã đạt giới hạn 2 sheet (gói Free). Xoá bớt sheet để thêm mới.' } },
+    });
+    render(<FileUpload onSuccess={() => {}} />);
+    fireEvent.change(getInput(), {
+      target: { files: [makeFile('data.csv', 'text/csv')] },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Upload file' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/giới hạn 2 sheet/i);
   });
 });

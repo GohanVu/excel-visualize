@@ -15,6 +15,7 @@ const mockPrisma = {
     findMany: jest.fn(),
     findFirst: jest.fn(),
     delete: jest.fn(),
+    count: jest.fn(),
   },
   chart: { deleteMany: jest.fn() },
   $transaction: jest.fn().mockResolvedValue(undefined),
@@ -51,6 +52,7 @@ describe('DatasetsService', () => {
     }).compile();
     service = module.get(DatasetsService);
     jest.clearAllMocks();
+    mockPrisma.dataset.count.mockResolvedValue(0);
     mockStorage.presignedPutUrl.mockResolvedValue('https://minio/presigned');
     mockStorage.getObject.mockResolvedValue(Buffer.from('fake'));
     mockParser.parse.mockReturnValue({
@@ -90,6 +92,32 @@ describe('DatasetsService', () => {
         fileSize: 30 * 1024 * 1024,
       });
       expect(result.presignedUrl).toBe('https://minio/presigned');
+    });
+
+    it('rejects when free user reached the 2-sheet quota', async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue(null);
+      mockPrisma.dataset.count.mockResolvedValue(2);
+      await expect(
+        service.presignUpload(mockUser, {
+          filename: 'new.xlsx',
+          contentType: XLSX_MIME,
+          fileSize: 1024,
+        }),
+      ).rejects.toThrow(/giới hạn 2 sheet/i);
+    });
+
+    it('allows pro user beyond the free quota (under 20)', async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        plan: 'pro',
+        status: 'active',
+      });
+      mockPrisma.dataset.count.mockResolvedValue(5);
+      const result = await service.presignUpload(mockUser, {
+        filename: 'new.xlsx',
+        contentType: XLSX_MIME,
+        fileSize: 1024,
+      });
+      expect(result.presignedUrl).toBeDefined();
     });
 
     it('rejects invalid file extension', async () => {

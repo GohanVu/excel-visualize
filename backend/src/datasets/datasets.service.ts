@@ -10,6 +10,9 @@ import { ConfirmUploadDto } from './dto/confirm-upload.dto';
 
 const FREE_LIMIT_BYTES = 10 * 1024 * 1024;
 const PRO_LIMIT_BYTES = 50 * 1024 * 1024;
+// Số sheet (file) tối đa cùng lúc theo gói
+const FREE_DATASET_LIMIT = 2;
+const PRO_DATASET_LIMIT = 20;
 const ALLOWED_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
 
 @Injectable()
@@ -26,6 +29,17 @@ export class DatasetsService {
     const isPro = await this.isProUser(user.id);
     const maxBytes = isPro ? PRO_LIMIT_BYTES : FREE_LIMIT_BYTES;
     const maxMb = maxBytes / 1024 / 1024;
+
+    // Quota số sheet — chặn khi đầy, user tự xoá bớt (Session 19)
+    const maxDatasets = isPro ? PRO_DATASET_LIMIT : FREE_DATASET_LIMIT;
+    const datasetCount = await this.prisma.dataset.count({
+      where: { userId: user.id },
+    });
+    if (datasetCount >= maxDatasets) {
+      throw new BadRequestException(
+        `Đã đạt giới hạn ${maxDatasets} sheet (gói ${isPro ? 'Pro' : 'Free'}). Xoá bớt sheet để thêm mới.`,
+      );
+    }
 
     if (dto.fileSize > maxBytes) {
       throw new BadRequestException(

@@ -26,6 +26,17 @@ function formatSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+// Lấy message thật từ lỗi API (NestJS để ở response.data.message), không phải
+// "Request failed with status code 400" — để hiện đúng lý do (vd đầy quota)
+function apiErrorMessage(e: unknown): string {
+  const data = (
+    e as { response?: { data?: { message?: string | string[] } } }
+  )?.response?.data?.message;
+  if (Array.isArray(data)) return data.join(', ');
+  if (typeof data === 'string') return data;
+  return e instanceof Error ? e.message : 'Upload thất bại, thử lại nhé';
+}
+
 export default function FileUpload({ onSuccess }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -58,8 +69,7 @@ export default function FileUpload({ onSuccess }: Props) {
       const dataset = await uploadFile(file);
       onSuccess(dataset.id);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Upload thất bại, thử lại nhé';
-      setError(msg);
+      setError(apiErrorMessage(e));
     } finally {
       setUploading(false);
     }
