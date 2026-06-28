@@ -939,4 +939,33 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.6-T2 ✅ → tiếp theo P1.6-T3 (đánh dấu đã thuộc/chưa thuộc mỗi thẻ — local trước)
 
+## [2026-06-28] Session 28 — Fix Issue-008: flashcard/chart trống khi override header
+
+### Yêu cầu
+- User: file "Báo giá thịt", trang Học toàn trống trơn
+
+### Chẩn đoán
+- Trang cột: 26 dòng, header dòng 5 (user nudge). Trang học: "7 / 27" → **27 ≠ 26** = /rows và /columns đọc header KHÁC dòng
+- Root cause: `fetchRows`/`/rows`/`getRows` không nhận `headerRow` → user override header thì /columns đúng nhưng /rows auto-detect lệch → key cột (displayNames) lệch → `row[front]` undefined → rỗng
+
+### Công việc đã làm
+- Thread `headerRow` xuyên /rows: `getRows(…, headerRow)`, controller `?headerRow=`, `fetchRows(id, { sheet, headerRow })`
+- Cập nhật caller: LearnPage + ChartDetailPage đọc headerRow từ state; ChartSuggestionPage truyền headerRow sang ChartDetail
+- Bonus: flashcard default mặt trước/sau ưu tiên cột chữ (string/category), không phải số (STT)
+- Ghi Issue-008 + api.md
+
+### Quyết định quan trọng
+- **Lesson (ghi Issue-008)**: param ảnh hưởng PARSE (sheet, headerRow) phải thread vào MỌI endpoint đọc cùng dataset. Triệu chứng lệch: tổng số dòng khác nhau giữa các trang
+- **fetchRows đổi sang opts object** `{ sheet, headerRow }` — đồng bộ với fetchColumns
+
+### Test coverage
+- 3 regression: getRows truyền sheet+headerRow vào parser, controller rows headerRow + default undefined
+- 120 backend + 89 frontend = 209 tests pass
+
+### Kết quả
+- Commit `f3a8b40` push. Bug đã fix — user hard refresh + thử lại
+
+### Tasks liên quan
+- Issue-008 (fix). Sau đó tiếp P1.6-T3 (đánh dấu thuộc/chưa thuộc)
+
 <!-- Thêm session mới ở đây -->
