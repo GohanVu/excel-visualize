@@ -122,6 +122,7 @@ function SuggestionContent({
                 datasetId={datasetId}
                 selectedColumns={selectedColumns}
                 sheet={sheet}
+                headerRow={headerRow}
               />
             ))}
           </div>
@@ -137,12 +138,14 @@ function SuggestionCard({
   datasetId,
   selectedColumns,
   sheet,
+  headerRow,
 }: {
   suggestion: ChartSuggestion;
   rows: Record<string, string>[];
   datasetId: string;
   selectedColumns: number[];
   sheet?: string;
+  headerRow?: number;
 }) {
   const navigate = useNavigate();
 
@@ -157,7 +160,7 @@ function SuggestionCard({
         type="button"
         onClick={() =>
           navigate(`/datasets/${datasetId}/chart`, {
-            state: { suggestion, selectedColumns, sheet },
+            state: { suggestion, selectedColumns, sheet, headerRow },
           })
         }
         className="mt-4 w-full rounded-lg bg-blue-600 py-2 text-sm font-medium transition hover:bg-blue-500"

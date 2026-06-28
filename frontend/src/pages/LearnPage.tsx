@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchColumns, fetchRows } from '../api/datasets';
+import type { DatasetColumn } from '../api/datasets';
 
 interface LocationState {
   sheet?: string;
@@ -21,8 +22,8 @@ export default function LearnPage() {
     enabled: !!id,
   });
   const rowsQ = useQuery({
-    queryKey: ['dataset', id, 'rows', sheet],
-    queryFn: () => fetchRows(id, sheet),
+    queryKey: ['dataset', id, 'rows', sheet, headerRow],
+    queryFn: () => fetchRows(id, { sheet, headerRow }),
     enabled: !!id,
   });
 
@@ -45,10 +46,10 @@ export default function LearnPage() {
     );
   }
 
-  const names = colsQ.data.columns.map((c) => c.name);
+  const columns = colsQ.data.columns;
   const rows = rowsQ.data.rows;
 
-  if (names.length < 2 || rows.length === 0) {
+  if (columns.length < 2 || rows.length === 0) {
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4 bg-gray-950 text-gray-300">
         <p>Dữ liệu chưa đủ để tạo thẻ học (cần ≥ 2 cột và có dòng).</p>
@@ -63,20 +64,31 @@ export default function LearnPage() {
     );
   }
 
-  return <FlashcardDeck names={names} rows={rows} onBack={onBack} />;
+  return <FlashcardDeck columns={columns} rows={rows} onBack={onBack} />;
 }
 
 function FlashcardDeck({
-  names,
+  columns,
   rows,
   onBack,
 }: {
-  names: string[];
+  columns: DatasetColumn[];
   rows: Record<string, string>[];
   onBack: () => void;
 }) {
-  const [front, setFront] = useState(names[0]);
-  const [back, setBack] = useState<string[]>([names[1]]);
+  const names = columns.map((c) => c.name);
+  // Default thông minh: mặt trước/sau ưu tiên cột chữ (string/category), không phải số
+  const textNames = columns
+    .filter((c) => c.type === 'string' || c.type === 'category')
+    .map((c) => c.name);
+  const defaultFront = textNames[0] ?? names[0];
+  const defaultBack =
+    textNames.find((n) => n !== defaultFront) ??
+    names.find((n) => n !== defaultFront) ??
+    names[0];
+
+  const [front, setFront] = useState(defaultFront);
+  const [back, setBack] = useState<string[]>([defaultBack]);
   const [order, setOrder] = useState<number[]>(() => rows.map((_, i) => i));
   const [pos, setPos] = useState(0);
   const [flipped, setFlipped] = useState(false);

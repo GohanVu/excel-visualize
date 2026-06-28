@@ -161,7 +161,12 @@ export class DatasetsService {
     return { datasetId, suggestions: this.suggester.suggest(selected) };
   }
 
-  async getRows(userId: string, datasetId: string, sheetName?: string) {
+  async getRows(
+    userId: string,
+    datasetId: string,
+    sheetName?: string,
+    headerRow?: number,
+  ) {
     const dataset = await this.prisma.dataset.findFirst({
       where: { id: datasetId, userId },
     });
@@ -170,6 +175,7 @@ export class DatasetsService {
     const buffer = await this.storage.getObject(dataset.minioKey);
     const { headers, rows } = this.parser.parse(buffer, dataset.mimeType, {
       sheetName,
+      headerRow,
     });
 
     // Key theo tên hiển thị (header trống → "Cột N") để khớp encoding của chart

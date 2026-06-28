@@ -148,9 +148,9 @@ Parse file → trả tổng quan cột (kiểu, confidence), preview, danh sách
 ---
 
 ### GET /datasets/:id/rows
-Trả toàn bộ dòng (key theo tên hiển thị) để render chart full.  
+Trả toàn bộ dòng (key theo tên hiển thị) để render chart full / flashcard.  
 **Auth**: JWT  
-**Query**: `sheet` (optional) — tên tab; không truyền → tab đầu  
+**Query**: `sheet` + `headerRow` (optional) — PHẢI khớp với view ở /columns, nếu không key cột lệch → giá trị rỗng (Issue-008)  
 **Response**:
 ```json
 { "datasetId": "cuid", "rows": [ { "STT": "1", "Chữ Hán": "八" } ] }

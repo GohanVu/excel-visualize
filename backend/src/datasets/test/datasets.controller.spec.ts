@@ -94,14 +94,25 @@ describe('DatasetsController', () => {
     );
   });
 
-  it('GET /datasets/:id/rows → delegates to service.getRows with userId, id and sheet', async () => {
+  it('GET /datasets/:id/rows → delegates to service.getRows with userId, id, sheet, headerRow', async () => {
     const expected = {
       datasetId: 'ds-1',
       rows: [{ Ngày: '2024-01-01', 'Doanh thu': '100' }],
     };
     mockService.getRows.mockResolvedValue(expected);
-    const result = await controller.rows(mockUser, 'ds-1', 'HSK 1');
-    expect(mockService.getRows).toHaveBeenCalledWith('user-1', 'ds-1', 'HSK 1');
+    const result = await controller.rows(mockUser, 'ds-1', 'HSK 1', '4');
+    expect(mockService.getRows).toHaveBeenCalledWith('user-1', 'ds-1', 'HSK 1', 4);
     expect(result).toEqual(expected);
+  });
+
+  it('GET /datasets/:id/rows → defaults sheet & headerRow to undefined', async () => {
+    mockService.getRows.mockResolvedValue({ datasetId: 'ds-1', rows: [] });
+    await controller.rows(mockUser, 'ds-1');
+    expect(mockService.getRows).toHaveBeenCalledWith(
+      'user-1',
+      'ds-1',
+      undefined,
+      undefined,
+    );
   });
 });

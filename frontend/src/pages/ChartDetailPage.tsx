@@ -11,6 +11,7 @@ interface LocationState {
   suggestion?: ChartSuggestion;
   selectedColumns?: number[];
   sheet?: string;
+  headerRow?: number;
 }
 
 export default function ChartDetailPage() {
@@ -20,6 +21,7 @@ export default function ChartDetailPage() {
   const suggestion = state?.suggestion;
   const selectedColumns = state?.selectedColumns;
   const sheet = state?.sheet;
+  const headerRow = state?.headerRow;
 
   if (!suggestion || !selectedColumns) {
     return <Navigate to={`/datasets/${id}/columns`} replace />;
@@ -30,9 +32,10 @@ export default function ChartDetailPage() {
       datasetId={id}
       suggestion={suggestion}
       sheet={sheet}
+      headerRow={headerRow}
       onBack={() =>
         navigate(`/datasets/${id}/charts`, {
-          state: { selectedColumns, sheet },
+          state: { selectedColumns, sheet, headerRow },
         })
       }
       onSaved={() => navigate('/dashboard')}
@@ -44,12 +47,14 @@ function ChartDetail({
   datasetId,
   suggestion,
   sheet,
+  headerRow,
   onBack,
   onSaved,
 }: {
   datasetId: string;
   suggestion: ChartSuggestion;
   sheet?: string;
+  headerRow?: number;
   onBack: () => void;
   onSaved: () => void;
 }) {
@@ -58,8 +63,8 @@ function ChartDetail({
   const [saveError, setSaveError] = useState('');
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['dataset', datasetId, 'rows', sheet],
-    queryFn: () => fetchRows(datasetId, sheet),
+    queryKey: ['dataset', datasetId, 'rows', sheet, headerRow],
+    queryFn: () => fetchRows(datasetId, { sheet, headerRow }),
   });
 
   if (isLoading) {

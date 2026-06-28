@@ -124,11 +124,14 @@ export interface DatasetRows {
 
 export async function fetchRows(
   datasetId: string,
-  sheet?: string,
+  opts: { sheet?: string; headerRow?: number } = {},
 ): Promise<DatasetRows> {
+  const params: Record<string, string> = {};
+  if (opts.sheet != null) params.sheet = opts.sheet;
+  if (opts.headerRow != null) params.headerRow = String(opts.headerRow);
   const { data } = await client.get<DatasetRows>(
     `/datasets/${datasetId}/rows`,
-    { params: sheet != null ? { sheet } : {} },
+    { params },
   );
   return data;
 }

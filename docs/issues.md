@@ -94,4 +94,14 @@
 - **Test added**: `parser.service.spec.ts` — "keeps date strings as dates, not Excel serial numbers"
 - **Lesson learned**: SheetJS auto-convert date khác nhau giữa buffer (xlsx) và string (csv). Mọi path đọc phải set `cellDates: true` nhất quán. Bug này chỉ lộ khi test bằng data thật có cột ngày.
 
+### [Issue-008] Flashcard/chart trống khi user chỉnh dòng header
+
+- **Status**: 🟢 Fixed
+- **Severity**: High
+- **Phát hiện**: 2026-06-28 — User upload "Báo giá thịt" (banner đầu sheet), chỉnh header sang dòng 5. Trang cột hiện 26 dòng đúng, nhưng trang Học hiện "7 / 27" và mọi giá trị thẻ trống trơn
+- **Root cause**: `/rows` (và `fetchRows`) KHÔNG nhận `headerRow`. Khi user override header, `/columns` parse đúng dòng 5 nhưng `/rows` vẫn auto-detect (lệch 1 dòng) → key cột (displayNames) lệch giữa 2 endpoint → `row[front]`/`row[back]` không tồn tại → rỗng. Dấu hiệu: số dòng lệch (27 vs 26)
+- **Fix**: Thread `headerRow` xuyên suốt `/rows`: `getRows(…, headerRow)` + controller `?headerRow=` + `fetchRows(id, { sheet, headerRow })`. Cập nhật caller LearnPage + ChartDetailPage (đọc headerRow từ router state); ChartSuggestionPage truyền headerRow sang ChartDetail
+- **Test added**: `datasets.service.spec` — "passes sheetName + headerRow to the parser"; `datasets.controller.spec` — rows truyền headerRow + default undefined
+- **Lesson learned**: Khi thêm 1 tham số ảnh hưởng cách PARSE (sheet, headerRow), phải thread vào MỌI endpoint đọc dữ liệu cùng dataset (`/columns`, `/rows`, `/suggest`) — nếu không các view parse khác nhau → lệch key. Triệu chứng kinh điển: tổng số dòng khác nhau giữa các trang.
+
 <!-- Thêm issues ở đây -->

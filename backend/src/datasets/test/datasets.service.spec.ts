@@ -295,6 +295,17 @@ describe('DatasetsService', () => {
       expect(result.rows[0]).toEqual({ Ngày: '2024-01-01', 'Doanh thu': '100' });
       expect(result.rows[2]).toEqual({ Ngày: '2024-01-03', 'Doanh thu': '300' });
     });
+
+    // Regression Issue-008: /rows phải dùng cùng sheet+headerRow như /columns,
+    // nếu không key cột lệch → giá trị rỗng (flashcard/chart trống)
+    it('passes sheetName + headerRow to the parser', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue(mockDataset);
+      await service.getRows('user-1', 'ds-1', 'Tab2', 4);
+      expect(mockParser.parse).toHaveBeenCalledWith(expect.any(Buffer), expect.any(String), {
+        sheetName: 'Tab2',
+        headerRow: 4,
+      });
+    });
   });
 
   describe('suggestCharts', () => {
