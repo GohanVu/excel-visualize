@@ -997,4 +997,33 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.7-T1 ✅ (kéo sớm) → quay lại Learning Mode P1.6-T3; phần còn lại Phase 1.7 (quota/xoá) sau
 
+## [2026-06-28] Session 30 — Đánh dấu thuộc/chưa + lọc thẻ rỗng (P1.6-T3)
+
+### Yêu cầu
+- Đánh dấu "đã thuộc / chưa thuộc" mỗi thẻ + đếm tiến độ; gộp lọc thẻ trống
+
+### Công việc đã làm
+- `LearnPage`/FlashcardDeck:
+  - Nút "✓ Đã thuộc" / "↻ Chưa thuộc" → đánh dấu + tự sang thẻ kế
+  - Tiến độ "Đã thuộc X / Y" (đếm theo deck); thẻ đã thuộc viền xanh
+  - `known: Set<number>` theo index gốc của rows → giữ qua shuffle + đổi front
+  - **Lọc thẻ rỗng mặt trước**: `deck` = useMemo lọc rows có front non-empty; đổi front → deck đổi → useEffect reset order/pos
+  - Guard `total===0` (cột front toàn trống)
+
+### Quyết định quan trọng
+- **known key theo index gốc** (không phải vị trí order): shuffle/đổi front không làm mất trạng thái đã thuộc
+- **deck phụ thuộc front**: lọc theo cột mặt trước hiện tại; useEffect([deck]) reset thứ tự khi front đổi (known KHÔNG reset — thuộc là về thẻ, không về front)
+- **Lọc "front rỗng" thay vì "back rỗng"**: thẻ không có mặt trước là vô dụng; dòng nhóm có front (tên nhóm) vẫn giữ — đơn giản, defensible
+- **Local state (chưa DB)**: T5/T6 thêm schema + API để persist
+
+### Test coverage
+- 3 FE tests mới: mark known (tiến độ +1 + advance), chưa thuộc (advance không tăng), skip dòng trống mặt trước (3 dòng → 2 thẻ)
+- 93 frontend tests pass
+
+### Kết quả
+- Commit `fe430dc` push lên https://github.com/GohanVu/excel-visualize
+
+### Tasks liên quan
+- P1.6-T3 ✅ → tiếp theo P1.6-T4 (quiz trắc nghiệm)
+
 <!-- Thêm session mới ở đây -->

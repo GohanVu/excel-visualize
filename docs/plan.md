@@ -174,7 +174,7 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
 | P1.6-T2 | Chọn cột **mặt trước / mặt sau** + màn flashcard: lật thẻ, next/prev, shuffle | ✅ Done | P1.6-T1 | LearnPage thuần client; front=select, back=toggle nhiều cột; fallback khi thiếu data |
-| P1.6-T3 | Đánh dấu **đã thuộc / chưa thuộc** mỗi thẻ | ⬜ Todo | P1.6-T2 | Local state trước, persist ở T6 |
+| P1.6-T3 | Đánh dấu **đã thuộc / chưa thuộc** mỗi thẻ | ✅ Done | P1.6-T2 | Local state. Nút Thuộc/Chưa + tiến độ X/Y + viền xanh. Bonus: lọc thẻ rỗng mặt trước. Persist ở T6 |
 
 ### Nhóm C — Quiz
 
