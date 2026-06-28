@@ -3,11 +3,14 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchColumns, fetchRows } from '../api/datasets';
 import type { DatasetColumn } from '../api/datasets';
+import QuizMode from './QuizMode';
 
 interface LocationState {
   sheet?: string;
   headerRow?: number;
 }
+
+type LearnModeValue = 'card' | 'quiz';
 
 export default function LearnPage() {
   const { id = '' } = useParams();
@@ -15,6 +18,7 @@ export default function LearnPage() {
   const state = useLocation().state as LocationState | null;
   const sheet = state?.sheet;
   const headerRow = state?.headerRow;
+  const [mode, setMode] = useState<LearnModeValue>('card');
 
   const colsQ = useQuery({
     queryKey: ['dataset', id, 'columns', sheet, headerRow],
@@ -64,17 +68,63 @@ export default function LearnPage() {
     );
   }
 
-  return <FlashcardDeck columns={columns} rows={rows} onBack={onBack} />;
+  return (
+    <div className="min-h-screen bg-gray-950 p-6 text-white">
+      <div className="mx-auto max-w-2xl">
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-4 text-sm text-gray-400 hover:text-white"
+        >
+          ← Quay lại
+        </button>
+        <ModeTabs mode={mode} onChange={setMode} />
+        {mode === 'card' ? (
+          <FlashcardDeck columns={columns} rows={rows} />
+        ) : (
+          <QuizMode columns={columns} rows={rows} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ModeTabs({
+  mode,
+  onChange,
+}: {
+  mode: LearnModeValue;
+  onChange: (m: LearnModeValue) => void;
+}) {
+  const tab = (m: LearnModeValue, label: string) => (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={mode === m}
+      onClick={() => onChange(m)}
+      className={`rounded-lg px-4 py-1.5 text-sm transition ${
+        mode === m
+          ? 'bg-purple-600 text-white'
+          : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+      }`}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div className="flex gap-2" role="tablist" aria-label="Chế độ học">
+      {tab('card', '🎴 Thẻ')}
+      {tab('quiz', '📝 Quiz')}
+    </div>
+  );
 }
 
 function FlashcardDeck({
   columns,
   rows,
-  onBack,
 }: {
   columns: DatasetColumn[];
   rows: Record<string, string>[];
-  onBack: () => void;
 }) {
   const names = columns.map((c) => c.name);
   // Default thông minh: mặt trước/sau ưu tiên cột chữ (string/category), không phải số
@@ -157,27 +207,18 @@ function FlashcardDeck({
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 p-6 text-white">
-      <div className="mx-auto max-w-2xl">
-        <button
-          type="button"
-          onClick={onBack}
-          className="mb-4 text-sm text-gray-400 hover:text-white"
-        >
-          ← Quay lại
-        </button>
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">🎴 Học bằng thẻ</h1>
-          <span className="text-sm text-gray-400">
-            Đã thuộc{' '}
-            <strong data-testid="known-count" className="text-green-400">
-              {knownCount}
-            </strong>{' '}
-            / {total}
-          </span>
-        </div>
+    <>
+      <div className="mt-4 flex items-center justify-end">
+        <span className="text-sm text-gray-400">
+          Đã thuộc{' '}
+          <strong data-testid="known-count" className="text-green-400">
+            {knownCount}
+          </strong>{' '}
+          / {total}
+        </span>
+      </div>
 
-        <div className="mt-4 grid gap-3 rounded-xl border border-gray-800 bg-gray-900 p-4 sm:grid-cols-2">
+      <div className="mt-2 grid gap-3 rounded-xl border border-gray-800 bg-gray-900 p-4 sm:grid-cols-2">
           <label className="text-sm">
             <span className="text-gray-400">Mặt trước</span>
             <select
@@ -286,16 +327,15 @@ function FlashcardDeck({
             Sau →
           </button>
         </div>
-        <div className="mt-3 flex justify-center">
-          <button
-            type="button"
-            onClick={shuffle}
-            className="rounded-lg bg-gray-800 px-4 py-2 text-sm hover:bg-gray-700"
-          >
-            🔀 Trộn thẻ
-          </button>
-        </div>
+      <div className="mt-3 flex justify-center">
+        <button
+          type="button"
+          onClick={shuffle}
+          className="rounded-lg bg-gray-800 px-4 py-2 text-sm hover:bg-gray-700"
+        >
+          🔀 Trộn thẻ
+        </button>
       </div>
-    </div>
+    </>
   );
 }

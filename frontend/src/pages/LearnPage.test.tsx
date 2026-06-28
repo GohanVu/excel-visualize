@@ -121,6 +121,31 @@ describe('LearnPage', () => {
     expect(screen.getByText('1 / 2')).toBeInTheDocument(); // 3 dòng → 2 thẻ hợp lệ
   });
 
+  it('switches to quiz mode and shows multiple-choice options', async () => {
+    renderPage();
+    await screen.findByText('八');
+    fireEvent.click(screen.getByRole('tab', { name: /Quiz/ }));
+    // câu hỏi 八 (Chữ Hán→Bính âm), đáp án đúng "bā" + nhiễu "hǎo"
+    expect(screen.getByRole('button', { name: 'bā' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'hǎo' })).toBeInTheDocument();
+  });
+
+  it('scores a correct quiz answer', async () => {
+    renderPage();
+    await screen.findByText('八');
+    fireEvent.click(screen.getByRole('tab', { name: /Quiz/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'bā' })); // đúng cho 八
+    expect(screen.getByTestId('quiz-score')).toHaveTextContent('1');
+  });
+
+  it('a wrong quiz answer does not increase the score', async () => {
+    renderPage();
+    await screen.findByText('八');
+    fireEvent.click(screen.getByRole('tab', { name: /Quiz/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'hǎo' })); // sai cho 八
+    expect(screen.getByTestId('quiz-score')).toHaveTextContent('0');
+  });
+
   it('shows a fallback when data is insufficient', async () => {
     mockCols.mockResolvedValue({ datasetId: 'ds-1', columns: [columns[0]] });
     mockRows.mockResolvedValue({ datasetId: 'ds-1', rows: [] });
