@@ -5,6 +5,7 @@ import UploadPage from './pages/UploadPage';
 import ColumnOverviewPage from './pages/ColumnOverviewPage';
 import ChartSuggestionPage from './pages/ChartSuggestionPage';
 import ChartDetailPage from './pages/ChartDetailPage';
+import LearnPage from './pages/LearnPage';
 import PrivateRoute from './components/PrivateRoute';
 import PublicRoute from './components/PublicRoute';
 
@@ -25,14 +26,7 @@ export default function App() {
         <Route path="/datasets/:id/columns" element={<ColumnOverviewPage />} />
         <Route path="/datasets/:id/charts" element={<ChartSuggestionPage />} />
         <Route path="/datasets/:id/chart" element={<ChartDetailPage />} />
-        <Route
-          path="/datasets/:id/learn"
-          element={
-            <div className="flex h-screen items-center justify-center bg-gray-950 text-white">
-              🎴 Học — flashcard/quiz đang xây dựng (P1.6-T2)
-            </div>
-          }
-        />
+        <Route path="/datasets/:id/learn" element={<LearnPage />} />
         <Route
           path="/admin/*"
           element={
