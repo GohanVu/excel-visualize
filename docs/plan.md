@@ -186,7 +186,7 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
-| P1.6-T5 | Schema `StudyProgress` (per user/dataset/sheet/card: known/seen, lastReviewedAt) + migration | ⬜ Todo | P0-T3 | Track thuộc/chưa thuộc. SRS (lặp ngắt quãng) để Pro/sau |
+| P1.6-T5 | Schema `StudyProgress` (per user/dataset/sheet/card: known/seen, lastReviewedAt) + migration | ✅ Done | P0-T3 | enum StudyStatus + model + unique(user,dataset,sheet,cardKey). Migration applied. cardKey=hash dòng (FE tính ở T7) |
 | P1.6-T6 | API lưu/đọc tiến độ học | ⬜ Todo | P1.6-T5 | POST/GET progress theo dataset |
 | P1.6-T7 | Wire flashcard + quiz vào progress; hiện "đã thuộc X/Y"; verify e2e file HSK | ⬜ Todo | P1.6-T3, P1.6-T4, P1.6-T6 | |
 

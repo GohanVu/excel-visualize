@@ -1055,4 +1055,29 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.6-T4 ✅ → tiếp theo P1.6-T5 (schema StudyProgress + migration) — bắt đầu phần persist tiến độ
 
+## [2026-06-28] Session 32 — Schema StudyProgress + migration (P1.6-T5)
+
+### Yêu cầu
+- Schema lưu tiến độ học (thuộc/chưa) per user/dataset/sheet/card
+
+### Công việc đã làm
+- `schema.prisma`:
+  - `enum StudyStatus { new, learning, known }`
+  - `model StudyProgress`: userId, datasetId, sheet (default ""), cardKey, status, seenCount, lastReviewedAt + timestamps
+  - relations `onDelete: Cascade` từ User + Dataset; `@@unique([userId, datasetId, sheet, cardKey])`
+- Migration `20260628140008_add_study_progress` applied + Prisma Client regenerated
+
+### Quyết định quan trọng
+- **cardKey = định danh thẻ ổn định qua re-parse** (không dùng rowIndex vì lệch khi đổi header/sheet). FE sẽ tính cardKey = hash giá trị dòng ở T7 — schema chỉ cần String
+- **sheet trong unique key**: tiến độ tách theo tab (file 2 tab học riêng)
+- **seenCount + status** (không knownCount riêng): status đủ biểu diễn thuộc/chưa; seenCount để dành SRS sau
+- **Cascade từ Dataset**: xoá file → xoá tiến độ (khác Chart đang Restrict — tiến độ không cần giữ)
+- **T5 schema-only, không unit test**: logic + test ở T6 (API). Verify: migration applied + 120 backend tests vẫn xanh sau regenerate
+
+### Kết quả
+- Commit `11edef1` push lên https://github.com/GohanVu/excel-visualize
+
+### Tasks liên quan
+- P1.6-T5 ✅ → tiếp theo P1.6-T6 (API lưu/đọc tiến độ — StudyProgress module)
+
 <!-- Thêm session mới ở đây -->
