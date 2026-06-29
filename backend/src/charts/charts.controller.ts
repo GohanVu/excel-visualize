@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { User } from '@prisma/client';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -24,5 +33,10 @@ export class ChartsController {
   @Patch('layout')
   updateLayout(@CurrentUser() user: User, @Body() dto: UpdateLayoutDto) {
     return this.chartsService.updateLayout(user.id, dto.layout);
+  }
+
+  @Delete(':id')
+  remove(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.chartsService.deleteChart(user.id, id);
   }
 }

@@ -40,6 +40,11 @@ export async function updateLayout(layout: LayoutItem[]): Promise<void> {
   await client.patch('/charts/layout', { layout });
 }
 
+// Xoá 1 chart khỏi dashboard.
+export async function deleteChart(chartId: string): Promise<void> {
+  await client.delete(`/charts/${chartId}`);
+}
+
 export async function saveChart(
   datasetId: string,
   type: string,

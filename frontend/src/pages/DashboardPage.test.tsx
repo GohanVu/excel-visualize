@@ -9,7 +9,11 @@ vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({ user: { name: 'Gohan' }, isLoading: false, isAuthenticated: true }),
 }));
 vi.mock('../api/client', () => ({ default: { post: vi.fn() } }));
-vi.mock('../api/charts', () => ({ listCharts: vi.fn(), updateLayout: vi.fn() }));
+vi.mock('../api/charts', () => ({
+  listCharts: vi.fn(),
+  updateLayout: vi.fn(),
+  deleteChart: vi.fn(),
+}));
 vi.mock('../api/datasets', () => ({ fetchDatasets: vi.fn(), deleteDataset: vi.fn() }));
 // react-grid-layout đo bề rộng container (≈0 trong test) → mock thành passthrough
 vi.mock('react-grid-layout', () => ({
@@ -24,10 +28,11 @@ vi.mock('../components/ChartView', () => ({
   ),
 }));
 
-import { listCharts } from '../api/charts';
+import { listCharts, deleteChart } from '../api/charts';
 import { fetchDatasets, deleteDataset } from '../api/datasets';
 
 const mockListCharts = listCharts as ReturnType<typeof vi.fn>;
+const mockDeleteChart = deleteChart as ReturnType<typeof vi.fn>;
 const mockFetchDatasets = fetchDatasets as ReturnType<typeof vi.fn>;
 const mockDeleteDataset = deleteDataset as ReturnType<typeof vi.fn>;
 
@@ -62,6 +67,7 @@ describe('DashboardPage', () => {
     mockFetchDatasets.mockResolvedValue([]);
     mockListCharts.mockResolvedValue([]);
     mockDeleteDataset.mockResolvedValue(undefined);
+    mockDeleteChart.mockResolvedValue(undefined);
   });
 
   it('renders user name in header', () => {
@@ -136,5 +142,27 @@ describe('DashboardPage', () => {
     renderPage();
     await screen.findByText('Sheet của tôi');
     expect(screen.queryByText('Biểu đồ đã lưu')).not.toBeInTheDocument();
+  });
+
+  it('xoá chart sau xác nhận 2 bước', async () => {
+    mockListCharts.mockResolvedValue(savedCharts);
+    renderPage();
+    await screen.findByText('Doanh thu theo tháng');
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Xoá Doanh thu theo tháng' }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Xoá' })); // xác nhận
+    await waitFor(() => expect(mockDeleteChart).toHaveBeenCalledWith('c-1'));
+  });
+
+  it('huỷ xoá chart → không gọi deleteChart', async () => {
+    mockListCharts.mockResolvedValue(savedCharts);
+    renderPage();
+    await screen.findByText('Doanh thu theo tháng');
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Xoá Doanh thu theo tháng' }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Huỷ' }));
+    expect(mockDeleteChart).not.toHaveBeenCalled();
   });
 });

@@ -6,7 +6,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 const mockPrisma = {
   dataset: { findFirst: jest.fn() },
   dashboard: { findFirst: jest.fn(), create: jest.fn() },
-  chart: { create: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
+  chart: {
+    create: jest.fn(),
+    findMany: jest.fn(),
+    updateMany: jest.fn(),
+    deleteMany: jest.fn(),
+  },
   $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
 };
 
@@ -144,6 +149,24 @@ describe('ChartsService', () => {
       const result = await service.updateLayout('user-1', layout);
       expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
       expect(result).toEqual({ updated: 2 });
+    });
+  });
+
+  describe('deleteChart', () => {
+    it('deletes the chart guarded by dashboard owner', async () => {
+      mockPrisma.chart.deleteMany.mockResolvedValue({ count: 1 });
+      const result = await service.deleteChart('user-1', 'c-1');
+      expect(mockPrisma.chart.deleteMany).toHaveBeenCalledWith({
+        where: { id: 'c-1', dashboard: { userId: 'user-1' } },
+      });
+      expect(result).toEqual({ deleted: true });
+    });
+
+    it('throws NotFound when chart is not the user\'s (count 0)', async () => {
+      mockPrisma.chart.deleteMany.mockResolvedValue({ count: 0 });
+      await expect(service.deleteChart('user-1', 'c-x')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

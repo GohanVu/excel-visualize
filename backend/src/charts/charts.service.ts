@@ -70,4 +70,14 @@ export class ChartsService {
     );
     return { updated: layout.length };
   }
+
+  // Xoá 1 chart khỏi dashboard. deleteMany lọc dashboard.userId → owner-guard.
+  // count 0 = không phải chart của user (hoặc không tồn tại) → 404 (không lộ).
+  async deleteChart(userId: string, chartId: string) {
+    const res = await this.prisma.chart.deleteMany({
+      where: { id: chartId, dashboard: { userId } },
+    });
+    if (res.count === 0) throw new NotFoundException('Biểu đồ không tồn tại.');
+    return { deleted: true };
+  }
 }

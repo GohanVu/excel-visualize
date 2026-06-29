@@ -7,7 +7,7 @@ import 'react-resizable/css/styles.css';
 import { useAuth } from '../hooks/useAuth';
 import { fetchDatasets, deleteDataset } from '../api/datasets';
 import type { Dataset } from '../api/datasets';
-import { listCharts, updateLayout } from '../api/charts';
+import { listCharts, updateLayout, deleteChart } from '../api/charts';
 import type { DashboardChart } from '../api/charts';
 import {
   chartsToLayout,
@@ -182,10 +182,21 @@ function SheetCard({
 }
 
 function SavedCharts({ charts }: { charts: DashboardChart[] }) {
+  const queryClient = useQueryClient();
   const [layout, setLayout] = useState<GridItem[]>(() => chartsToLayout(charts));
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const saveMut = useMutation({ mutationFn: updateLayout });
   const persist = (next: GridItem[]) =>
     saveMut.mutate(layoutToPayload(next));
+  const deleteMut = useMutation({
+    mutationFn: deleteChart,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['charts'] });
+      setConfirmId(null);
+    },
+  });
+  // chặn react-grid-layout bắt đầu kéo khi bấm nút trong thanh tiêu đề
+  const stopDrag = (e: { stopPropagation: () => void }) => e.stopPropagation();
 
   return (
     <section className="mt-10">
@@ -212,9 +223,41 @@ function SavedCharts({ charts }: { charts: DashboardChart[] }) {
               key={chart.id}
               className="flex flex-col overflow-hidden rounded-xl border border-gray-800 bg-gray-900"
             >
-              <div className="chart-drag flex cursor-move items-center gap-2 border-b border-gray-800 px-3 py-2 text-sm font-medium">
-                <span className="text-gray-500">⠿</span>
-                <span className="truncate">{chart.title ?? 'Biểu đồ'}</span>
+              <div className="flex items-center justify-between border-b border-gray-800 px-3 py-2 text-sm font-medium">
+                <div className="chart-drag flex min-w-0 flex-1 cursor-move items-center gap-2">
+                  <span className="text-gray-500">⠿</span>
+                  <span className="truncate">{chart.title ?? 'Biểu đồ'}</span>
+                </div>
+                {confirmId === chart.id ? (
+                  <span className="flex shrink-0 items-center gap-1 text-xs">
+                    <button
+                      type="button"
+                      onMouseDown={stopDrag}
+                      onClick={() => deleteMut.mutate(chart.id)}
+                      className="rounded bg-red-600 px-2 py-0.5 hover:bg-red-500"
+                    >
+                      Xoá
+                    </button>
+                    <button
+                      type="button"
+                      onMouseDown={stopDrag}
+                      onClick={() => setConfirmId(null)}
+                      className="rounded bg-gray-700 px-2 py-0.5 hover:bg-gray-600"
+                    >
+                      Huỷ
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    aria-label={`Xoá ${chart.title ?? 'biểu đồ'}`}
+                    onMouseDown={stopDrag}
+                    onClick={() => setConfirmId(chart.id)}
+                    className="shrink-0 rounded p-1 text-gray-500 transition hover:bg-gray-800 hover:text-red-400"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
               <div className="min-h-0 flex-1 p-2">
                 <ChartView
