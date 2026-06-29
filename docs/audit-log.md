@@ -1273,4 +1273,26 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.6-T7 ✅ → Phase 1.6 hoàn tất (trừ e2e browser). Next: P1.8 (aggregation suite) hoặc các verify e2e tồn đọng
 
+## [2026-06-29] Session — P1.8-T1: Generalize aggregation + groupAggregate (sửa nhóm-lặp)
+
+### Yêu cầu
+- Mở rộng phép gộp (count→sum/average/median/min/max), thêm `groupAggregate`, sửa lỗi category+number vẽ raw → nhóm lặp (vd "Bò Úc" 5 dòng = 5 cột trùng tên)
+
+### Công việc đã làm
+- `api/datasets.ts`: type `Aggregation = count|sum|average|median|min|max`; `ChartSuggestion.aggregation?` dùng type này (thay `'count'`)
+- `lib/buildChartOption.ts`: thêm `reduceAgg(values, fn)` + `groupAggregate(rows, x, yKey, fn)` (export). Gộp nhánh `aggregation === 'count'` cũ thành `if (aggregation)` chung → mọi phép gộp nhóm theo x distinct rồi áp hàm; bỏ `countBy` (count đi qua groupAggregate)
+- Sửa lỗi nhóm-lặp: 1 giá trị x distinct = đúng 1 cột (Map giữ thứ tự xuất hiện đầu)
+- Tests: buildChartOption 10→19 (sum/avg/median/min/max trên bảng báo giá thịt + groupAggregate trực tiếp + dedup). Full FE 119 pass, build xanh
+
+### Quyết định quan trọng
+- **aggregation rỗng = nhánh raw** (time-series line: mỗi dòng 1 điểm, KHÔNG gộp). Chỉ gộp khi có aggregation → giữ nguyên line theo ngày, fix category+number khi T2 set agg
+- **count thống nhất qua groupAggregate** (yKey rỗng, đếm length) thay vì hàm riêng — ít code, hành vi count y hệt cũ (test cũ vẫn xanh)
+- **median chẵn = TB 2 giá trị giữa**; nhóm rỗng giá trị → 0 (đồng nhất với `num()`)
+
+### Kết quả
+- buildChartOption đủ phép gộp, sửa nhóm-lặp. Backend chưa set agg cho category+number (đó là T2) nên hiệu ứng fix nhóm-lặp e2e sẽ thấy sau T2
+
+### Tasks liên quan
+- P1.8-T1 ✅ → tiếp P1.8-T2 (suggester BE: category+number → default agg theo tên cột; encoding mang yCol + aggregation)
+
 <!-- Thêm session mới ở đây -->
