@@ -83,6 +83,7 @@ function ChartDetail({
   const [agg, setAgg] = useState<Aggregation | undefined>(
     suggestion.aggregation,
   );
+  const [percent, setPercent] = useState(false); // toggle "% tổng" (chỉ bar)
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dataset', datasetId, 'rows', sheet, headerRow],
@@ -109,8 +110,9 @@ function ChartDetail({
   // thuần (y rỗng) không có gì để tổng/TB; time-series raw cũng không gộp.
   const canSwitch =
     suggestion.aggregation != null && suggestion.encoding.y.length > 0;
+  const canTogglePercent = suggestion.type === 'bar'; // pie vốn đã %
   const activeSuggestion = agg ? { ...suggestion, aggregation: agg } : suggestion;
-  const option = buildChartOption(activeSuggestion, data.rows);
+  const option = buildChartOption(activeSuggestion, data.rows, { percent });
 
   async function handleSave() {
     setSaving(true);
@@ -164,6 +166,18 @@ function ChartDetail({
               ))}
             </div>
           </div>
+        )}
+
+        {canTogglePercent && (
+          <label className="mt-3 flex w-fit cursor-pointer items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={percent}
+              onChange={(e) => setPercent(e.target.checked)}
+              className="h-4 w-4 accent-purple-600"
+            />
+            Hiển thị % tổng
+          </label>
         )}
 
         <div className="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-4">

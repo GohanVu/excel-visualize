@@ -179,6 +179,53 @@ describe('buildChartOption', () => {
     });
   });
 
+  describe('percent (% tổng — chỉ bar)', () => {
+    const meat = [
+      { Loại: 'Bò Úc', Giá: '100' },
+      { Loại: 'Bò Úc', Giá: '200' },
+      { Loại: 'Bò Mỹ', Giá: '300' },
+    ];
+
+    it('bar gộp: series chuyển sang % tổng + trục có hậu tố %', () => {
+      const opt = buildChartOption(
+        suggestion({ type: 'bar', aggregation: 'sum', encoding: { x: 'Loại', y: ['Giá'] } }),
+        meat,
+        { percent: true },
+      ) as any;
+      expect(opt.series[0].data).toEqual([50, 50]); // 300/600, 300/600
+      expect(opt.yAxis.axisLabel.formatter).toBe('{value}%');
+    });
+
+    it('bar raw (không gộp) cũng % tổng, làm tròn 1 chữ số', () => {
+      const opt = buildChartOption(
+        suggestion({ type: 'bar', encoding: { x: 'Ngày', y: ['Doanh thu'] } }),
+        rows, // 100, 200 → tổng 300
+        { percent: true },
+      ) as any;
+      expect(opt.series[0].data).toEqual([33.3, 66.7]);
+    });
+
+    it('KHÔNG áp cho pie (pie vốn đã %)', () => {
+      const opt = buildChartOption(
+        suggestion({ type: 'pie', aggregation: 'sum', encoding: { x: 'Loại', y: ['Giá'] } }),
+        meat,
+        { percent: true },
+      ) as any;
+      expect(opt.series[0].data).toEqual([
+        { name: 'Bò Úc', value: 300 },
+        { name: 'Bò Mỹ', value: 300 },
+      ]);
+    });
+
+    it('line bỏ qua percent', () => {
+      const opt = buildChartOption(suggestion({ type: 'line' }), rows, {
+        percent: true,
+      }) as any;
+      expect(opt.series[0].data).toEqual([100, 200]);
+      expect(opt.yAxis.axisLabel).toBeUndefined();
+    });
+  });
+
   describe('groupAggregate', () => {
     const rows = [
       { k: 'a', v: '2' },

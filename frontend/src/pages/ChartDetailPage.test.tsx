@@ -194,6 +194,23 @@ describe('ChartDetailPage', () => {
     );
   });
 
+  it('toggle "% tổng" đổi bar sang phần trăm', async () => {
+    mockFetchRows.mockResolvedValue({ datasetId: 'ds-1', rows: meatRows });
+    renderPage({ suggestion: aggSuggestion, selectedColumns });
+    await screen.findByText('So sánh giữa các nhóm');
+    expect(readOption().series[0].data).toEqual([300, 300]);
+    await userEvent.click(screen.getByLabelText(/Hiển thị % tổng/));
+    expect(readOption().series[0].data).toEqual([50, 50]); // 300/600
+  });
+
+  it('KHÔNG hiện toggle % cho chart không phải bar', async () => {
+    renderPage(); // line
+    await screen.findByText('Xu hướng theo thời gian');
+    expect(
+      screen.queryByLabelText(/Hiển thị % tổng/),
+    ).not.toBeInTheDocument();
+  });
+
   it('shows error message when save fails', async () => {
     mockSaveChart.mockRejectedValue(new Error('server error'));
     renderPage();

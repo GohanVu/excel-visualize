@@ -56,13 +56,29 @@ export function groupAggregate(
   }));
 }
 
+// Chuẩn hoá 1 series thành % tổng (mỗi giá trị / tổng series, làm tròn 1 chữ số).
+// "% tổng" là CÁCH HIỂN THỊ (chỉ cho bar), không phải phép gộp.
+function maybePercent(data: number[], on: boolean): number[] {
+  if (!on) return data;
+  const total = data.reduce((a, b) => a + b, 0);
+  if (total === 0) return data.map(() => 0);
+  return data.map((v) => Math.round((v / total) * 1000) / 10);
+}
+
+const valueAxis = (percent: boolean) =>
+  percent
+    ? { type: 'value', axisLabel: { formatter: '{value}%' } }
+    : { type: 'value' };
+
 /** Dựng ECharts option từ 1 gợi ý chart + data rows (dùng cho cả thumbnail và full) */
 export function buildChartOption(
   suggestion: ChartSuggestion,
   rows: Row[],
+  opts: { percent?: boolean } = {},
 ): ChartOption {
   const { type, encoding, aggregation } = suggestion;
   const { x, y } = encoding;
+  const percent = !!opts.percent && type === 'bar'; // % tổng chỉ áp cho bar
 
   // Có phép gộp → nhóm theo x rồi áp hàm (count|sum|average|median|min|max).
   // Gộp ra category → bar (hoặc pie). Không gộp (aggregation rỗng) đi nhánh raw.
@@ -84,11 +100,14 @@ export function buildChartOption(
       tooltip: { trigger: 'axis' },
       legend: cols.length > 1 ? { data: cols } : undefined,
       xAxis: { type: 'category', data: names },
-      yAxis: { type: 'value' },
+      yAxis: valueAxis(percent),
       series: cols.map((c) => ({
         name: c,
         type: 'bar',
-        data: groupAggregate(rows, x, c, aggregation).map((d) => d.value),
+        data: maybePercent(
+          groupAggregate(rows, x, c, aggregation).map((d) => d.value),
+          percent,
+        ),
       })),
     };
   }
@@ -128,11 +147,14 @@ export function buildChartOption(
     tooltip: { trigger: 'axis' },
     legend: y.length > 1 ? { data: y } : undefined,
     xAxis: { type: 'category', data: rows.map((r) => r[x] ?? '') },
-    yAxis: { type: 'value' },
+    yAxis: valueAxis(percent),
     series: y.map((col) => ({
       name: col,
       type,
-      data: rows.map((r) => num(r[col])),
+      data: maybePercent(
+        rows.map((r) => num(r[col])),
+        percent,
+      ),
     })),
   };
 }
