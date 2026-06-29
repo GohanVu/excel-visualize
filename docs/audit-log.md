@@ -1338,4 +1338,25 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.8-T3 ✅ → tiếp P1.8-T4 (toggle "% tổng" cho bar) rồi P1.8-T5 (verify e2e)
 
+## [2026-06-29] Session — P1.8-T4: Toggle "% tổng" cho bar
+
+### Yêu cầu
+- Toggle hiển thị bar theo % tổng (pie vốn đã %). Là cách HIỂN THỊ, không phải phép gộp
+
+### Công việc đã làm
+- `buildChartOption.ts`: thêm tham số `opts.percent`; helper `maybePercent` (mỗi series → giá trị/tổng series ×100, làm tròn 1 chữ số) + `valueAxis(percent)` (trục hậu tố `{value}%`). Áp cho bar ở cả nhánh gộp lẫn raw; pie/line bỏ qua (`percent && type==='bar'`)
+- `ChartDetailPage.tsx`: state `percent` + checkbox "Hiển thị % tổng" (chỉ khi type=bar); truyền `{percent}` vào buildChartOption
+- Tests: +4 buildChartOption (bar gộp %, bar raw làm tròn, pie không áp, line bỏ qua) +2 ChartDetailPage (toggle đổi %, ẩn với line). FE 129, build xanh
+
+### Quyết định quan trọng
+- **% theo từng series** (mỗi series tự chuẩn hoá về 100%) — đơn giản, đúng cho case 1 series category (tỷ trọng). Multi-series mỗi series riêng
+- **percent chỉ bar**: pie đã là %, line theo thời gian % vô nghĩa → chặn ở buildChartOption (`type==='bar'`) lẫn UI (`canTogglePercent`)
+- **Làm tròn 1 chữ số** ngay trong data để tooltip/trục gọn
+
+### Kết quả
+- Phase 1.8 còn T5 (verify e2e báo giá). T1–T4 đủ: phép gộp + switcher + % tổng, sửa nhóm-lặp
+
+### Tasks liên quan
+- P1.8-T4 ✅ → P1.8-T5 (verify e2e với bảng báo giá — thủ công, cần login + file)
+
 <!-- Thêm session mới ở đây -->
