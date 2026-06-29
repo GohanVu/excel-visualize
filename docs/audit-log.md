@@ -1295,4 +1295,25 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.8-T1 ✅ → tiếp P1.8-T2 (suggester BE: category+number → default agg theo tên cột; encoding mang yCol + aggregation)
 
+## [2026-06-29] Session — P1.8-T2: Suggester default aggregation theo tên cột
+
+### Yêu cầu
+- Category+number: chọn phép gộp mặc định thông minh theo tên cột số (giá→TB; số lượng/doanh thu/thành tiền→Tổng); suggestion mang aggregation
+
+### Công việc đã làm
+- `chart-suggester.service.ts`: type `Aggregation` (broaden từ `'count'`); `defaultAggregation(name)` heuristic (AVG_HINTS gồm giá/đơn giá/tỉ lệ/phần trăm/...; "giá trị"→sum; mặc định sum). Gắn agg + label (Tổng/Trung bình) vào bar & pie nhánh category+number, description phản ánh phép gộp
+- `buildChartOption.ts` (FE): nhánh aggregation cho bar giờ tạo **1 series mỗi cột số** (count → y rỗng → 1 series). Tránh mất cột khi category + nhiều number (T2 set agg cho cả case này)
+- Tests: +5 BE suggester (sum default, average cho giá/đơn giá, "giá trị"→sum, description) = 16; +1 FE (multi-number → 2 series). BE 141, FE 120, cả 2 build xanh
+
+### Quyết định quan trọng
+- **Heuristic tên cột (rẻ)** thay vì AI: đủ cho default, user verify/đổi ở T3, AI ở Phase 4. Loại trừ "giá trị" (value) khỏi nhóm "giá" (price)
+- **agg theo y[0]** cho nhãn/label; nhưng FE render mọi cột y (mỗi cột 1 series cùng phép gộp) → không mất dữ liệu khi multi-number
+- **count vẫn 1 series** (y rỗng → cols=['']) — tương thích test cũ
+
+### Kết quả
+- Category+number giờ gộp đúng (hết nhóm-lặp) với phép gộp mặc định hợp lý. Sẵn sàng cho T3 (switcher đổi phép gộp)
+
+### Tasks liên quan
+- P1.8-T2 ✅ → tiếp P1.8-T3 (switcher trên ChartDetailPage để user verify/đổi phép gộp → re-render)
+
 <!-- Thêm session mới ở đây -->
