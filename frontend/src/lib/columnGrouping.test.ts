@@ -3,7 +3,7 @@ import { groupColumns, autoSelectColumns } from './columnGrouping';
 import type { DatasetColumn } from '../api/datasets';
 
 function col(name: string, index: number, type: DatasetColumn['type']): DatasetColumn {
-  return { name, index, type, sampleValues: [] };
+  return { name, index, type, confidence: 1, sampleValues: [] };
 }
 
 const columns: DatasetColumn[] = [

@@ -22,6 +22,7 @@ const overview = {
   activeSheet: 'Sheet1',
   headerRowIndex: 0,
   headerConfident: true,
+  learnable: false,
   columns: [],
   previewRows: [{ Ngày: '2024-01-01', 'Doanh thu': '100' }],
 };
