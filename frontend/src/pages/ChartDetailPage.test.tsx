@@ -32,6 +32,26 @@ const suggestion = {
   encoding: { x: 'Ngày', y: ['Doanh thu'] },
 };
 
+// Gợi ý đã gộp (category + number) — có switcher phép gộp
+const aggSuggestion = {
+  type: 'bar' as const,
+  title: 'So sánh giữa các nhóm',
+  description: 'Tổng Doanh thu theo từng Khu vực',
+  encoding: { x: 'Khu vực', y: ['Doanh thu'] },
+  aggregation: 'sum' as const,
+};
+const meatRows = [
+  { 'Khu vực': 'Bắc', 'Doanh thu': '100' },
+  { 'Khu vực': 'Bắc', 'Doanh thu': '200' },
+  { 'Khu vực': 'Nam', 'Doanh thu': '300' },
+];
+
+function readOption() {
+  return JSON.parse(
+    screen.getByTestId('chart-view').getAttribute('data-option') ?? '{}',
+  );
+}
+
 const selectedColumns = [0, 1];
 
 function renderPage(state?: object) {
@@ -139,6 +159,40 @@ describe('ChartDetailPage', () => {
       { timeout: 2500 },
     );
   }, 6000);
+
+  it('does NOT show aggregation switcher for a time-series chart', async () => {
+    renderPage();
+    await screen.findByText('Xu hướng theo thời gian');
+    expect(
+      screen.queryByRole('group', { name: 'Phép gộp' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows switcher for category+number and re-renders on change', async () => {
+    mockFetchRows.mockResolvedValue({ datasetId: 'ds-1', rows: meatRows });
+    renderPage({ suggestion: aggSuggestion, selectedColumns });
+    await screen.findByText('So sánh giữa các nhóm');
+    expect(screen.getByRole('group', { name: 'Phép gộp' })).toBeInTheDocument();
+    expect(readOption().series[0].data).toEqual([300, 300]); // sum mặc định
+    await userEvent.click(screen.getByRole('button', { name: 'Trung bình' }));
+    expect(readOption().series[0].data).toEqual([150, 300]); // average
+  });
+
+  it('saves the chart with the switched aggregation', async () => {
+    mockFetchRows.mockResolvedValue({ datasetId: 'ds-1', rows: meatRows });
+    renderPage({ suggestion: aggSuggestion, selectedColumns });
+    await screen.findByText('So sánh giữa các nhóm');
+    await userEvent.click(screen.getByRole('button', { name: 'Trung bình' }));
+    await userEvent.click(screen.getByRole('button', { name: /Lưu vào dashboard/ }));
+    expect(mockSaveChart).toHaveBeenCalledWith(
+      'ds-1',
+      'bar',
+      'So sánh giữa các nhóm',
+      expect.objectContaining({
+        series: [expect.objectContaining({ data: [150, 300] })],
+      }),
+    );
+  });
 
   it('shows error message when save fails', async () => {
     mockSaveChart.mockRejectedValue(new Error('server error'));

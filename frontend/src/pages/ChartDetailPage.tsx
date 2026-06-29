@@ -2,10 +2,28 @@ import { useState } from 'react';
 import { useParams, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchRows } from '../api/datasets';
-import type { ChartSuggestion } from '../api/datasets';
+import type { ChartSuggestion, Aggregation } from '../api/datasets';
 import { saveChart } from '../api/charts';
 import { buildChartOption } from '../lib/buildChartOption';
 import ChartView from '../components/ChartView';
+
+// Nhãn tiếng Việt cho switcher phép gộp (T3). Chưa gate Free/Pro — hiện đủ 6.
+const AGG_ORDER: Aggregation[] = [
+  'count',
+  'sum',
+  'average',
+  'median',
+  'min',
+  'max',
+];
+const AGG_LABELS: Record<Aggregation, string> = {
+  count: 'Đếm',
+  sum: 'Tổng',
+  average: 'Trung bình',
+  median: 'Trung vị',
+  min: 'Nhỏ nhất',
+  max: 'Lớn nhất',
+};
 
 interface LocationState {
   suggestion?: ChartSuggestion;
@@ -61,6 +79,10 @@ function ChartDetail({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
+  // Phép gộp đang chọn — khởi tạo từ gợi ý; user verify/đổi → re-render
+  const [agg, setAgg] = useState<Aggregation | undefined>(
+    suggestion.aggregation,
+  );
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dataset', datasetId, 'rows', sheet, headerRow],
@@ -83,7 +105,12 @@ function ChartDetail({
     );
   }
 
-  const option = buildChartOption(suggestion, data.rows);
+  // Cho đổi phép gộp khi gợi ý đã gộp VÀ có cột số (category+number). Chart "đếm"
+  // thuần (y rỗng) không có gì để tổng/TB; time-series raw cũng không gộp.
+  const canSwitch =
+    suggestion.aggregation != null && suggestion.encoding.y.length > 0;
+  const activeSuggestion = agg ? { ...suggestion, aggregation: agg } : suggestion;
+  const option = buildChartOption(activeSuggestion, data.rows);
 
   async function handleSave() {
     setSaving(true);
@@ -111,6 +138,34 @@ function ChartDetail({
         </button>
         <h1 className="text-xl font-bold">{suggestion.title}</h1>
         <p className="mt-1 text-sm text-gray-400">{suggestion.description}</p>
+
+        {canSwitch && (
+          <div className="mt-4">
+            <span className="text-xs text-gray-400">Phép gộp</span>
+            <div
+              className="mt-1 flex flex-wrap gap-2"
+              role="group"
+              aria-label="Phép gộp"
+            >
+              {AGG_ORDER.map((a) => (
+                <button
+                  key={a}
+                  type="button"
+                  aria-pressed={agg === a}
+                  onClick={() => setAgg(a)}
+                  className={`rounded-lg px-3 py-1.5 text-sm transition ${
+                    agg === a
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  }`}
+                >
+                  {AGG_LABELS[a]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-4">
           <ChartView option={option} height={480} />
         </div>
