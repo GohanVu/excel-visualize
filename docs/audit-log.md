@@ -1404,4 +1404,26 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P2-T1 ✅ → tiếp các task Phase 2 (T2 thêm chart, T6 xoá chart, T5 panel tuỳ chỉnh, T7 đổi tên dashboard…)
 
+## [2026-06-29] Session — P2-T6: Xoá chart khỏi dashboard
+
+### Yêu cầu
+- Cho phép xoá 1 chart khỏi dashboard (bổ trợ lưới P2-T1)
+
+### Công việc đã làm
+- **Backend**: `DELETE /charts/:id` → `deleteChart` dùng `deleteMany` lọc `dashboard.userId` (owner-guard); count 0 → 404 (không lộ tồn tại). +2 test
+- **Frontend**: `deleteChart` api. Header chart tách drag-handle (chỉ tiêu đề) khỏi nút; nút ✕ → xác nhận 2 bước (Xoá/Huỷ); `onMouseDown stopPropagation` để RGL không bắt đầu kéo khi bấm nút; mutation invalidate ['charts']. +2 test
+- **E2e**: xoá → 200 {deleted:true}; biến mất khỏi list; xoá lại/id lạ → 404. 4/4
+
+### Quyết định quan trọng
+- **deleteMany + relation filter** (như updateLayout) → owner-guard trong where, 404 khi không phải chart của user
+- **Tách drag-handle khỏi nút xoá** + `stopPropagation` onMouseDown: tránh xung đột giữa kéo (RGL mousedown) và bấm nút
+- **Xác nhận 2 bước** (1 confirmId cho cả lưới) — đồng nhất với SheetCard, gọn không cần state mỗi item (giữ children RGL là div thuần)
+
+### Kết quả
+- Xoá chart hoạt động e2e. FE 135, BE 146 test xanh, build xanh
+- Phase 2: T1 ✅ T6 ✅. Tiếp: T2 (thêm chart vào dashboard đang mở) / T7 (đổi tên dashboard) / T5 (panel tuỳ chỉnh)
+
+### Tasks liên quan
+- P2-T6 ✅ → tiếp P2-T2 hoặc P2-T7
+
 <!-- Thêm session mới ở đây -->

@@ -263,7 +263,7 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 | P2-T3 | Free tier gate: giới hạn 3 chart / dashboard | ⬜ Todo | P2-T2 | Rule: min(3, số chart hợp lý từ data) |
 | P2-T4 | UI locked chart slot: blur + 🔒 + nudge nâng cấp | ⬜ Todo | P2-T3 | Không hiện slot trống nếu data không đủ chart |
 | P2-T5 | Chart customization panel: đổi màu, tiêu đề, theme | ⬜ Todo | P2-T1 | Simple panel bên phải khi click chart |
-| P2-T6 | Xoá chart khỏi dashboard | ⬜ Todo | P2-T1 | |
+| P2-T6 | Xoá chart khỏi dashboard | ✅ Done | P2-T1 | `DELETE /charts/:id` (deleteMany owner-guard, count 0→404). Nút ✕ + xác nhận 2 bước trên header chart (onMouseDown stopPropagation để không kích hoạt drag); invalidate ['charts']. E2e 4/4. +4 test |
 | P2-T7 | Đổi tên dashboard | ⬜ Todo | P2-T1 | |
 | P2-T8 | Export chart thành PNG | ⬜ Todo | P2-T5 | Dùng ECharts built-in export hoặc html2canvas |
 
