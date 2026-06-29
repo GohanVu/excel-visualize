@@ -108,12 +108,22 @@ export async function fetchColumns(
 
 export type ChartType = 'line' | 'bar' | 'pie' | 'scatter';
 
+// Phép gộp khi nhóm theo cột x. 'count' = đếm dòng (không cần cột số);
+// còn lại áp lên 1 cột số (y[0]). 'percent' KHÔNG ở đây — đó là cách hiển thị.
+export type Aggregation =
+  | 'count'
+  | 'sum'
+  | 'average'
+  | 'median'
+  | 'min'
+  | 'max';
+
 export interface ChartSuggestion {
   type: ChartType;
   title: string;
   description: string;
   encoding: { x: string; y: string[] };
-  aggregation?: 'count';
+  aggregation?: Aggregation;
 }
 
 export interface SuggestResponse {
