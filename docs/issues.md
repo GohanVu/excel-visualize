@@ -114,4 +114,31 @@
 - **Test added**: `UploadPage.test.tsx` — "invalidates the datasets list + navigates on upload success"
 - **Lesson learned**: Khi `staleTime > 0`, mọi thao tác THÊM/XOÁ/SỬA làm thay đổi list phải `invalidateQueries` thủ công cho query liên quan (đã làm cho delete ở DashboardPage; thiếu cho create ở UploadPage). Mutation thay đổi data → luôn invalidate query đọc data đó.
 
+### [Issue-010] MinIO báo unhealthy → backend không start (sau fresh clone)
+
+- **Status**: 🟢 Fixed
+- **Severity**: Medium
+- **Phát hiện**: 2026-06-29 — `docker compose up` lần đầu: minio "Up (unhealthy)", backend bị chặn vì `depends_on: minio condition: service_healthy`
+- **Root cause**: Healthcheck dùng `mc ready local` nhưng `mc` trong image minio chưa có alias `local` cấu hình → `mc: <ERROR> Unable to load config`. MinIO server thực ra chạy bình thường ("1 Online")
+- **Fix**: Đổi healthcheck sang `curl -f http://localhost:9000/minio/health/live` (curl có sẵn trong image, endpoint health chuẩn của MinIO) — `docker-compose.yml`
+- **Lesson learned**: Healthcheck phải dùng công cụ thực sự hoạt động trong image. `mc ready` cần alias đã config; endpoint `/minio/health/live` đáng tin hơn cho healthcheck.
+
+### [Issue-011] Prisma P1010 "User chartly was denied access on chartly.public" dù là superuser
+
+- **Status**: 🟢 Fixed
+- **Severity**: High
+- **Phát hiện**: 2026-06-29 — `prisma migrate deploy` và app runtime (PrismaService.onModuleInit) đều ném P1010, dù `chartly` là superuser, có đủ quyền (psql tạo/xoá bảng OK, `has_schema_privilege` đều true)
+- **Root cause**: Volume `postgres_data` bị khởi tạo ở trạng thái dở dang trong lần `up` đầu (lúc build backend fail vì C: đầy). DB ở trạng thái lỗi khiến cả schema-engine lẫn query-engine của Prisma báo P1010 (lỗi bị map sai từ quaint). GRANT/ALTER OWNER không cứu được vì gốc là DB hỏng
+- **Fix**: Re-init riêng volume postgres (clone trắng, không mất data): `docker compose stop postgres && rm -f postgres && docker volume rm excel-visualize_postgres_data && up -d postgres` → migrate deploy thành công, restart backend hết P1010
+- **Lesson learned**: Nếu một lần `up` thất bại giữa chừng (vd hết disk), volume DB có thể init lỗi. Triệu chứng: P1010/quyền sai dù user đủ quyền thực tế. Với môi trường chưa có data, re-init volume là cách nhanh & sạch nhất. Kiểm tra `docker volume inspect ... CreatedAt` để xác định volume tạo trong lần chạy lỗi.
+
+### [Issue-012] Frontend `pnpm build` đỏ do fixture test stale (từ P1.6-T1)
+
+- **Status**: 🟢 Fixed
+- **Severity**: High (CI frontend build fail)
+- **Phát hiện**: 2026-06-29 — khi chạy `pnpm build` lúc làm P1.6-T7. `vitest run` (test) xanh nhưng `tsc -b` (trong build) đỏ
+- **Root cause**: `tsconfig.app.json` include cả file test. Khi thêm field bắt buộc vào type (`learnable` ở P1.6-T1, `confidence` ở P1.5-T3) thì các fixture test cũ thiếu field → lỗi type. Ngoài ra `ChartDetailPage.test` dùng global `it/expect` mà không import; `vite.config.ts` dùng `defineConfig` từ `vite` (không có type `test`). Build đã đỏ từ P1.6-T1 nhưng các session T2–T6 chỉ chạy `pnpm test` (vitest) chứ không chạy `build` nên không lộ
+- **Fix**: thêm `learnable` (ChartSuggestionPage.test), `confidence` (columnGrouping.test); import `describe/it/expect/beforeEach` ở ChartDetailPage.test; `vite.config.ts` import `defineConfig` từ `vitest/config`
+- **Lesson learned**: `pnpm test` (vitest, có `globals:true`) KHÔNG bằng `tsc -b` về type — fixture stale chỉ lộ khi build. Sau khi thêm field bắt buộc vào shared type (vd DatasetOverview, DatasetColumn), phải grep mọi fixture test dùng type đó. Nên chạy `pnpm build` (không chỉ test) trước khi coi task FE là done. Cân nhắc thêm bước `typecheck`/`build` vào pre-commit để bắt sớm.
+
 <!-- Thêm issues ở đây -->

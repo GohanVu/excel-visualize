@@ -1220,4 +1220,57 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.6-T6 ✅ → tiếp theo P1.6-T7 (wire flashcard+quiz vào API progress; hiện "đã thuộc X/Y"; verify e2e file HSK)
 
+## [2026-06-29] Session — Setup môi trường sau fresh clone (chạy stack lần đầu)
+
+### Yêu cầu
+- Người dùng vừa `git clone` về máy mới (Windows), yêu cầu kiểm tra trạng thái và start dự án
+
+### Công việc đã làm
+- Kiểm tra toolchain: Node v20.16.0 OK; pnpm/docker ban đầu chưa có. Người dùng tự cài Docker Desktop (WSL2 backend, v29.5.3)
+- Tạo `.env` từ `.env.example` với JWT_SECRET/JWT_REFRESH_SECRET random (Google OAuth vẫn placeholder)
+- `docker compose up --build -d` → build backend+frontend, pull postgres/redis/minio
+- Fix healthcheck MinIO (xem Issue-010) → stack chạy được
+- `pnpm db:generate` + `prisma migrate deploy` trong container backend (dev Dockerfile KHÔNG tự generate/migrate)
+- Re-init volume postgres do P1010 (xem Issue-011), migrate lại thành công (2 migrations)
+- Restart backend → "Nest application successfully started", Prisma kết nối OK
+
+### Quyết định quan trọng
+- **Disk**: ổ C: đầy 0GB khiến buildkit read-only → người dùng tự xử lý (chuyển/dọn). Project ở D: (87GB trống)
+- **MinIO healthcheck**: đổi `mc ready local` → `curl -f http://localhost:9000/minio/health/live` (mc config trong image lỗi, curl có sẵn)
+- **Prisma generate/migrate thủ công**: dev container chỉ chạy `nest start --watch`. Sau fresh clone phải chạy `make db-generate` (hoặc `pnpm db:generate`) + `db-migrate`/`migrate deploy` 1 lần
+
+### Kết quả
+- Stack chạy: FE :5174 (200), BE :3000 (routes OK), Postgres :5433, Redis :6379, MinIO :9000/:9001 — tất cả healthy
+- Lưu ý: Google OAuth chưa cấu hình → login Google chưa hoạt động cho tới khi điền `GOOGLE_CLIENT_ID/SECRET` thật
+
+### Tasks liên quan
+- Setup/onboarding — không thuộc task plan cụ thể. Next dev task vẫn là P1.6-T7
+
+## [2026-06-29] Session — P1.6-T7: Wire flashcard + quiz vào API tiến độ học
+
+### Yêu cầu
+- Nối flashcard (T2/T3) và quiz (T4) đang dùng local state vào StudyProgress API (T6); hiện "đã thuộc X/Y" từ tiến độ đã lưu
+
+### Công việc đã làm
+- `lib/cardKey.ts`: `rowCardKey(row, columnNames)` — FNV-1a hash theo cặp `tên=giá trị` (sort theo tên cột) → ổn định qua re-parse, không phụ thuộc thứ tự cột/rowIndex
+- `api/study-progress.ts`: client `fetchProgress(datasetId, sheet?)` + `saveProgress({datasetId, sheet?, cardKey, status})`
+- `LearnPage`: thêm useQuery đọc progress (non-blocking) + useMutation lưu; truyền `progress` + `onMark` xuống 2 chế độ
+- `FlashcardDeck`: tính `cardKeys` (memo theo columns/rows), seed Set "đã thuộc" từ items status='known' (match cardKey), mark→onMark('known'|'learning')
+- `QuizMode`: thêm `onMark`; trả lời đúng→'known', sai→'learning'
+- Tests: 22 FE pass (17 LearnPage gồm seed-from-server + persist known/learning + quiz persist; 5 cardKey unit)
+- **Bonus (Issue-012)**: sửa frontend build đỏ pre-existing (3 fixture stale + vite.config type) → `pnpm build` xanh trở lại
+
+### Quyết định quan trọng
+- **cardKey = hash giá trị dòng (canonical sort theo tên cột)**: ổn định khi đổi header/sheet/thêm dòng; FE tính (khớp ghi chú schema T5)
+- **Quiz đúng = 'known'**: 1 lần trả lời đúng coi như thuộc (đơn giản; SRS tinh vi để Phase sau). Sai = 'learning' (đã ôn)
+- **Không invalidate progress query sau khi lưu**: seed local 1 lần khi vào, giữ state phiên hiện tại (tránh refetch reset/nháy); lần vào sau GET mới seed lại đúng
+- **memo cardKeys theo [columns, rows]** (ref query ổn định) thay vì `names` (mảng mới mỗi render) → tránh effect seed chạy lại reset known
+
+### Kết quả
+- Tiến độ học persist qua DB; quay lại thấy "đã thuộc X/Y" đúng. Logic phủ unit test. Build/lint/test FE xanh
+- Còn lại: verify e2e trên browser với file HSK thật (cần tài khoản đăng nhập + upload) — gộp chung với P1.5-T9
+
+### Tasks liên quan
+- P1.6-T7 ✅ → Phase 1.6 hoàn tất (trừ e2e browser). Next: P1.8 (aggregation suite) hoặc các verify e2e tồn đọng
+
 <!-- Thêm session mới ở đây -->

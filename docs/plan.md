@@ -188,7 +188,7 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 |---------|--------|--------|--------------|-------|
 | P1.6-T5 | Schema `StudyProgress` (per user/dataset/sheet/card: known/seen, lastReviewedAt) + migration | ✅ Done | P0-T3 | enum StudyStatus + model + unique(user,dataset,sheet,cardKey). Migration applied. cardKey=hash dòng (FE tính ở T7) |
 | P1.6-T6 | API lưu/đọc tiến độ học | ✅ Done | P1.6-T5 | StudyProgress module: POST upsert + GET theo dataset/sheet. Owner-guard 404 |
-| P1.6-T7 | Wire flashcard + quiz vào progress; hiện "đã thuộc X/Y"; verify e2e file HSK | ⬜ Todo | P1.6-T3, P1.6-T4, P1.6-T6 | |
+| P1.6-T7 | Wire flashcard + quiz vào progress; hiện "đã thuộc X/Y"; verify e2e file HSK | ✅ Done | P1.6-T3, P1.6-T4, P1.6-T6 | cardKey hash giá trị dòng (`lib/cardKey`). Flashcard seed "đã thuộc" từ GET progress; mark→POST upsert (known/learning). Quiz: đúng→known, sai→learning. 22 test FE. **E2e browser pending** (cần login + file HSK). Bonus: fix frontend build đỏ pre-existing (Issue-012) |
 
 ### Gating (định hướng)
 
