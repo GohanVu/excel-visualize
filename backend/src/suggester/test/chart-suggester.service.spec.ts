@@ -54,6 +54,51 @@ describe('ChartSuggesterService', () => {
       expect(result.map((s) => s.type)).not.toContain('pie');
       expect(result.map((s) => s.type)).toContain('bar');
     });
+
+    it('gắn aggregation mặc định (sum cho doanh thu) vào bar + pie', () => {
+      const result = service.suggest([
+        col('Khu vực', ColumnType.category),
+        col('Doanh thu', ColumnType.number),
+      ]);
+      expect(result.every((s) => s.aggregation === 'sum')).toBe(true);
+    });
+
+    it('chọn average cho cột "Đơn giá" / "Giá"', () => {
+      expect(
+        service.suggest([
+          col('Mặt hàng', ColumnType.category),
+          col('Đơn giá', ColumnType.number),
+        ])[0].aggregation,
+      ).toBe('average');
+      expect(
+        service.suggest([
+          col('Mặt hàng', ColumnType.category),
+          col('Giá bán', ColumnType.number),
+        ])[0].aggregation,
+      ).toBe('average');
+    });
+
+    it('"Giá trị" (value) → sum, không nhầm với giá (price)', () => {
+      expect(
+        service.suggest([
+          col('Khu vực', ColumnType.category),
+          col('Giá trị hợp đồng', ColumnType.number),
+        ])[0].aggregation,
+      ).toBe('sum');
+    });
+
+    it('description phản ánh phép gộp (Tổng/Trung bình)', () => {
+      const sumBar = service.suggest([
+        col('Khu vực', ColumnType.category),
+        col('Doanh thu', ColumnType.number),
+      ])[0];
+      expect(sumBar.description).toContain('Tổng');
+      const avgBar = service.suggest([
+        col('Mặt hàng', ColumnType.category),
+        col('Đơn giá', ColumnType.number),
+      ])[0];
+      expect(avgBar.description).toContain('Trung bình');
+    });
   });
 
   describe('number + number', () => {

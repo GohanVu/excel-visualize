@@ -147,6 +147,23 @@ describe('buildChartOption', () => {
       expect((buildChartOption(sg('median'), rows) as any).series[0].data).toEqual([25]);
     });
 
+    it('nhiều cột số → mỗi cột 1 series (không bỏ sót cột)', () => {
+      const sales = [
+        { KV: 'Bắc', DT: '10', CP: '4' },
+        { KV: 'Bắc', DT: '20', CP: '6' },
+        { KV: 'Nam', DT: '30', CP: '9' },
+      ];
+      const opt = buildChartOption(
+        suggestion({ type: 'bar', aggregation: 'sum', encoding: { x: 'KV', y: ['DT', 'CP'] } }),
+        sales,
+      ) as any;
+      expect(opt.xAxis.data).toEqual(['Bắc', 'Nam']);
+      expect(opt.series).toHaveLength(2);
+      expect(opt.series[0]).toMatchObject({ name: 'DT', data: [30, 30] });
+      expect(opt.series[1]).toMatchObject({ name: 'CP', data: [10, 9] });
+      expect(opt.legend).toEqual({ data: ['DT', 'CP'] });
+    });
+
     it('pie cũng gộp theo nhóm', () => {
       const opt = buildChartOption(sg('sum'), meat) as any;
       // bar ở trên; kiểm tra pie riêng

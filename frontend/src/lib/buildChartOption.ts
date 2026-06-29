@@ -67,20 +67,29 @@ export function buildChartOption(
   // Có phép gộp → nhóm theo x rồi áp hàm (count|sum|average|median|min|max).
   // Gộp ra category → bar (hoặc pie). Không gộp (aggregation rỗng) đi nhánh raw.
   if (aggregation) {
-    const data = groupAggregate(rows, x, y[0] ?? '', aggregation);
     if (type === 'pie') {
+      const data = groupAggregate(rows, x, y[0] ?? '', aggregation);
       return {
         color: PALETTE,
         tooltip: { trigger: 'item' },
         series: [{ type: 'pie', radius: '70%', data }],
       };
     }
+    // bar: mỗi cột số = 1 series (count → y rỗng → 1 series đếm).
+    // Thứ tự nhóm x giống nhau với mọi cột y (nhóm theo x), lấy từ cột đầu.
+    const cols = y.length > 0 ? y : [''];
+    const names = groupAggregate(rows, x, cols[0], aggregation).map((d) => d.name);
     return {
       color: PALETTE,
       tooltip: { trigger: 'axis' },
-      xAxis: { type: 'category', data: data.map((d) => d.name) },
+      legend: cols.length > 1 ? { data: cols } : undefined,
+      xAxis: { type: 'category', data: names },
       yAxis: { type: 'value' },
-      series: [{ type: 'bar', data: data.map((d) => d.value) }],
+      series: cols.map((c) => ({
+        name: c,
+        type: 'bar',
+        data: groupAggregate(rows, x, c, aggregation).map((d) => d.value),
+      })),
     };
   }
 
