@@ -1381,4 +1381,27 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.8-T5 ✅ → Phase 1.8 done. Tiếp: Phase 0.5 (Admin) hoặc Phase 2 (Dashboard builder). P1.5-T9 (multi-tab/header-edit browser) vẫn để ngỏ phần visual
 
+## [2026-06-29] Session — P2-T1: react-grid-layout (kéo-thả/resize chart)
+
+### Yêu cầu
+- Dashboard: kéo-thả + resize chart, lưu vị trí vào `charts.position` JSONB (đã có sẵn field)
+
+### Công việc đã làm
+- **Backend**: `PATCH /charts/layout` (UpdateLayoutDto: layout[]{id,x,y,w,h}). Service `updateLayout` dùng `$transaction` + `updateMany` lọc `dashboard.userId` → owner-guard (chỉ sửa chart của mình). `listCharts` thêm `position` vào select. +5 test
+- **Frontend**: cài `react-grid-layout@1.4.4` + `react-resizable@3.0.5` (cần react-resizable làm direct dep để CSS resolve dưới pnpm). `lib/chartLayout.ts` (chartsToLayout: position đã lưu hoặc xếp mặc định 2/hàng; layoutToPayload: i→id). DashboardPage `SavedCharts` → `WidthProvider(RGL)` 12 cột, drag-handle = thanh tiêu đề, onDragStop/onResizeStop → lưu. ChartView remount theo key w-h để echarts resize đúng ô. +4 test (mock RGL passthrough + chartLayout unit)
+- **E2e** (script): save chart → position {} → PATCH → đọc lại position {x,y,w,h} đúng (JSONB reorder key nhưng giá trị khớp). Owner-guard id lạ → 200 không sửa
+
+### Quyết định quan trọng
+- **updateMany + relation filter** thay vì update từng id: owner-guard ngay trong where (`dashboard:{userId}`) → chart người khác bị bỏ qua an toàn, 1 transaction
+- **Lưu khi onDragStop/onResizeStop** (không onLayoutChange) → tránh ghi DB lúc mount; layout state vẫn cập nhật qua onLayoutChange để tính lại height
+- **ChartView key=`id-w-h`**: echarts-for-react không tự resize theo container → remount khi đổi kích thước ô (chỉ lúc resize-stop, rẻ)
+- **pnpm store-dir**: container dev có node_modules link từ store cũ → `pnpm add --store-dir=/root/.local/share/pnpm/store` (Issue: store mismatch khi add lúc runtime trên Windows)
+
+### Kết quả
+- Kéo-thả/resize hoạt động, vị trí lưu DB e2e-verified. FE 133, BE 144 test xanh, build xanh. DnD visual cần xem ở browser
+- Phase 2 mở màn. Tiếp: P2-T2 (thêm chart vào dashboard đang mở) / P2-T6 (xoá chart) / P2-T5 (customization)
+
+### Tasks liên quan
+- P2-T1 ✅ → tiếp các task Phase 2 (T2 thêm chart, T6 xoá chart, T5 panel tuỳ chỉnh, T7 đổi tên dashboard…)
+
 <!-- Thêm session mới ở đây -->

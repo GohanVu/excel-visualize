@@ -258,7 +258,7 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
-| P2-T1 | Tích hợp react-grid-layout: kéo thả và resize chart trên dashboard | ⬜ Todo | P1 done | Lưu position vào `charts.position` JSONB |
+| P2-T1 | Tích hợp react-grid-layout: kéo thả và resize chart trên dashboard | ✅ Done | P1 done | RGL 12 cột (WidthProvider), drag-handle = tiêu đề. BE: `PATCH /charts/layout` (updateMany owner-guard) + position trong listCharts. FE: `lib/chartLayout` (chartsToLayout/layoutToPayload). E2e: position persist đúng. +9 test. Deps: react-grid-layout 1.4.4 + react-resizable 3.0.5 |
 | P2-T2 | Thêm chart mới vào dashboard đang mở | ⬜ Todo | P2-T1 | Trigger lại flow từ P1-T4 |
 | P2-T3 | Free tier gate: giới hạn 3 chart / dashboard | ⬜ Todo | P2-T2 | Rule: min(3, số chart hợp lý từ data) |
 | P2-T4 | UI locked chart slot: blur + 🔒 + nudge nâng cấp | ⬜ Todo | P2-T3 | Không hiện slot trống nếu data không đủ chart |
