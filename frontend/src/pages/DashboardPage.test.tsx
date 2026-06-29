@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -8,8 +9,15 @@ vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({ user: { name: 'Gohan' }, isLoading: false, isAuthenticated: true }),
 }));
 vi.mock('../api/client', () => ({ default: { post: vi.fn() } }));
-vi.mock('../api/charts', () => ({ listCharts: vi.fn() }));
+vi.mock('../api/charts', () => ({ listCharts: vi.fn(), updateLayout: vi.fn() }));
 vi.mock('../api/datasets', () => ({ fetchDatasets: vi.fn(), deleteDataset: vi.fn() }));
+// react-grid-layout đo bề rộng container (≈0 trong test) → mock thành passthrough
+vi.mock('react-grid-layout', () => ({
+  WidthProvider: (C: unknown) => C,
+  default: ({ children }: { children: ReactNode }) => (
+    <div data-testid="grid-layout">{children}</div>
+  ),
+}));
 vi.mock('../components/ChartView', () => ({
   default: ({ option }: { option: unknown }) => (
     <div data-testid="chart-view" data-option={JSON.stringify(option)} />

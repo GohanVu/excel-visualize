@@ -6,7 +6,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 const mockPrisma = {
   dataset: { findFirst: jest.fn() },
   dashboard: { findFirst: jest.fn(), create: jest.fn() },
-  chart: { create: jest.fn(), findMany: jest.fn() },
+  chart: { create: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
+  $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
 };
 
 const config = { type: 'line', title: 'Xu hướng', config: { series: [] } };
@@ -109,6 +110,40 @@ describe('ChartsService', () => {
       mockPrisma.chart.findMany.mockResolvedValue([]);
       const result = await service.listCharts('user-1');
       expect(result.charts).toEqual([]);
+    });
+
+    it('includes position in the selected fields', async () => {
+      mockPrisma.chart.findMany.mockResolvedValue([]);
+      await service.listCharts('user-1');
+      expect(mockPrisma.chart.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: expect.objectContaining({ position: true }),
+        }),
+      );
+    });
+  });
+
+  describe('updateLayout', () => {
+    const layout = [
+      { id: 'c-1', x: 0, y: 0, w: 6, h: 7 },
+      { id: 'c-2', x: 6, y: 0, w: 6, h: 7 },
+    ];
+
+    beforeEach(() => mockPrisma.chart.updateMany.mockResolvedValue({ count: 1 }));
+
+    it('updates each chart position, guarded by dashboard owner', async () => {
+      await service.updateLayout('user-1', layout);
+      expect(mockPrisma.chart.updateMany).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.chart.updateMany).toHaveBeenCalledWith({
+        where: { id: 'c-1', dashboard: { userId: 'user-1' } },
+        data: { position: { x: 0, y: 0, w: 6, h: 7 } },
+      });
+    });
+
+    it('runs updates in a single transaction and returns count', async () => {
+      const result = await service.updateLayout('user-1', layout);
+      expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ updated: 2 });
     });
   });
 });

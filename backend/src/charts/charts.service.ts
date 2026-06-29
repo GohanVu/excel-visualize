@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SaveChartDto } from './dto/save-chart.dto';
+import { LayoutItemDto } from './dto/update-layout.dto';
 
 @Injectable()
 export class ChartsService {
@@ -48,10 +49,25 @@ export class ChartsService {
         type: true,
         title: true,
         config: true,
+        position: true,
         createdAt: true,
       },
     });
 
     return { charts };
+  }
+
+  // Lưu vị trí/kích thước các chart sau khi user kéo-thả/resize (react-grid-layout).
+  // updateMany lọc theo dashboard.userId → chỉ sửa chart của chính user (owner-guard).
+  async updateLayout(userId: string, layout: LayoutItemDto[]) {
+    await this.prisma.$transaction(
+      layout.map((it) =>
+        this.prisma.chart.updateMany({
+          where: { id: it.id, dashboard: { userId } },
+          data: { position: { x: it.x, y: it.y, w: it.w, h: it.h } },
+        }),
+      ),
+    );
+    return { updated: layout.length };
   }
 }

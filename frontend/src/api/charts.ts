@@ -10,12 +10,34 @@ export interface DashboardChart {
   type: string;
   title: string | null;
   config: Record<string, unknown>;
+  position: ChartPosition;
   createdAt: string;
+}
+
+// Vị trí/kích thước chart trên lưới dashboard (react-grid-layout). {} khi chưa đặt.
+export interface ChartPosition {
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+}
+
+export interface LayoutItem {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 export async function listCharts(): Promise<DashboardChart[]> {
   const { data } = await client.get<{ charts: DashboardChart[] }>('/charts');
   return data.charts;
+}
+
+// Lưu vị trí các chart sau khi user kéo-thả/resize.
+export async function updateLayout(layout: LayoutItem[]): Promise<void> {
+  await client.patch('/charts/layout', { layout });
 }
 
 export async function saveChart(

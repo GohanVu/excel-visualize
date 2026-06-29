@@ -1,13 +1,24 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import RGL, { WidthProvider } from 'react-grid-layout';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 import { useAuth } from '../hooks/useAuth';
 import { fetchDatasets, deleteDataset } from '../api/datasets';
 import type { Dataset } from '../api/datasets';
-import { listCharts } from '../api/charts';
+import { listCharts, updateLayout } from '../api/charts';
 import type { DashboardChart } from '../api/charts';
+import {
+  chartsToLayout,
+  layoutToPayload,
+  GRID,
+  type GridItem,
+} from '../lib/chartLayout';
 import ChartView from '../components/ChartView';
 import client from '../api/client';
+
+const GridLayout = WidthProvider(RGL);
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -171,21 +182,51 @@ function SheetCard({
 }
 
 function SavedCharts({ charts }: { charts: DashboardChart[] }) {
+  const [layout, setLayout] = useState<GridItem[]>(() => chartsToLayout(charts));
+  const saveMut = useMutation({ mutationFn: updateLayout });
+  const persist = (next: GridItem[]) =>
+    saveMut.mutate(layoutToPayload(next));
+
   return (
     <section className="mt-10">
       <h2 className="text-xl font-bold">Biểu đồ đã lưu</h2>
-      <p className="mt-1 text-sm text-gray-400">{charts.length} biểu đồ</p>
-      <div className="mt-5 grid gap-5 md:grid-cols-2">
-        {charts.map((chart) => (
-          <div
-            key={chart.id}
-            className="rounded-xl border border-gray-800 bg-gray-900 p-4"
-          >
-            {chart.title && <h3 className="mb-3 font-medium">{chart.title}</h3>}
-            <ChartView option={chart.config} height={260} />
-          </div>
-        ))}
-      </div>
+      <p className="mt-1 text-sm text-gray-400">
+        {charts.length} biểu đồ — kéo tiêu đề để di chuyển, kéo góc để chỉnh kích thước
+      </p>
+      <GridLayout
+        className="mt-5"
+        layout={layout}
+        cols={GRID.COLS}
+        rowHeight={GRID.ROW_HEIGHT}
+        margin={[16, 16]}
+        draggableHandle=".chart-drag"
+        onLayoutChange={(l) => setLayout(l as GridItem[])}
+        onDragStop={(l) => persist(l as GridItem[])}
+        onResizeStop={(l) => persist(l as GridItem[])}
+      >
+        {charts.map((chart) => {
+          const item = layout.find((l) => l.i === chart.id);
+          const h = (item?.h ?? GRID.DEFAULT_H) * GRID.ROW_HEIGHT - 44;
+          return (
+            <div
+              key={chart.id}
+              className="flex flex-col overflow-hidden rounded-xl border border-gray-800 bg-gray-900"
+            >
+              <div className="chart-drag flex cursor-move items-center gap-2 border-b border-gray-800 px-3 py-2 text-sm font-medium">
+                <span className="text-gray-500">⠿</span>
+                <span className="truncate">{chart.title ?? 'Biểu đồ'}</span>
+              </div>
+              <div className="min-h-0 flex-1 p-2">
+                <ChartView
+                  key={`${chart.id}-${item?.w ?? GRID.DEFAULT_W}-${item?.h ?? GRID.DEFAULT_H}`}
+                  option={chart.config}
+                  height={h}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </GridLayout>
     </section>
   );
 }
