@@ -1359,4 +1359,26 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.8-T4 ✅ → P1.8-T5 (verify e2e với bảng báo giá — thủ công, cần login + file)
 
+## [2026-06-29] Session — P1.8-T5: Verify e2e trên stack thật + Issue-013
+
+### Yêu cầu
+- Verify e2e Phase 1.8 (báo giá: nhóm-lặp + phép gộp) + các verify tồn đọng, "cùng nhau"
+
+### Công việc đã làm
+- Script `e2e.mjs` (scratchpad) chạy luồng thật qua API stack đang chạy: register→presign→PUT MinIO→confirm→/columns→/suggest→/rows→study-progress save/get→owner-guard. Dùng 2 file CSV (báo giá có nhóm lặp Bò Úc; HSK từ vựng)
+- Kết quả 19/19 PASS: suggest mang `aggregation` (Giá→average đúng heuristic T2); rows xác nhận nhóm-lặp; study-progress lưu/đọc 'known' (T6/T7 BE); owner-guard 404; HSK learnable
+- **Phát hiện Issue-013**: dev server KHÔNG hot-reload trên Windows (bind mount không truyền inotify) → backend chạy code cũ, e2e ban đầu fail. Restart backend+frontend → code mới live → 19/19
+- Tạo tài khoản test e2e (email e2e-<ts>@chartly.local) — KHÔNG đụng tài khoản caboisai1811
+
+### Quyết định quan trọng
+- **E2e qua API + CSV** thay vì browser tự động: parser nhận CSV (nhanh, không cần dựng .xlsx); verify được toàn bộ data pipeline thật. Render chart là FE (đã unit-test buildChartOption + ChartDetailPage + build)
+- **Restart container sau khi sửa code** là bắt buộc trên Windows để verify (Issue-013)
+
+### Kết quả
+- Phase 1.8 HOÀN TẤT (T1–T5). Study-progress (P1.6-T7) cũng verified e2e phần BE. Data pipeline upload→gộp→học chạy thật end-to-end
+- Còn lại thuần browser-visual (chart render, switcher, % toggle) — unit-tested, có thể xem trực tiếp ở :5174 nếu cần
+
+### Tasks liên quan
+- P1.8-T5 ✅ → Phase 1.8 done. Tiếp: Phase 0.5 (Admin) hoặc Phase 2 (Dashboard builder). P1.5-T9 (multi-tab/header-edit browser) vẫn để ngỏ phần visual
+
 <!-- Thêm session mới ở đây -->

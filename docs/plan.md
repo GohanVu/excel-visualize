@@ -243,7 +243,7 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 | P1.8-T2 | Suggester: category+number → default agg thông minh theo tên cột (giá→Trung bình; số lượng/doanh thu/thành tiền→Tổng); encoding mang yCol + aggregation | ✅ Done | P1.8-T1 | `defaultAggregation()` heuristic (AVG_HINTS: giá/đơn giá/tỉ lệ/...; "giá trị"→sum; mặc định sum). Set agg + label vào bar/pie category+number. Bonus: buildChartOption gộp **mỗi cột số = 1 series** (multi-number không mất cột). +5 BE +1 FE test |
 | P1.8-T3 | Switcher trên ChartDetailPage — user **verify/đổi** phép gộp (Đếm/Tổng/TB/Trung vị/Min/Max) → chart re-render | ✅ Done | P1.8-T2 | 6 nút (chưa gate Free/Pro — user chốt). Chỉ hiện khi `aggregation` set + có cột số (count thuần/time-series ẩn). Đổi → re-render; lưu giữ phép gộp đã chọn. +3 FE test |
 | P1.8-T4 | Toggle "% tổng" cho bar (pie đã sẵn %) | ✅ Done | P1.8-T3 | `buildChartOption(…, {percent})`: mỗi series → % tổng (làm tròn 1 số), trục `{value}%`. Chỉ bar (pie/line bỏ qua). Checkbox "Hiển thị % tổng" trên ChartDetailPage khi type=bar. +6 test |
-| P1.8-T5 | Verify e2e + test với bảng báo giá (nhóm lặp + các phép gộp) | ⬜ Todo | P1.8-T1..T4 | |
+| P1.8-T5 | Verify e2e + test với bảng báo giá (nhóm lặp + các phép gộp) | ✅ Done | P1.8-T1..T4 | E2e API trên stack thật (script node, file CSV báo giá + HSK): upload→parse→suggest mang agg (Giá→average)→nhóm-lặp xác nhận; study-progress save/read; owner-guard 404. 19/19 pass. Render chart là FE unit-tested+build. Lộ Issue-013 (Windows hot-reload) |
 
 ### Gating (định hướng)
 

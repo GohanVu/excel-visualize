@@ -141,4 +141,13 @@
 - **Fix**: thêm `learnable` (ChartSuggestionPage.test), `confidence` (columnGrouping.test); import `describe/it/expect/beforeEach` ở ChartDetailPage.test; `vite.config.ts` import `defineConfig` từ `vitest/config`
 - **Lesson learned**: `pnpm test` (vitest, có `globals:true`) KHÔNG bằng `tsc -b` về type — fixture stale chỉ lộ khi build. Sau khi thêm field bắt buộc vào shared type (vd DatasetOverview, DatasetColumn), phải grep mọi fixture test dùng type đó. Nên chạy `pnpm build` (không chỉ test) trước khi coi task FE là done. Cân nhắc thêm bước `typecheck`/`build` vào pre-commit để bắt sớm.
 
+### [Issue-013] Dev server không hot-reload trên Windows (bind mount + inotify)
+
+- **Status**: 🟡 Workaround (chưa fix tận gốc)
+- **Severity**: Medium (dev experience — dễ verify nhầm code cũ)
+- **Phát hiện**: 2026-06-29 — chạy e2e thấy `aggregation` undefined dù T2 đã code. Backend đang chạy **JS compile từ code CŨ**: sửa file `.ts` không trigger `nest start --watch` recompile
+- **Root cause**: Bind mount `./backend:/app` trên Docker Desktop Windows (WSL2) KHÔNG truyền inotify event từ host vào container → file watcher (nest/vite) không thấy thay đổi. Chỉ `pnpm test`/`pnpm build` (chạy mới mỗi lần) mới phản ánh code mới nhất; dev server live thì đứng yên
+- **Workaround**: sau khi sửa code backend/frontend mà muốn test trên server đang chạy → `docker compose restart backend` (hoặc frontend). Hoặc bật polling: thêm `CHOKIDAR_USEPOLLING=true` (vite) / `WATCHPACK_POLLING=true` và nest `--watch` với polling cho tsc (cấu hình sau)
+- **Lesson learned**: Trên Windows, KHÔNG tin dev server đã reload. Khi verify e2e/thủ công sau khi sửa code → restart container trước. Unit test (`pnpm test`) luôn đúng vì compile mới. Cân nhắc thêm polling env vào docker-compose để fix hẳn (follow-up).
+
 <!-- Thêm issues ở đây -->
