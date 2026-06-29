@@ -1316,4 +1316,26 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P1.8-T2 ✅ → tiếp P1.8-T3 (switcher trên ChartDetailPage để user verify/đổi phép gộp → re-render)
 
+## [2026-06-29] Session — P1.8-T3: Switcher phép gộp trên ChartDetailPage
+
+### Yêu cầu
+- User verify/đổi phép gộp (Đếm/Tổng/TB/Trung vị/Min/Max) trên trang chi tiết → chart re-render. Quyết định: hiện đủ 6, CHƯA gate Free/Pro
+
+### Công việc đã làm
+- `ChartDetailPage.tsx`: state `agg` (init từ `suggestion.aggregation`); `activeSuggestion = {...suggestion, aggregation: agg}`; build option theo agg → đổi nút là re-render. Lưu giữ phép gộp đã chọn (option lưu phản ánh agg)
+- Switcher 6 nút (AGG_ORDER + AGG_LABELS tiếng Việt), `role="group" aria-label="Phép gộp"`, active = aria-pressed
+- `canSwitch = aggregation != null && encoding.y.length > 0` → ẩn switcher cho chart "đếm" thuần (không có cột số) và time-series raw
+- Tests: +3 FE (ẩn với time-series; hiện + đổi sum→average re-render qua data-option mock; lưu giữ agg đã đổi). FE 123, build xanh
+
+### Quyết định quan trọng
+- **Chưa gate Free/Pro** (user chốt) — để dành task riêng; giờ hiện cả 6
+- **Switcher ẩn khi y rỗng**: count thuần (data toàn chữ) không có gì để Tổng/TB → đổi sẽ ra 0, nên không cho đổi
+- **Đọc option qua ChartView mock** (`data-option` JSON) để test re-render mà không cần render echarts thật
+
+### Kết quả
+- "Step verify giá trị" hoạt động: user đổi phép gộp thấy chart đổi ngay, lưu đúng. Còn T4 (% tổng) + T5 (e2e báo giá)
+
+### Tasks liên quan
+- P1.8-T3 ✅ → tiếp P1.8-T4 (toggle "% tổng" cho bar) rồi P1.8-T5 (verify e2e)
+
 <!-- Thêm session mới ở đây -->

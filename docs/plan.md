@@ -241,7 +241,7 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 |---------|--------|--------|--------------|-------|
 | P1.8-T1 | Generalize `aggregation` enum (count\|sum\|average\|median\|min\|max) + `groupAggregate(rows,x,yCol,fn)` trong buildChartOption; sửa lỗi nhóm-lặp | ✅ Done | P1.5-T8 | `Aggregation` type (datasets.ts). `groupAggregate` + `reduceAgg`; count gộp chung nhánh. Nhóm theo x distinct → 1 cột (hết lặp). +9 test (sum/avg/median/min/max + báo giá thịt). Switcher đổi agg = T3 |
 | P1.8-T2 | Suggester: category+number → default agg thông minh theo tên cột (giá→Trung bình; số lượng/doanh thu/thành tiền→Tổng); encoding mang yCol + aggregation | ✅ Done | P1.8-T1 | `defaultAggregation()` heuristic (AVG_HINTS: giá/đơn giá/tỉ lệ/...; "giá trị"→sum; mặc định sum). Set agg + label vào bar/pie category+number. Bonus: buildChartOption gộp **mỗi cột số = 1 series** (multi-number không mất cột). +5 BE +1 FE test |
-| P1.8-T3 | Switcher trên ChartDetailPage — user **verify/đổi** phép gộp (Đếm/Tổng/TB/Trung vị/Min/Max) → chart re-render | ⬜ Todo | P1.8-T2 | Đây là "step verify giá trị" user yêu cầu |
+| P1.8-T3 | Switcher trên ChartDetailPage — user **verify/đổi** phép gộp (Đếm/Tổng/TB/Trung vị/Min/Max) → chart re-render | ✅ Done | P1.8-T2 | 6 nút (chưa gate Free/Pro — user chốt). Chỉ hiện khi `aggregation` set + có cột số (count thuần/time-series ẩn). Đổi → re-render; lưu giữ phép gộp đã chọn. +3 FE test |
 | P1.8-T4 | Toggle "% tổng" cho bar (pie đã sẵn %) | ⬜ Todo | P1.8-T3 | Hiển thị, không phải phép gộp |
 | P1.8-T5 | Verify e2e + test với bảng báo giá (nhóm lặp + các phép gộp) | ⬜ Todo | P1.8-T1..T4 | |
 
