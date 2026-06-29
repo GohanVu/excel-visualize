@@ -1,9 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { fetchColumns, fetchRows } from '../api/datasets';
 import type { DatasetColumn } from '../api/datasets';
+import { fetchProgress, saveProgress } from '../api/study-progress';
+import type { ProgressItem, StudyStatus } from '../api/study-progress';
+import { rowCardKey } from '../lib/cardKey';
 import QuizMode from './QuizMode';
+
+// Callback wire 2 chế độ học vào API tiến độ. cardKey do FE tính từ giá trị dòng.
+export type MarkFn = (cardKey: string, status: StudyStatus) => void;
 
 interface LocationState {
   sheet?: string;
@@ -30,6 +36,15 @@ export default function LearnPage() {
     queryFn: () => fetchRows(id, { sheet, headerRow }),
     enabled: !!id,
   });
+  // Tiến độ học đã lưu (non-blocking — seed vào deck khi về)
+  const progressQ = useQuery({
+    queryKey: ['study-progress', id, sheet ?? ''],
+    queryFn: () => fetchProgress(id, sheet ?? ''),
+    enabled: !!id,
+  });
+  const saveMut = useMutation({ mutationFn: saveProgress });
+  const handleMark: MarkFn = (cardKey, status) =>
+    saveMut.mutate({ datasetId: id, sheet, cardKey, status });
 
   const onBack = () =>
     navigate(`/datasets/${id}/columns`, { state: { sheet } });
@@ -80,9 +95,14 @@ export default function LearnPage() {
         </button>
         <ModeTabs mode={mode} onChange={setMode} />
         {mode === 'card' ? (
-          <FlashcardDeck columns={columns} rows={rows} />
+          <FlashcardDeck
+            columns={columns}
+            rows={rows}
+            progress={progressQ.data?.items ?? []}
+            onMark={handleMark}
+          />
         ) : (
-          <QuizMode columns={columns} rows={rows} />
+          <QuizMode columns={columns} rows={rows} onMark={handleMark} />
         )}
       </div>
     </div>
@@ -122,11 +142,21 @@ function ModeTabs({
 function FlashcardDeck({
   columns,
   rows,
+  progress,
+  onMark,
 }: {
   columns: DatasetColumn[];
   rows: Record<string, string>[];
+  progress: ProgressItem[];
+  onMark: MarkFn;
 }) {
   const names = columns.map((c) => c.name);
+  // cardKey theo giá trị dòng — ổn định qua re-parse. Memo theo columns/rows
+  // (ref query ổn định) để tránh tính lại mỗi render → không reset seed.
+  const cardKeys = useMemo(() => {
+    const ns = columns.map((c) => c.name);
+    return rows.map((r) => rowCardKey(r, ns));
+  }, [columns, rows]);
   // Default thông minh: mặt trước/sau ưu tiên cột chữ (string/category), không phải số
   const textNames = columns
     .filter((c) => c.type === 'string' || c.type === 'category')
@@ -143,6 +173,18 @@ function FlashcardDeck({
   const [flipped, setFlipped] = useState(false);
   // index dòng đã thuộc (theo index gốc của rows — giữ qua shuffle/đổi front)
   const [known, setKnown] = useState<Set<number>>(new Set());
+
+  // Seed "đã thuộc" từ tiến độ đã lưu (match theo cardKey, không theo index)
+  useEffect(() => {
+    const knownKeys = new Set(
+      progress.filter((p) => p.status === 'known').map((p) => p.cardKey),
+    );
+    const seeded = new Set<number>();
+    cardKeys.forEach((k, i) => {
+      if (knownKeys.has(k)) seeded.add(i);
+    });
+    setKnown(seeded);
+  }, [progress, cardKeys]);
 
   // Bỏ qua thẻ rỗng mặt trước (dòng nhóm/trống không có gì để học)
   const deck = useMemo(
@@ -180,6 +222,8 @@ function FlashcardDeck({
       isKnownNow ? next.add(idx) : next.delete(idx);
       return next;
     });
+    // Persist: đã thuộc → 'known'; chưa thuộc nhưng đã xem → 'learning'
+    onMark(cardKeys[idx], isKnownNow ? 'known' : 'learning');
     go(1);
   }
 

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -9,10 +9,21 @@ vi.mock('../api/datasets', () => ({
   fetchRows: vi.fn(),
 }));
 
+vi.mock('../api/study-progress', () => ({
+  fetchProgress: vi.fn(),
+  saveProgress: vi.fn(),
+}));
+
 import { fetchColumns, fetchRows } from '../api/datasets';
+import { fetchProgress, saveProgress } from '../api/study-progress';
+import { rowCardKey } from '../lib/cardKey';
 
 const mockCols = fetchColumns as ReturnType<typeof vi.fn>;
 const mockRows = fetchRows as ReturnType<typeof vi.fn>;
+const mockFetchProgress = fetchProgress as ReturnType<typeof vi.fn>;
+const mockSaveProgress = saveProgress as ReturnType<typeof vi.fn>;
+
+const colNames = ['Chữ Hán', 'Bính âm', 'Nghĩa'];
 
 const columns = [
   { name: 'Chữ Hán', index: 0, type: 'string', confidence: 1, sampleValues: [] },
@@ -44,6 +55,8 @@ describe('LearnPage', () => {
     vi.clearAllMocks();
     mockCols.mockResolvedValue({ datasetId: 'ds-1', columns });
     mockRows.mockResolvedValue({ datasetId: 'ds-1', rows });
+    mockFetchProgress.mockResolvedValue({ items: [] });
+    mockSaveProgress.mockResolvedValue(undefined);
   });
 
   it('shows the front of the first card by default', async () => {
@@ -105,6 +118,61 @@ describe('LearnPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Chưa thuộc/ }));
     expect(screen.getByText('好')).toBeInTheDocument();
     expect(screen.getByTestId('known-count')).toHaveTextContent('0');
+  });
+
+  it('seeds "đã thuộc" count from saved progress (match by cardKey)', async () => {
+    const knownKey = rowCardKey(rows[0], colNames); // thẻ 八 đã thuộc từ trước
+    mockFetchProgress.mockResolvedValue({
+      items: [
+        { cardKey: knownKey, status: 'known', seenCount: 2, lastReviewedAt: null },
+      ],
+    });
+    renderPage();
+    await screen.findByText('八');
+    await waitFor(() =>
+      expect(screen.getByTestId('known-count')).toHaveTextContent('1'),
+    );
+  });
+
+  it('persists "known" with the row cardKey when marking a card known', async () => {
+    renderPage();
+    await screen.findByText('八');
+    fireEvent.click(screen.getByRole('button', { name: /Đã thuộc/ }));
+    await waitFor(() =>
+      expect(mockSaveProgress).toHaveBeenCalledWith(
+        expect.objectContaining({
+          datasetId: 'ds-1',
+          cardKey: rowCardKey(rows[0], colNames),
+          status: 'known',
+        }),
+      ),
+    );
+  });
+
+  it('persists "learning" when marking a card not known', async () => {
+    renderPage();
+    await screen.findByText('八');
+    fireEvent.click(screen.getByRole('button', { name: /Chưa thuộc/ }));
+    await waitFor(() =>
+      expect(mockSaveProgress).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'learning' }),
+      ),
+    );
+  });
+
+  it('persists "known" when a quiz answer is correct', async () => {
+    renderPage();
+    await screen.findByText('八');
+    fireEvent.click(screen.getByRole('tab', { name: /Quiz/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'bā' })); // đúng cho 八
+    await waitFor(() =>
+      expect(mockSaveProgress).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cardKey: rowCardKey(rows[0], colNames),
+          status: 'known',
+        }),
+      ),
+    );
   });
 
   it('skips cards whose front value is empty (section/blank rows)', async () => {

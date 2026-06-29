@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { DatasetColumn } from '../api/datasets';
+import { rowCardKey } from '../lib/cardKey';
+import type { MarkFn } from './LearnPage';
 
 function nonEmpty(v: string | undefined): boolean {
   return (v ?? '').toString().trim() !== '';
@@ -37,11 +39,17 @@ function buildOptions(
 export default function QuizMode({
   columns,
   rows,
+  onMark,
 }: {
   columns: DatasetColumn[];
   rows: Record<string, string>[];
+  onMark: MarkFn;
 }) {
   const names = columns.map((c) => c.name);
+  const cardKeys = useMemo(() => {
+    const ns = columns.map((c) => c.name);
+    return rows.map((r) => rowCardKey(r, ns));
+  }, [columns, rows]);
   const textNames = columns
     .filter((c) => c.type === 'string' || c.type === 'category')
     .map((c) => c.name);
@@ -85,10 +93,13 @@ export default function QuizMode({
   function pick(opt: string) {
     if (picked != null) return;
     setPicked(opt);
+    const isCorrect = opt === correct;
     setScore((s) => ({
-      correct: s.correct + (opt === correct ? 1 : 0),
+      correct: s.correct + (isCorrect ? 1 : 0),
       answered: s.answered + 1,
     }));
+    // Persist: trả lời đúng → 'known'; sai nhưng đã ôn → 'learning'
+    onMark(cardKeys[deck[pos]], isCorrect ? 'known' : 'learning');
   }
 
   function next() {
