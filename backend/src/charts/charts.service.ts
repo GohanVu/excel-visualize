@@ -60,7 +60,9 @@ export class ChartsService {
     return { chart, dashboardId: dashboard.id };
   }
 
-  // Load các chart đã lưu của user (qua dashboard mặc định) — dùng cho trang Dashboard
+  // Load các chart đã lưu của user (qua dashboard mặc định) — dùng cho trang Dashboard.
+  // Trả kèm `limit` (số biểu đồ tối đa/dashboard) để FE hiện locked slot (P2-T4):
+  // Free = FREE_CHART_LIMIT, Pro = null (không giới hạn).
   async listCharts(userId: string) {
     const charts = await this.prisma.chart.findMany({
       where: { dashboard: { userId } },
@@ -75,7 +77,8 @@ export class ChartsService {
       },
     });
 
-    return { charts };
+    const isPro = await this.isProUser(userId);
+    return { charts, limit: isPro ? null : FREE_CHART_LIMIT };
   }
 
   // Lưu vị trí/kích thước các chart sau khi user kéo-thả/resize (react-grid-layout).

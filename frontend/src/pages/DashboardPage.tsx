@@ -29,6 +29,8 @@ export default function DashboardPage() {
   const queryClient = useQueryClient();
   const datasetsQ = useQuery({ queryKey: ['datasets'], queryFn: fetchDatasets });
   const chartsQ = useQuery({ queryKey: ['charts'], queryFn: listCharts });
+  const charts = chartsQ.data?.charts ?? [];
+  const chartLimit = chartsQ.data?.limit ?? null;
 
   const deleteMut = useMutation({
     mutationFn: deleteDataset,
@@ -70,9 +72,10 @@ export default function DashboardPage() {
           onAdd={() => navigate('/upload')}
           onDelete={(id) => deleteMut.mutate(id)}
         />
-        {chartsQ.data && chartsQ.data.length > 0 && (
+        {charts.length > 0 && (
           <SavedCharts
-            charts={chartsQ.data}
+            charts={charts}
+            limit={chartLimit}
             datasets={datasetsQ.data ?? []}
             onPick={(dsId) => navigate(`/datasets/${dsId}/columns`)}
             onUpload={() => navigate('/upload')}
@@ -190,15 +193,20 @@ function SheetCard({
 
 function SavedCharts({
   charts,
+  limit,
   datasets,
   onPick,
   onUpload,
 }: {
   charts: DashboardChart[];
+  limit: number | null;
   datasets: Dataset[];
   onPick: (datasetId: string) => void;
   onUpload: () => void;
 }) {
+  // Locked slot (P2-T4): chỉ hiện khi gói Free đã đạt cap (limit != null & đủ chart).
+  // Pro (limit=null) hoặc còn dưới cap → không hiện (khỏi slot trống vô nghĩa).
+  const atLimit = limit != null && charts.length >= limit;
   const queryClient = useQueryClient();
   const [layout, setLayout] = useState<GridItem[]>(() => chartsToLayout(charts));
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -316,6 +324,8 @@ function SavedCharts({
         })}
       </GridLayout>
 
+      {atLimit && <LockedChartSlot limit={limit as number} />}
+
       {editing && (
         <ChartStylePanel
           chart={editing}
@@ -325,6 +335,41 @@ function SavedCharts({
         />
       )}
     </section>
+  );
+}
+
+// Slot biểu đồ bị khoá khi gói Free đã đầy: nền blur giả lập + 🔒 + nudge nâng cấp.
+// CTA nâng cấp chưa wire (trang billing là Phase 5) → tạm chỉ nudge text.
+function LockedChartSlot({ limit }: { limit: number }) {
+  return (
+    <div
+      role="note"
+      aria-label="Biểu đồ bị khoá"
+      className="relative mt-4 flex min-h-[160px] items-center justify-center overflow-hidden rounded-xl border border-dashed border-gray-700 bg-gray-900"
+    >
+      {/* Nền mô phỏng biểu đồ, làm mờ để gợi ý "có thể mở khoá" */}
+      <div
+        aria-hidden
+        className="absolute inset-0 flex items-end gap-3 p-8 opacity-20 blur-sm"
+      >
+        {[40, 70, 55, 90, 65].map((h, i) => (
+          <div
+            key={i}
+            style={{ height: `${h}%` }}
+            className="flex-1 rounded-t bg-purple-500"
+          />
+        ))}
+      </div>
+      <div className="relative flex flex-col items-center text-center">
+        <span className="text-3xl">🔒</span>
+        <p className="mt-2 text-sm font-medium text-gray-200">
+          Đã đạt {limit} biểu đồ của gói Free
+        </p>
+        <p className="mt-0.5 text-xs text-gray-400">
+          Nâng cấp Pro để thêm biểu đồ không giới hạn
+        </p>
+      </div>
+    </div>
   );
 }
 

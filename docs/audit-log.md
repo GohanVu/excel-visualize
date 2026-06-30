@@ -1541,4 +1541,33 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P2-T3 ✅
 
+## [2026-06-30] Session — P2-T4: Locked chart slot (UI gate nâng cấp)
+
+### Yêu cầu
+- Khi gói Free đầy chart/dashboard → hiện slot khoá (blur + 🔒 + nudge nâng cấp). Không hiện slot trống nếu chưa đủ điều kiện
+
+### Công việc đã làm
+- **Backend** (`charts.service.listCharts`): trả thêm `limit` = `isPro ? null : FREE_CHART_LIMIT` (3). Authoritative, đặt cạnh gate P2-T3. +2 test (limit=3 Free, null Pro)
+- **Frontend**:
+  - `api/charts.ts`: `listCharts()` đổi return `DashboardChart[]` → `ChartsResponse { charts, limit }`
+  - `DashboardPage`: đọc `charts`/`chartLimit` từ response; `SavedCharts` nhận `limit`; `atLimit = limit != null && charts.length >= limit` → render `LockedChartSlot` (nền bar blur + 🔒 + "Đã đạt N biểu đồ của gói Free / Nâng cấp Pro…"), `role="note"`
+  - +3 test (hiện khi Free đạt cap 3/3; ẩn khi dưới cap 2/3; ẩn cho Pro limit=null). Cập nhật mock listCharts sang `{ charts, limit }`
+
+### Quyết định quan trọng
+- **`limit` từ `listCharts`** (không thêm endpoint/không nhồi plan vào `/auth/me`): dashboard vốn đã gọi `/charts`, ghép limit vào là 1 round-trip; logic giới hạn ở 1 chỗ (charts.service) cạnh gate
+- **Locked slot chỉ hiện ĐÚNG lúc đạt cap** (Free, charts≥limit): thoả "không hiện slot trống nếu data chưa đủ chart" một cách tự nhiên — dưới cap user vẫn thêm chart bình thường (AddChartMenu), không có slot khoá lơ lửng. "min(số chart hợp lý từ data)" trên dashboard đa-dataset không tính được rõ → diễn giải thực dụng: cap = tín hiệu chặn
+- **CTA "Nâng cấp Pro" defer**: trang billing là Phase 5, chưa có đích → để button dead-end là UX xấu → tạm chỉ nudge text. Thêm CTA khi P5 có trang upgrade
+- **`limit: number | null`** (null = unlimited) thay vì số lớn/`Infinity`: JSON-safe, FE check `!= null` rõ nghĩa
+
+### Test coverage
+- Backend: 154 → **156 pass** (lint 0 error)
+- Frontend: 155 → **158 pass**, `pnpm build` (tsc -b) xanh, lint 0 error
+
+### Kết quả
+- Free user đủ 3 chart → thấy slot khoá nudge nâng cấp; Pro/dưới cap → không. Phase 2: T1 ✅ T2 ✅ T3 ✅ T4 ✅ T5 ✅ T6 ✅
+- Còn lại Phase 2: P2-T7 (đổi tên dashboard), P2-T8 (export PNG). Phần visual (blur slot, drag/resize) cần xem ở browser
+
+### Tasks liên quan
+- P2-T4 ✅
+
 <!-- Thêm session mới ở đây -->

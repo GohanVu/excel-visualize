@@ -67,7 +67,7 @@ describe('DashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFetchDatasets.mockResolvedValue([]);
-    mockListCharts.mockResolvedValue([]);
+    mockListCharts.mockResolvedValue({ charts: [], limit: 3 });
     mockDeleteDataset.mockResolvedValue(undefined);
     mockDeleteChart.mockResolvedValue(undefined);
     mockUpdateChart.mockResolvedValue(undefined);
@@ -133,7 +133,7 @@ describe('DashboardPage', () => {
   });
 
   it('renders saved charts below when present', async () => {
-    mockListCharts.mockResolvedValue(savedCharts);
+    mockListCharts.mockResolvedValue({ charts: savedCharts, limit: 3 });
     renderPage();
     expect(await screen.findByText('Doanh thu theo tháng')).toBeInTheDocument();
     expect(screen.getByText('So sánh khu vực')).toBeInTheDocument();
@@ -148,7 +148,7 @@ describe('DashboardPage', () => {
   });
 
   it('xoá chart sau xác nhận 2 bước', async () => {
-    mockListCharts.mockResolvedValue(savedCharts);
+    mockListCharts.mockResolvedValue({ charts: savedCharts, limit: 3 });
     renderPage();
     await screen.findByText('Doanh thu theo tháng');
     fireEvent.click(
@@ -159,7 +159,7 @@ describe('DashboardPage', () => {
   });
 
   it('huỷ xoá chart → không gọi deleteChart', async () => {
-    mockListCharts.mockResolvedValue(savedCharts);
+    mockListCharts.mockResolvedValue({ charts: savedCharts, limit: 3 });
     renderPage();
     await screen.findByText('Doanh thu theo tháng');
     fireEvent.click(
@@ -170,7 +170,7 @@ describe('DashboardPage', () => {
   });
 
   it('Thêm biểu đồ → chọn sheet → điều hướng tới /columns của sheet đó', async () => {
-    mockListCharts.mockResolvedValue(savedCharts);
+    mockListCharts.mockResolvedValue({ charts: savedCharts, limit: 3 });
     mockFetchDatasets.mockResolvedValue(datasets);
     renderPage();
     await screen.findByText('Doanh thu theo tháng');
@@ -182,7 +182,7 @@ describe('DashboardPage', () => {
   });
 
   it('mở panel tuỳ chỉnh khi bấm ⚙', async () => {
-    mockListCharts.mockResolvedValue(savedCharts);
+    mockListCharts.mockResolvedValue({ charts: savedCharts, limit: 3 });
     renderPage();
     await screen.findByText('Doanh thu theo tháng');
     fireEvent.click(
@@ -194,7 +194,7 @@ describe('DashboardPage', () => {
   });
 
   it('lưu tuỳ chỉnh → gọi updateChart với id + patch (đổi bảng màu)', async () => {
-    mockListCharts.mockResolvedValue(savedCharts);
+    mockListCharts.mockResolvedValue({ charts: savedCharts, limit: 3 });
     renderPage();
     await screen.findByText('Doanh thu theo tháng');
     fireEvent.click(
@@ -208,5 +208,35 @@ describe('DashboardPage', () => {
     expect(id).toBe('c-1');
     expect(patch.title).toBe('Doanh thu theo tháng');
     expect((patch.config as { color: string[] }).color).toContain('#1d4ed8');
+  });
+
+  describe('locked chart slot (P2-T4)', () => {
+    const threeCharts = [
+      ...savedCharts,
+      { id: 'c-3', type: 'pie', title: 'Tỷ trọng', config: { series: [] }, createdAt: '2026-06-27T02:00:00.000Z' },
+    ];
+
+    it('shows the locked slot when a Free user is at the chart cap', async () => {
+      mockListCharts.mockResolvedValue({ charts: threeCharts, limit: 3 });
+      renderPage();
+      await screen.findByText('Tỷ trọng');
+      expect(screen.getByRole('note', { name: 'Biểu đồ bị khoá' })).toBeInTheDocument();
+      expect(screen.getByText(/Đã đạt 3 biểu đồ của gói Free/)).toBeInTheDocument();
+    });
+
+    it('does NOT show the locked slot while under the cap', async () => {
+      // 2 chart, limit 3 → còn chỗ → không nudge
+      mockListCharts.mockResolvedValue({ charts: savedCharts, limit: 3 });
+      renderPage();
+      await screen.findByText('Doanh thu theo tháng');
+      expect(screen.queryByRole('note', { name: 'Biểu đồ bị khoá' })).not.toBeInTheDocument();
+    });
+
+    it('does NOT show the locked slot for a Pro user (limit null)', async () => {
+      mockListCharts.mockResolvedValue({ charts: threeCharts, limit: null });
+      renderPage();
+      await screen.findByText('Tỷ trọng');
+      expect(screen.queryByRole('note', { name: 'Biểu đồ bị khoá' })).not.toBeInTheDocument();
+    });
   });
 });

@@ -159,6 +159,23 @@ describe('ChartsService', () => {
       expect(result.charts).toEqual([]);
     });
 
+    it('returns the Free chart limit (3) for a non-Pro user', async () => {
+      mockPrisma.chart.findMany.mockResolvedValue([]);
+      mockPrisma.subscription.findUnique.mockResolvedValue(null);
+      const result = await service.listCharts('user-1');
+      expect(result.limit).toBe(3);
+    });
+
+    it('returns null limit (unlimited) for a Pro user', async () => {
+      mockPrisma.chart.findMany.mockResolvedValue([]);
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        plan: 'pro',
+        status: 'active',
+      });
+      const result = await service.listCharts('user-1');
+      expect(result.limit).toBeNull();
+    });
+
     it('includes position in the selected fields', async () => {
       mockPrisma.chart.findMany.mockResolvedValue([]);
       await service.listCharts('user-1');

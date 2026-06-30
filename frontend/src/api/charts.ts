@@ -30,9 +30,15 @@ export interface LayoutItem {
   h: number;
 }
 
-export async function listCharts(): Promise<DashboardChart[]> {
-  const { data } = await client.get<{ charts: DashboardChart[] }>('/charts');
-  return data.charts;
+export interface ChartsResponse {
+  charts: DashboardChart[];
+  // Số biểu đồ tối đa/dashboard theo gói. null = không giới hạn (Pro).
+  limit: number | null;
+}
+
+export async function listCharts(): Promise<ChartsResponse> {
+  const { data } = await client.get<ChartsResponse>('/charts');
+  return data;
 }
 
 // Lưu vị trí các chart sau khi user kéo-thả/resize.

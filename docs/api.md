@@ -234,8 +234,9 @@ Lấy các chart đã lưu của user (qua dashboard), cũ → mới.
 **Auth**: JWT  
 **Response**:
 ```json
-{ "charts": [ { "id": "cuid", "type": "line", "title": "...", "config": { }, "position": { }, "createdAt": "ISO date" } ] }
+{ "charts": [ { "id": "cuid", "type": "line", "title": "...", "config": { }, "position": { }, "createdAt": "ISO date" } ], "limit": 3 }
 ```
+`limit`: số biểu đồ tối đa/dashboard theo gói (Free=3, Pro=`null` = không giới hạn) — FE dùng để hiện locked slot (P2-T4).
 
 ---
 
