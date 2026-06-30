@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { ChartsService } from '../charts.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditLogsService } from '../../audit-logs/audit-logs.service';
 
 const mockPrisma = {
   dataset: { findFirst: jest.fn() },
@@ -17,6 +18,10 @@ const mockPrisma = {
   $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
 };
 
+const mockAuditLogs = {
+  log: jest.fn(),
+};
+
 const config = { type: 'line', title: 'Xu hướng', config: { series: [] } };
 
 describe('ChartsService', () => {
@@ -27,6 +32,7 @@ describe('ChartsService', () => {
       providers: [
         ChartsService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: AuditLogsService, useValue: mockAuditLogs },
       ],
     }).compile();
     service = module.get(ChartsService);

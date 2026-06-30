@@ -8,13 +8,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SaveChartDto } from './dto/save-chart.dto';
 import { LayoutItemDto } from './dto/update-layout.dto';
 import { UpdateChartDto } from './dto/update-chart.dto';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 // Free tier gate (P2-T3): tối đa 3 biểu đồ / dashboard. Pro không giới hạn.
 const FREE_CHART_LIMIT = 3;
 
 @Injectable()
 export class ChartsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditLogs: AuditLogsService,
+  ) {}
 
   async saveChart(userId: string, dto: SaveChartDto) {
     const dataset = await this.prisma.dataset.findFirst({
@@ -55,6 +59,14 @@ export class ChartsService {
         title: dto.title ?? null,
         config: dto.config as Prisma.InputJsonValue,
       },
+    });
+
+    await this.auditLogs.log({
+      userId,
+      action: 'chart.create',
+      entity: 'Chart',
+      entityId: chart.id,
+      metadata: { title: chart.title, type: chart.type, datasetId: dto.datasetId },
     });
 
     return { chart, dashboardId: dashboard.id };
@@ -108,6 +120,15 @@ export class ChartsService {
       data,
     });
     if (res.count === 0) throw new NotFoundException('Biểu đồ không tồn tại.');
+
+    await this.auditLogs.log({
+      userId,
+      action: 'chart.update',
+      entity: 'Chart',
+      entityId: chartId,
+      metadata: { title: dto.title },
+    });
+
     return { updated: true };
   }
 
@@ -118,6 +139,14 @@ export class ChartsService {
       where: { id: chartId, dashboard: { userId } },
     });
     if (res.count === 0) throw new NotFoundException('Biểu đồ không tồn tại.');
+
+    await this.auditLogs.log({
+      userId,
+      action: 'chart.delete',
+      entity: 'Chart',
+      entityId: chartId,
+    });
+
     return { deleted: true };
   }
 

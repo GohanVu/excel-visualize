@@ -4,10 +4,14 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 @Injectable()
 export class DashboardsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditLogs: AuditLogsService,
+  ) {}
 
   // Dashboard mặc định của user (đầu tiên theo thứ tự tạo). Tạo lười khi lưu chart
   // (charts.service) nên có thể chưa tồn tại → trả null, FE ẩn phần đổi tên.
@@ -30,6 +34,15 @@ export class DashboardsService {
       data: { name },
     });
     if (res.count === 0) throw new NotFoundException('Dashboard không tồn tại.');
+
+    await this.auditLogs.log({
+      userId,
+      action: 'dashboard.rename',
+      entity: 'Dashboard',
+      entityId: dashboardId,
+      metadata: { name },
+    });
+
     return { id: dashboardId, name };
   }
 }

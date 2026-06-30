@@ -1,7 +1,7 @@
 # CLAUDE.md — Project Instructions for Claude Code
 
 > File này được Claude Code tự động đọc khi bắt đầu conversation.
-> Tổng hợp từ `.kiro/steering/` — xem chi tiết tại các file gốc.
+> Tổng hợp từ `.antigravity/steering/` — xem chi tiết tại các file gốc.
 
 ---
 
@@ -96,4 +96,4 @@ Sau khi đọc, trả lời: "Tôi đã đọc [list files]. Task tiếp theo l�
 - Không cài global packages (`pip install` không có venv, `npm install -g`)
 - Mọi dependency trong container hoặc virtual environment
 - Clone → 1 command → chạy. Không cần setup manual.
-- Chi tiết: `.kiro/steering/project-conventions.md`
+- Chi tiết: `.antigravity/steering/project-conventions.md`

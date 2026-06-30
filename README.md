@@ -1,12 +1,12 @@
-# Kiro Project Template
+# Antigravity Project Template
 
-> Template khởi đầu cho các dự án sử dụng AI (Kiro) làm coding partner.
+> Template khởi đầu cho các dự án sử dụng AI (Antigravity) làm coding partner.
 > Clone → brainstorm → plan → implement. Không code tay từ đầu.
 
 ## Cấu trúc
 
 ```
-.kiro/steering/                    ← Kiro (auto-loaded)
+.antigravity/steering/              ← Antigravity (auto-loaded)
 ├── workflow-guide.md
 ├── project-conventions.md
 ├── security-review.md
@@ -35,13 +35,13 @@ docs/
 ```bash
 # Option A: GitHub "Use this template"
 # Option B: Clone
-git clone https://github.com/YOUR_USERNAME/kiro-project-template.git my-new-project
+git clone https://github.com/YOUR_USERNAME/antigravity-project-template.git my-new-project
 cd my-new-project
 rm -rf .git && git init
 ```
 
 ### Bước 2: Brainstorm
-Mở Kiro và bắt đầu:
+Mở Antigravity và bắt đầu:
 ```
 "Tôi muốn build [mô tả project]. Brainstorm cùng tôi."
 ```

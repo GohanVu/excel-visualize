@@ -7,6 +7,7 @@ import { ParserService } from '../../parser/parser.service';
 import { ColumnTypeService } from '../../parser/column-type.service';
 import { ChartSuggesterService } from '../../suggester/chart-suggester.service';
 import { ColumnType } from '@prisma/client';
+import { AuditLogsService } from '../../audit-logs/audit-logs.service';
 
 const mockPrisma = {
   subscription: { findUnique: jest.fn() },
@@ -33,6 +34,10 @@ const mockParser = {
 
 const mockUser = { id: 'user-1', email: 'u@test.com' } as any;
 
+const mockAuditLogs = {
+  log: jest.fn(),
+};
+
 const XLSX_MIME =
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
@@ -48,6 +53,7 @@ describe('DatasetsService', () => {
         { provide: ParserService, useValue: mockParser },
         ColumnTypeService,
         ChartSuggesterService,
+        { provide: AuditLogsService, useValue: mockAuditLogs },
       ],
     }).compile();
     service = module.get(DatasetsService);

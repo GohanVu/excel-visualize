@@ -1,6 +1,6 @@
 # Agent Instructions
 
-> File này dùng khi làm việc với AI agent KHÔNG phải Kiro (Claude, GPT, Cursor, Copilot, v.v.)
+> File này dùng khi làm việc với AI agent KHÔNG phải Antigravity (Claude, GPT, Cursor, Copilot, v.v.)
 
 ---
 
@@ -8,7 +8,7 @@
 
 | AI Agent | File auto-loaded | Đã có trong template |
 |----------|-----------------|:-------------------:|
-| **Kiro** | `.kiro/steering/*.md` | ✅ |
+| **Antigravity** | `.antigravity/steering/*.md` | ✅ |
 | **Claude Code** | `CLAUDE.md` | ✅ |
 | **Cursor** | `.cursorrules` | ✅ |
 | **Windsurf** | `.windsurfrules` | ✅ |
@@ -48,7 +48,7 @@ KHÔNG code ngay khi nhận yêu cầu. Tuân theo workflow:
 - docs/plan.md — Plan hiện tại, phases, tasks, status
 - docs/audit-log.md — Nhật ký làm việc, quyết định đã có
 - docs/issues.md — Bugs đã phát hiện, lessons learned
-- .kiro/steering/project-conventions.md — Quy ước kỹ thuật (DB, API, testing...)
+- .antigravity/steering/project-conventions.md — Quy ước kỹ thuật (DB, API, testing...)
 
 ## Audit Log Format
 

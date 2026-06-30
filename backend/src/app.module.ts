@@ -8,6 +8,8 @@ import { DatasetsModule } from './datasets/datasets.module';
 import { ChartsModule } from './charts/charts.module';
 import { DashboardsModule } from './dashboards/dashboards.module';
 import { StudyProgressModule } from './study-progress/study-progress.module';
+import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { StudyProgressModule } from './study-progress/study-progress.module';
     ChartsModule,
     DashboardsModule,
     StudyProgressModule,
+    AuditLogsModule,
+    AdminModule,
   ],
   controllers: [AppController],
 })

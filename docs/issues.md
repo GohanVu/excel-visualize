@@ -150,4 +150,20 @@
 - **Workaround**: sau khi sửa code backend/frontend mà muốn test trên server đang chạy → `docker compose restart backend` (hoặc frontend). Hoặc bật polling: thêm `CHOKIDAR_USEPOLLING=true` (vite) / `WATCHPACK_POLLING=true` và nest `--watch` với polling cho tsc (cấu hình sau)
 - **Lesson learned**: Trên Windows, KHÔNG tin dev server đã reload. Khi verify e2e/thủ công sau khi sửa code → restart container trước. Unit test (`pnpm test`) luôn đúng vì compile mới. Cân nhắc thêm polling env vào docker-compose để fix hẳn (follow-up).
 
+### [Issue-014] Khởi động mới (fresh setup) gây lỗi 500 ở Backend do chưa chạy Migrate & Generate
+
+- **Status**: 🟢 Fixed
+- **Severity**: High
+- **Phát hiện**: 2026-06-30 — Người dùng báo lỗi 500 khi đăng nhập sau khi khôi phục môi trường (fresh state).
+- **Root cause**: 
+  1. Thiếu file `.env` chứa `POSTGRES_PASSWORD` (do file này nằm trong `.gitignore`), làm container Postgres không khởi chạy được.
+  2. Sau khi tạo `.env` và Postgres chạy lên, database vẫn trống và Prisma Client chưa được sinh ra (`generate`) trong `node_modules` của container backend. Backend NestJS bị lỗi biên dịch TypeScript, dẫn đến lỗi 500 khi gọi API.
+- **Fix**:
+  1. Tạo file `.env` từ [.env.example](file:///d:/Project/excel-visualize/.env.example).
+  2. Chạy `docker compose exec backend pnpm db:migrate` để đồng bộ DB schema và tự động sinh Prisma Client.
+  3. Cấu hình lại `docker-compose.yml` để container `backend` tự động chạy `pnpm db:migrate` trước khi khởi động `pnpm start:dev` (sử dụng `command: sh -c "pnpm db:migrate && pnpm start:dev"`).
+- **Test added**: N/A (Môi trường / Cấu hình Docker)
+- **Lesson learned**: Để đảm bảo nguyên lý "Clone -> 1 command -> chạy" của dự án, các container chạy môi trường dev có sử dụng ORM (như Prisma) nên được cấu hình tự động chạy migration và sinh client tại thời điểm khởi động (sau khi database dependency đã healthy). Khi gặp lỗi database, cần xử lý trọn gói từ việc sửa kết nối (cấu hình biến môi trường) cho đến đồng bộ hóa schema.
+
 <!-- Thêm issues ở đây -->
+

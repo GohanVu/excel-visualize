@@ -24,7 +24,7 @@ KHÔNG code ngay khi nhận yêu cầu. Tuân theo workflow:
 - docs/plan.md — Plan hiện tại, phases, tasks, status
 - docs/audit-log.md — Nhật ký làm việc, quyết định đã có
 - docs/issues.md — Bugs đã phát hiện, lessons learned
-- .kiro/steering/project-conventions.md — Quy ước kỹ thuật (DB, API, testing...)
+- .antigravity/steering/project-conventions.md — Quy ước kỹ thuật (DB, API, testing...)
 
 ## Audit Log Format
 

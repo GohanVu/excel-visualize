@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Role } from '@prisma/client';
+import { AuditLogsService } from '../../audit-logs/audit-logs.service';
 
 const mockUser = {
   id: 'user-1',
@@ -45,6 +46,10 @@ const mockConfig = {
   get: jest.fn(),
 };
 
+const mockAuditLogs = {
+  log: jest.fn(),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -56,6 +61,7 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: JwtService, useValue: mockJwt },
         { provide: ConfigService, useValue: mockConfig },
+        { provide: AuditLogsService, useValue: mockAuditLogs },
       ],
     }).compile();
 

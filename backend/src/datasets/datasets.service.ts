@@ -7,6 +7,7 @@ import { ColumnTypeService } from '../parser/column-type.service';
 import { ChartSuggesterService } from '../suggester/chart-suggester.service';
 import { PresignUploadDto } from './dto/presign-upload.dto';
 import { ConfirmUploadDto } from './dto/confirm-upload.dto';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 const FREE_LIMIT_BYTES = 10 * 1024 * 1024;
 const PRO_LIMIT_BYTES = 50 * 1024 * 1024;
@@ -23,6 +24,7 @@ export class DatasetsService {
     private parser: ParserService,
     private columnType: ColumnTypeService,
     private suggester: ChartSuggesterService,
+    private auditLogs: AuditLogsService,
   ) {}
 
   async presignUpload(user: User, dto: PresignUploadDto) {
@@ -60,7 +62,7 @@ export class DatasetsService {
   }
 
   async confirmUpload(user: User, dto: ConfirmUploadDto) {
-    return this.prisma.dataset.create({
+    const dataset = await this.prisma.dataset.create({
       data: {
         userId: user.id,
         name: this.baseName(dto.originalFilename),
@@ -70,6 +72,16 @@ export class DatasetsService {
         minioKey: dto.objectKey,
       },
     });
+
+    await this.auditLogs.log({
+      userId: user.id,
+      action: 'dataset.upload',
+      entity: 'Dataset',
+      entityId: dataset.id,
+      metadata: { name: dataset.name, originalName: dataset.originalName },
+    });
+
+    return dataset;
   }
 
   async parseDataset(
@@ -220,6 +232,14 @@ export class DatasetsService {
       this.prisma.chart.deleteMany({ where: { datasetId } }),
       this.prisma.dataset.delete({ where: { id: datasetId } }),
     ]);
+
+    await this.auditLogs.log({
+      userId,
+      action: 'dataset.delete',
+      entity: 'Dataset',
+      entityId: datasetId,
+      metadata: { name: dataset.name },
+    });
 
     // Dọn file trên MinIO (best-effort — record đã xoá, không chặn nếu lỗi)
     await this.storage.removeObject(dataset.minioKey).catch(() => undefined);

@@ -2,9 +2,14 @@ import { Test } from '@nestjs/testing';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { DashboardsService } from '../dashboards.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditLogsService } from '../../audit-logs/audit-logs.service';
 
 const mockPrisma = {
   dashboard: { findFirst: jest.fn(), updateMany: jest.fn() },
+};
+
+const mockAuditLogs = {
+  log: jest.fn(),
 };
 
 describe('DashboardsService', () => {
@@ -15,6 +20,7 @@ describe('DashboardsService', () => {
       providers: [
         DashboardsService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: AuditLogsService, useValue: mockAuditLogs },
       ],
     }).compile();
     service = module.get(DashboardsService);

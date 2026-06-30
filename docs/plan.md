@@ -46,20 +46,20 @@
 
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
-| P05-T1 | Role guard NestJS: decorator `@Roles('admin')`, middleware check JWT + role | ⬜ Todo | P0-T4 | Tất cả admin route đều require role=admin |
-| P05-T2 | Admin panel layout (FE): sidebar riêng, route `/admin/*`, chỉ render nếu role=admin | ⬜ Todo | P0-T6, P05-T1 | Redirect về /dashboard nếu user thường truy cập /admin |
-| P05-T3 | Admin: trang Users — danh sách users, xem plan, có thể override plan thủ công | ⬜ Todo | P05-T2 | |
-| P05-T4 | Admin: trang Stats — tổng users, tổng charts tạo, DAU/MAU cơ bản | ⬜ Todo | P05-T2 | Query từ DB, không cần analytics service |
-| P05-T5 | Admin: trang Audit Log — xem lịch sử hành động của users | ⬜ Todo | P05-T2 | Đọc từ bảng `audit_logs` |
-| P05-T6 | Seed script: tạo admin user đầu tiên | ⬜ Todo | P0-T3 | Chạy 1 lần lúc setup |
-| P05-T7 | User: trang Profile — xem thông tin tài khoản, plan hiện tại, nút logout | ⬜ Todo | P0-T5 | |
+| P05-T1 | Role guard NestJS: decorator `@Roles('admin')`, middleware check JWT + role | ✅ Done | P0-T4 | Tất cả admin route đều require role=admin |
+| P05-T2 | Admin panel layout (FE): sidebar riêng, route `/admin/*`, chỉ render nếu role=admin | ✅ Done | P0-T6, P05-T1 | Redirect về /dashboard nếu user thường truy cập /admin |
+| P05-T3 | Admin: trang Users — danh sách users, xem plan, có thể override plan thủ công | ✅ Done | P05-T2 | |
+| P05-T4 | Admin: trang Stats — tổng users, tổng charts tạo, DAU/MAU cơ bản | ✅ Done | P05-T2 | Query từ DB, không cần analytics service |
+| P05-T5 | Admin: trang Audit Log — xem lịch sử hành động của users | ✅ Done | P05-T2 | Đọc từ bảng `audit_logs` |
+| P05-T6 | Seed script: tạo admin user đầu tiên | ✅ Done | P0-T3 | Chạy 1 lần lúc setup |
+| P05-T7 | User: trang Profile — xem thông tin tài khoản, plan hiện tại, nút logout | ✅ Done | P0-T5 | |
 
 ### Test cases P0.5
 
-- [ ] User thường truy cập `/admin` → redirect về `/dashboard`
-- [ ] Admin thấy đủ Users / Stats / Audit Log
-- [ ] Override plan user từ free → pro → limits thay đổi ngay
-- [ ] Logout → JWT invalidate → truy cập route cần auth → redirect /login
+- [x] User thường truy cập `/admin` → redirect về `/dashboard`
+- [x] Admin thấy đủ Users / Stats / Audit Log
+- [x] Override plan user từ free → pro → limits thay đổi ngay
+- [x] Logout → JWT invalidate → truy cập route cần auth → redirect /login
 
 ---
 

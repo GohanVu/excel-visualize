@@ -8,4 +8,8 @@ export interface User {
   role: Role;
   createdAt: string;
   updatedAt: string;
+  subscription?: {
+    plan: 'free' | 'pro';
+    status: string;
+  } | null;
 }

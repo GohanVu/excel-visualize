@@ -5,6 +5,7 @@ import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypt
 import { hash, compare } from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { User } from '@prisma/client';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 interface GoogleProfile {
   googleId: string;
@@ -22,6 +23,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwt: JwtService,
     private config: ConfigService,
+    private auditLogs: AuditLogsService,
   ) {
     // Derive 32-byte key from JWT_SECRET — stable across restarts
     this.encryptionKey = scryptSync(
@@ -58,6 +60,12 @@ export class AuthService {
       });
     }
 
+    await this.auditLogs.log({
+      userId: user.id,
+      action: 'auth.google_login',
+      metadata: { email: user.email },
+    });
+
     return user;
   }
 
@@ -82,7 +90,7 @@ export class AuthService {
     if (existing) throw new ConflictException('Email đã được sử dụng');
 
     const passwordHash = await hash(password, 10);
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         email,
         name,
@@ -90,6 +98,14 @@ export class AuthService {
         subscription: { create: { plan: 'free', status: 'active' } },
       },
     });
+
+    await this.auditLogs.log({
+      userId: user.id,
+      action: 'auth.register',
+      metadata: { email: user.email },
+    });
+
+    return user;
   }
 
   async loginWithPassword(email: string, password: string): Promise<User> {
@@ -98,6 +114,12 @@ export class AuthService {
 
     const valid = await compare(password, user.passwordHash);
     if (!valid) throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
+
+    await this.auditLogs.log({
+      userId: user.id,
+      action: 'auth.login',
+      metadata: { email: user.email },
+    });
 
     return user;
   }

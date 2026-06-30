@@ -6,8 +6,15 @@ import ColumnOverviewPage from './pages/ColumnOverviewPage';
 import ChartSuggestionPage from './pages/ChartSuggestionPage';
 import ChartDetailPage from './pages/ChartDetailPage';
 import LearnPage from './pages/LearnPage';
+import ProfilePage from './pages/ProfilePage';
+import AdminStatsPage from './pages/admin/AdminStatsPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminAuditLogsPage from './pages/admin/AdminAuditLogsPage';
+
 import PrivateRoute from './components/PrivateRoute';
 import PublicRoute from './components/PublicRoute';
+import AdminRoute from './components/AdminRoute';
+import AdminLayout from './components/AdminLayout';
 
 export default function App() {
   return (
@@ -27,14 +34,17 @@ export default function App() {
         <Route path="/datasets/:id/charts" element={<ChartSuggestionPage />} />
         <Route path="/datasets/:id/chart" element={<ChartDetailPage />} />
         <Route path="/datasets/:id/learn" element={<LearnPage />} />
-        <Route
-          path="/admin/*"
-          element={
-            <div className="flex h-screen items-center justify-center bg-gray-950 text-white">
-              Admin panel — coming soon
-            </div>
-          }
-        />
+        <Route path="/profile" element={<ProfilePage />} />
+      </Route>
+
+      {/* Admin-only routes */}
+      <Route element={<AdminRoute />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/stats" replace />} />
+          <Route path="stats" element={<AdminStatsPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="audit-logs" element={<AdminAuditLogsPage />} />
+        </Route>
       </Route>
     </Routes>
   );

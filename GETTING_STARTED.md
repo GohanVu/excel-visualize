@@ -3,7 +3,7 @@
 ## Trước khi bắt đầu
 
 Bạn cần:
-- [Kiro](https://kiro.dev) (AI-powered IDE)
+- [Antigravity](https://github.com/google-deepmind) (AI-powered Coding Assistant)
 - Git
 - Ý tưởng project muốn build 🚀
 
@@ -11,17 +11,17 @@ Bạn cần:
 
 ```bash
 # GitHub "Use this template" button hoặc:
-git clone https://github.com/YOUR_USERNAME/kiro-project-template.git my-project
+git clone https://github.com/YOUR_USERNAME/antigravity-project-template.git my-project
 cd my-project
 rm -rf .git
 git init
 git add .
-git commit -m "init: from kiro-project-template"
+git commit -m "init: from antigravity-project-template"
 ```
 
 ## Bước 2: Brainstorm
 
-Mở Kiro và chat:
+Mở Antigravity và chat:
 
 ```
 Tôi muốn build [mô tả project]. Brainstorm cùng tôi.
@@ -92,7 +92,7 @@ Phát hiện bug? Ghi vào `docs/issues.md` trước. AI sẽ đọc và tránh 
 Audit log là "bộ nhớ" của AI giữa các session. Xóa = mất context.
 
 ### 💡 Steering có thể thêm
-Nếu project có quy ước riêng (VD: code style, naming convention) → thêm file `.md` mới trong `.kiro/steering/`.
+Nếu project có quy ước riêng (VD: code style, naming convention) → thêm file `.md` mới trong `.antigravity/steering/`.
 
 ## FAQ
 
