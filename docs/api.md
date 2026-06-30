@@ -224,7 +224,8 @@ Lưu chart vào dashboard mặc định (tự tạo nếu chưa có).
 { "datasetId": "cuid", "type": "line", "title": "Doanh thu", "config": { } }
 ```
 `config`: ECharts option (JSONB).  
-**Response**: `{ "chart": { "id": "cuid", ... }, "dashboardId": "cuid" }`
+**Response**: `{ "chart": { "id": "cuid", ... }, "dashboardId": "cuid" }`  
+**Quota (Free tier gate)**: gói Free tối đa **3 biểu đồ/dashboard** → biểu đồ thứ 4 trả `400` với message nudge nâng cấp Pro. Pro không giới hạn.
 
 ---
 

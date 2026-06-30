@@ -218,4 +218,20 @@ describe('ChartDetailPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /Lưu vào dashboard/ }));
     expect(await screen.findByText(/Lưu thất bại/)).toBeInTheDocument();
   });
+
+  it('surfaces the backend nudge when the free-tier chart limit is hit', async () => {
+    // BadRequestException từ backend khi đầy quota Free tier (axios shape)
+    mockSaveChart.mockRejectedValue({
+      response: {
+        data: {
+          message:
+            'Gói Free chỉ cho tối đa 3 biểu đồ/dashboard. Nâng cấp Pro để thêm biểu đồ không giới hạn.',
+        },
+      },
+    });
+    renderPage();
+    await screen.findByText('Xu hướng theo thời gian');
+    await userEvent.click(screen.getByRole('button', { name: /Lưu vào dashboard/ }));
+    expect(await screen.findByText(/Nâng cấp Pro/)).toBeInTheDocument();
+  });
 });

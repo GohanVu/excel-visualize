@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchRows } from '../api/datasets';
 import type { ChartSuggestion, Aggregation } from '../api/datasets';
 import { saveChart } from '../api/charts';
+import { apiErrorMessage } from '../lib/apiError';
 import { buildChartOption } from '../lib/buildChartOption';
 import ChartView from '../components/ChartView';
 
@@ -121,8 +122,9 @@ function ChartDetail({
       await saveChart(datasetId, suggestion.type, suggestion.title, option);
       setSaved(true);
       setTimeout(onSaved, 1200);
-    } catch {
-      setSaveError('Lưu thất bại. Thử lại sau.');
+    } catch (err) {
+      // Ưu tiên message backend (vd nudge nâng cấp khi đầy quota Free tier)
+      setSaveError(apiErrorMessage(err) ?? 'Lưu thất bại. Thử lại sau.');
     } finally {
       setSaving(false);
     }

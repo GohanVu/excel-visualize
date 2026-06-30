@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { ChartsService } from '../charts.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -8,10 +8,12 @@ const mockPrisma = {
   dashboard: { findFirst: jest.fn(), create: jest.fn() },
   chart: {
     create: jest.fn(),
+    count: jest.fn(),
     findMany: jest.fn(),
     updateMany: jest.fn(),
     deleteMany: jest.fn(),
   },
+  subscription: { findUnique: jest.fn() },
   $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
 };
 
@@ -29,6 +31,9 @@ describe('ChartsService', () => {
     }).compile();
     service = module.get(ChartsService);
     jest.clearAllMocks();
+    // Mặc định: Free, dashboard chưa đầy → các test saveChart cũ không vướng gate
+    mockPrisma.subscription.findUnique.mockResolvedValue(null);
+    mockPrisma.chart.count.mockResolvedValue(0);
   });
 
   it('throws NotFoundException when dataset does not belong to user', async () => {
@@ -91,6 +96,43 @@ describe('ChartsService', () => {
 
     expect(result.chart.id).toBe('chart-42');
     expect(result.dashboardId).toBe('dash-1');
+  });
+
+  describe('free tier gate (3 charts/dashboard)', () => {
+    beforeEach(() => {
+      mockPrisma.dataset.findFirst.mockResolvedValue({ id: 'ds-1' });
+      mockPrisma.dashboard.findFirst.mockResolvedValue({ id: 'dash-1' });
+      mockPrisma.chart.create.mockResolvedValue({ id: 'chart-1', dashboardId: 'dash-1' });
+    });
+
+    it('blocks a Free user from saving a 4th chart on a dashboard', async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue(null);
+      mockPrisma.chart.count.mockResolvedValue(3);
+
+      await expect(
+        service.saveChart('user-1', { datasetId: 'ds-1', ...config }),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockPrisma.chart.create).not.toHaveBeenCalled();
+    });
+
+    it('allows a Free user to save while under the limit', async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue(null);
+      mockPrisma.chart.count.mockResolvedValue(2);
+
+      await service.saveChart('user-1', { datasetId: 'ds-1', ...config });
+      expect(mockPrisma.chart.create).toHaveBeenCalled();
+    });
+
+    it('does not gate a Pro user (skips count, allows beyond 3)', async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue({
+        plan: 'pro',
+        status: 'active',
+      });
+
+      await service.saveChart('user-1', { datasetId: 'ds-1', ...config });
+      expect(mockPrisma.chart.count).not.toHaveBeenCalled();
+      expect(mockPrisma.chart.create).toHaveBeenCalled();
+    });
   });
 
   describe('listCharts', () => {

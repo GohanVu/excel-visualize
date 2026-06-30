@@ -1491,4 +1491,54 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P2-T2 ✅
 
+## [2026-06-30] Session — Tooling: bật auto-index codebase-memory MCP + nhắc kiểm tra stale
+
+### Yêu cầu
+- Đảm bảo index của codebase-memory MCP tự cập nhật khi có code mới; thêm nhắc nhở kiểm tra index cũ ở đầu session
+
+### Công việc đã làm
+- `config set auto_index true` cho codebase-memory-mcp (toàn cục, persisted). `auto_index_limit` giữ 50000 (trần repo). Có hiệu lực từ phiên SAU (server nạp lại config lúc khởi động)
+- CLAUDE.md mục "Khi bắt đầu session mới": thêm 1 dòng — nếu vừa đổi code lớn/đổi branch thì chạy `detect_changes`, danh sách dài thì `index_repository` lại trước khi tin `file:line` từ MCP
+
+### Quyết định quan trọng
+- **Hook SessionStart chỉ NUDGE, không enforce**: nó nhắc "dùng MCP first" + index nếu chưa có, nhưng KHÔNG cover trường hợp index cũ (stale) khi code đã đổi → đó là lý do thêm dòng `detect_changes` thủ công
+- **Auto-index + detect_changes + Read-before-Edit là 3 lớp bổ trợ**, không trùng: auto-index lo quanh lúc start session, detect_changes lo giữa phiên, Read-before-Edit chặn sửa nhầm file stale
+- **Hành vi auto_index suy từ tên** (help không mô tả thời điểm trigger chính xác) — coi như đồng bộ quanh lúc khởi động server, không giả định watch real-time từng lần lưu file
+
+### Kết quả
+- MCP exe v0.8.1; `config list` xác nhận `auto_index = true`. Không đụng code dự án (chỉ config tooling + CLAUDE.md)
+
+### Tasks liên quan
+- Không nằm trong plan — tooling. Task code kế tiếp vẫn là P2-T3
+
+## [2026-06-30] Session — P2-T3: Free tier gate (3 biểu đồ/dashboard)
+
+### Yêu cầu
+- Giới hạn gói Free: tối đa 3 biểu đồ/dashboard; Pro không giới hạn. Hiện nudge nâng cấp khi đầy
+
+### Công việc đã làm
+- **Backend** (`charts.service.ts`): gate trong `saveChart` — sau khi resolve dashboard, nếu KHÔNG phải Pro thì `chart.count({ dashboardId })`; ≥ `FREE_CHART_LIMIT` (3) → `BadRequestException` với message nudge nâng cấp Pro. Thêm private `isProUser` (subscription plan='pro' & status='active') — mirror `DatasetsService.isProUser`. +3 test (chặn chart thứ 4 Free, cho lưu khi <3, Pro bỏ qua không count). Mock thêm `chart.count` + `subscription.findUnique` (default Free/count 0 trong beforeEach để test cũ không vướng)
+- **Frontend**:
+  - Tách helper dùng chung `lib/apiError.ts` (`apiErrorMessage`) từ bản local trong `FileUpload.tsx` — trả `undefined` khi không có message backend, caller tự fallback. FileUpload import lại + giữ fallback "Upload thất bại…"
+  - `ChartDetailPage.handleSave`: `catch` đọc `apiErrorMessage(err)` → hiện đúng message backend (nudge nâng cấp) thay vì "Lưu thất bại" chung chung. +1 test (đầy quota → hiện "Nâng cấp Pro")
+- **docs/api.md**: ghi chú quota gate ở `POST /charts`
+
+### Quyết định quan trọng
+- **Gate ở điểm save duy nhất (`saveChart`)**: phủ cả luồng "Lưu vào dashboard" (P1) lẫn "Thêm biểu đồ" (P2-T2) vì cả hai cùng đổ về endpoint này
+- **Đếm theo `dashboardId`** (không phải userId): đúng ngữ nghĩa "3 chart/dashboard"; dashboard vừa tạo có 0 chart nên user mới không bị vướng
+- **Phần "min(3, số chart hợp lý từ data)"** chuyển sang **P2-T4** (locked slot UI) — T3 chỉ là hard cap + enforcement; "số chart hợp lý" là quyết định hiển thị slot, không phải chặn lưu
+- **Tách `apiErrorMessage` thành lib chung** thay vì nhân đôi: FileUpload đã có sẵn pattern này → reuse (CLAUDE.md "reuse trước, tạo mới sau")
+- **`isProUser` trùng với DatasetsService**: chấp nhận duplicate 4 dòng để tránh churn module-wiring; ghi chú cân nhắc tách `SubscriptionService` sau
+
+### Test coverage
+- Backend: 151 → **154 pass** (lint 0 error, chỉ warning cũ)
+- Frontend: 154 → **155 pass**, `pnpm build` (tsc -b) xanh
+
+### Kết quả
+- Free user lưu chart thứ 4 → bị chặn 400 + thấy nudge "Nâng cấp Pro…". Pro lưu không giới hạn
+- Phase 2: T1 ✅ T2 ✅ T3 ✅ T5 ✅ T6 ✅. Tiếp: P2-T4 (locked slot UI) / P2-T7 (đổi tên dashboard) / P2-T8 (export PNG)
+
+### Tasks liên quan
+- P2-T3 ✅
+
 <!-- Thêm session mới ở đây -->

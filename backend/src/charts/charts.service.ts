@@ -1,9 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SaveChartDto } from './dto/save-chart.dto';
 import { LayoutItemDto } from './dto/update-layout.dto';
 import { UpdateChartDto } from './dto/update-chart.dto';
+
+// Free tier gate (P2-T3): tối đa 3 biểu đồ / dashboard. Pro không giới hạn.
+const FREE_CHART_LIMIT = 3;
 
 @Injectable()
 export class ChartsService {
@@ -25,6 +32,19 @@ export class ChartsService {
       dashboard = await this.prisma.dashboard.create({
         data: { userId, name: 'Dashboard của tôi' },
       });
+    }
+
+    // Free tier gate: chặn khi dashboard đã đủ 3 biểu đồ (Pro bỏ qua).
+    // Dashboard vừa tạo có 0 chart nên user mới không bị vướng.
+    if (!(await this.isProUser(userId))) {
+      const chartCount = await this.prisma.chart.count({
+        where: { dashboardId: dashboard.id },
+      });
+      if (chartCount >= FREE_CHART_LIMIT) {
+        throw new BadRequestException(
+          `Gói Free chỉ cho tối đa ${FREE_CHART_LIMIT} biểu đồ/dashboard. Nâng cấp Pro để thêm biểu đồ không giới hạn.`,
+        );
+      }
     }
 
     const chart = await this.prisma.chart.create({
@@ -96,5 +116,14 @@ export class ChartsService {
     });
     if (res.count === 0) throw new NotFoundException('Biểu đồ không tồn tại.');
     return { deleted: true };
+  }
+
+  // Pro = subscription plan 'pro' đang active. Free khi không có sub hoặc inactive.
+  // (Trùng logic với DatasetsService.isProUser — cân nhắc tách SubscriptionService sau.)
+  private async isProUser(userId: string): Promise<boolean> {
+    const sub = await this.prisma.subscription.findUnique({
+      where: { userId },
+    });
+    return sub?.plan === 'pro' && sub?.status === 'active';
   }
 }

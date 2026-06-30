@@ -1,5 +1,6 @@
 import { useState, useRef, DragEvent } from 'react';
 import { uploadFile } from '../api/datasets';
+import { apiErrorMessage } from '../lib/apiError';
 
 interface Props {
   onSuccess: (datasetId: string) => void;
@@ -24,17 +25,6 @@ function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-// Lấy message thật từ lỗi API (NestJS để ở response.data.message), không phải
-// "Request failed with status code 400" — để hiện đúng lý do (vd đầy quota)
-function apiErrorMessage(e: unknown): string {
-  const data = (
-    e as { response?: { data?: { message?: string | string[] } } }
-  )?.response?.data?.message;
-  if (Array.isArray(data)) return data.join(', ');
-  if (typeof data === 'string') return data;
-  return e instanceof Error ? e.message : 'Upload thất bại, thử lại nhé';
 }
 
 export default function FileUpload({ onSuccess }: Props) {
@@ -69,7 +59,7 @@ export default function FileUpload({ onSuccess }: Props) {
       const dataset = await uploadFile(file);
       onSuccess(dataset.id);
     } catch (e: unknown) {
-      setError(apiErrorMessage(e));
+      setError(apiErrorMessage(e) ?? 'Upload thất bại, thử lại nhé');
     } finally {
       setUploading(false);
     }
