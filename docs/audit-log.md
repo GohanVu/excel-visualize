@@ -27,6 +27,30 @@
 > [!NOTE]
 > Các session từ Phase 0 đến Phase 1.8 đã được lưu trữ tại [audit-log-phase-1.md](file:///d:/Project/excel-visualize/docs/archive/audit-log-phase-1.md) để giảm dung lượng file và tối ưu hóa việc đọc context.
 
+## [2026-06-30] Session — Fix Docker healthcheck MinIO (clone-and-run)
+
+### Yêu cầu
+- Pull code mới về và chạy dự án lên.
+
+### Công việc đã làm
+- `git pull --ff-only`: cập nhật 27 commits mới (Google Sheets integration, Auth & Role System, Admin Panel, export chart PNG, fix format ngày trên chart...).
+- `docker compose up -d --build`: MinIO báo `unhealthy` → backend/frontend bị chặn bởi `depends_on: condition: service_healthy`.
+- Phát hiện image `minio/minio:RELEASE.2024-06-13` **không có sẵn `curl`** nên healthcheck cũ (`curl -f .../minio/health/live`) luôn fail, dù MinIO server thực tế "1 Online" và endpoint health trả OK từ host.
+- Đổi healthcheck sang `["CMD", "mc", "ready", "local"]` (`mc` có sẵn trong image, là cách MinIO khuyến nghị).
+- `pnpm install` lại trong container backend (thiếu `@nestjs/schedule`) và frontend (dep mới) do volume `node_modules` còn cũ; restart 2 container.
+
+### Quyết định quan trọng
+- Dùng `mc ready local` thay vì cài thêm `curl` vào image — gọn, không thay đổi base image, đúng khuyến nghị MinIO.
+- Lý do node_modules cũ: dùng named volume (`backend_modules`/`frontend_modules`) persist qua các lần build → khi package.json thêm dep mới phải `pnpm install` trong container (hoặc rebuild volume).
+
+### Kết quả
+- Toàn bộ stack Up & healthy: Frontend http://localhost:5174 (200), Backend :3000 (routes mapped OK), Postgres/Redis/MinIO healthy.
+
+### Tasks liên quan
+- Hạ tầng/môi trường (không thuộc task plan cụ thể).
+
+---
+
 ## [2026-06-29] Session — P2-T1: react-grid-layout (kéo-thả/resize chart)
 
 ### Yêu cầu
