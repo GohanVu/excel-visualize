@@ -14,6 +14,8 @@ PHẢI đọc theo thứ tự trước khi làm bất cứ gì:
 3. `docs/brainstorm.md` — Lý do thiết kế ban đầu
 4. `docs/issues.md` — Bugs đã biết, lessons learned
 
+> Nếu vừa có thay đổi code lớn / đổi branch từ phiên trước → chạy `detect_changes` của codebase-memory MCP; nếu danh sách file đổi dài thì `index_repository` lại trước khi tin `file:line` từ MCP (graph là snapshot, có thể stale).
+
 Sau khi đọc, trả lời: "Tôi đã đọc [list files]. Task tiếp theo là [task ID + mô tả]. Confirm để tôi bắt đầu."
 
 ---

@@ -265,7 +265,7 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 | P2-T5 | Chart customization panel: đổi màu, tiêu đề, theme | ✅ Done | P2-T1 | `PATCH /charts/:id` (updateMany owner-guard, chỉ set field gửi). FE: ChartStylePanel (drawer phải) đổi tiêu đề + 4 bảng màu + nền sáng/tối, preview trực tiếp; `lib/chartCustomize` (applyCustomization/readStyle thuần). Nút ⚙ trên header chart. +5 BE +13 FE test |
 | P2-T6 | Xoá chart khỏi dashboard | ✅ Done | P2-T1 | `DELETE /charts/:id` (deleteMany owner-guard, count 0→404). Nút ✕ + xác nhận 2 bước trên header chart (onMouseDown stopPropagation để không kích hoạt drag); invalidate ['charts']. E2e 4/4. +4 test |
 | P2-T7 | Đổi tên dashboard | ✅ Done | P2-T1 | DashboardsModule mới: `GET /dashboards/default` + `PATCH /dashboards/:id` (owner-guard, trim, 404). FE: DashboardTitle sửa tên tại chỗ (✏️→input→Lưu) trên header khu biểu đồ |
-| P2-T8 | Export chart thành PNG | ⬜ Todo | P2-T5 | Dùng ECharts built-in export hoặc html2canvas |
+| P2-T8 | Export chart thành PNG | ✅ Done | P2-T5 | ECharts `getDataURL` (canvas renderer) + `<a download>` |
 
 ### Test cases P2
 

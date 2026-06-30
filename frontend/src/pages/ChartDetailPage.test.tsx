@@ -13,11 +13,15 @@ vi.mock('../api/charts', () => ({
   saveChart: vi.fn(),
 }));
 
-vi.mock('../components/ChartView', () => ({
-  default: ({ option }: { option: unknown }) => (
-    <div data-testid="chart-view" data-option={JSON.stringify(option)} />
-  ),
-}));
+vi.mock('../components/ChartView', async () => {
+  const { forwardRef } = await import('react');
+  return {
+    // forwardRef mock — tránh warning "Function components cannot be given refs"
+    default: forwardRef(({ option }: { option: unknown }, _ref: unknown) => (
+      <div data-testid="chart-view" data-option={JSON.stringify(option)} />
+    )),
+  };
+});
 
 import { fetchRows } from '../api/datasets';
 import { saveChart } from '../api/charts';

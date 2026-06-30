@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useParams, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchRows } from '../api/datasets';
@@ -77,6 +77,7 @@ function ChartDetail({
   onBack: () => void;
   onSaved: () => void;
 }) {
+  const chartRef = useRef<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -114,6 +115,20 @@ function ChartDetail({
   const canTogglePercent = suggestion.type === 'bar'; // pie vốn đã %
   const activeSuggestion = agg ? { ...suggestion, aggregation: agg } : suggestion;
   const option = buildChartOption(activeSuggestion, data.rows, { percent });
+
+  function exportPng() {
+    const instance = chartRef.current?.getEchartsInstance?.();
+    if (!instance) return;
+    const url = instance.getDataURL({
+      type: 'png',
+      pixelRatio: 2,
+      backgroundColor: '#030712', // gray-950
+    });
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${suggestion.title || 'chart'}.png`;
+    a.click();
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -183,11 +198,11 @@ function ChartDetail({
         )}
 
         <div className="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-4">
-          <ChartView option={option} height={480} />
+          <ChartView ref={chartRef} option={option} height={480} renderer="canvas" />
         </div>
         <p className="mt-3 text-xs text-gray-500">{data.rows.length} dòng dữ liệu</p>
 
-        <div className="mt-6 flex items-center gap-4">
+        <div className="mt-6 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={handleSave}
@@ -195,6 +210,13 @@ function ChartDetail({
             className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium transition hover:bg-blue-500 disabled:opacity-60"
           >
             {saving ? 'Đang lưu…' : saved ? '✓ Đã lưu!' : 'Lưu vào dashboard'}
+          </button>
+          <button
+            type="button"
+            onClick={exportPng}
+            className="rounded-lg border border-gray-700 bg-gray-800 px-5 py-2.5 text-sm font-medium text-gray-200 transition hover:bg-gray-700"
+          >
+            Tải ảnh PNG
           </button>
           {saveError && (
             <p className="text-sm text-red-400">{saveError}</p>

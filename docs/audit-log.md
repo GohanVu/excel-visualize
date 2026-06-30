@@ -1604,4 +1604,28 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P2-T7 ✅
 
+---
+
+## [2026-06-30] Session — P2-T8: Export chart thành PNG
+
+### Yêu cầu
+- Thêm tính năng export chart ra file PNG từ ChartDetailPage
+
+### Công việc đã làm
+- `ChartView.tsx`: thêm prop `renderer?: 'svg' | 'canvas'` (default `'svg'`), wrap bằng `forwardRef` để expose ECharts instance ra ngoài
+- `ChartDetailPage.tsx`: thêm `useRef`, truyền `renderer="canvas"` + `ref={chartRef}` vào `ChartView` trong `ChartDetail`, thêm hàm `exportPng()` + nút "Tải ảnh PNG"
+- `ChartDetailPage.test.tsx`: cập nhật mock `ChartView` sang `forwardRef` để tránh React warning
+
+### Quyết định quan trọng
+- **Canvas renderer cho ChartDetail**: `getDataURL({ type: 'png' })` của ECharts yêu cầu canvas renderer (SVG renderer trả về SVG). Chỉ đổi renderer ở ChartDetailPage, giữ `svg` ở các nơi khác (DashboardPage, SuggestionPage, StylePanel) để không ảnh hưởng layout
+- **`pixelRatio: 2`**: ảnh xuất ra độ phân giải gấp đôi màn hình → sắc nét trên Retina/HiDPI
+- **`backgroundColor: '#030712'`**: khớp với `bg-gray-950` của trang — không để nền trong suốt
+- **Download trigger**: tạo `<a download>` và `.click()` — không cần thư viện thêm, không cần endpoint backend
+
+### Kết quả
+- 161/161 tests pass, không còn warning
+
+### Tasks liên quan
+- P2-T8 ✅
+
 <!-- Thêm session mới ở đây -->
