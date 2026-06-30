@@ -16,6 +16,10 @@ vi.mock('../api/charts', () => ({
   updateChart: vi.fn(),
 }));
 vi.mock('../api/datasets', () => ({ fetchDatasets: vi.fn(), deleteDataset: vi.fn() }));
+vi.mock('../api/dashboards', () => ({
+  getDefaultDashboard: vi.fn(),
+  renameDashboard: vi.fn(),
+}));
 // react-grid-layout đo bề rộng container (≈0 trong test) → mock thành passthrough
 vi.mock('react-grid-layout', () => ({
   WidthProvider: (C: unknown) => C,
@@ -31,12 +35,15 @@ vi.mock('../components/ChartView', () => ({
 
 import { listCharts, deleteChart, updateChart } from '../api/charts';
 import { fetchDatasets, deleteDataset } from '../api/datasets';
+import { getDefaultDashboard, renameDashboard } from '../api/dashboards';
 
 const mockListCharts = listCharts as ReturnType<typeof vi.fn>;
 const mockDeleteChart = deleteChart as ReturnType<typeof vi.fn>;
 const mockUpdateChart = updateChart as ReturnType<typeof vi.fn>;
 const mockFetchDatasets = fetchDatasets as ReturnType<typeof vi.fn>;
 const mockDeleteDataset = deleteDataset as ReturnType<typeof vi.fn>;
+const mockGetDefaultDashboard = getDefaultDashboard as ReturnType<typeof vi.fn>;
+const mockRenameDashboard = renameDashboard as ReturnType<typeof vi.fn>;
 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -71,6 +78,8 @@ describe('DashboardPage', () => {
     mockDeleteDataset.mockResolvedValue(undefined);
     mockDeleteChart.mockResolvedValue(undefined);
     mockUpdateChart.mockResolvedValue(undefined);
+    mockGetDefaultDashboard.mockResolvedValue(null);
+    mockRenameDashboard.mockResolvedValue({ id: 'dash-1', name: 'Mới' });
   });
 
   it('renders user name in header', () => {
@@ -208,6 +217,44 @@ describe('DashboardPage', () => {
     expect(id).toBe('c-1');
     expect(patch.title).toBe('Doanh thu theo tháng');
     expect((patch.config as { color: string[] }).color).toContain('#1d4ed8');
+  });
+
+  describe('đổi tên dashboard (P2-T7)', () => {
+    it('shows the dashboard name as the section title when present', async () => {
+      mockListCharts.mockResolvedValue({ charts: savedCharts, limit: 3 });
+      mockGetDefaultDashboard.mockResolvedValue({ id: 'dash-1', name: 'Doanh số Q1' });
+      renderPage();
+      expect(
+        await screen.findByRole('heading', { name: 'Doanh số Q1' }),
+      ).toBeInTheDocument();
+    });
+
+    it('renames via the inline edit form → calls renameDashboard with id + new name', async () => {
+      mockListCharts.mockResolvedValue({ charts: savedCharts, limit: 3 });
+      mockGetDefaultDashboard.mockResolvedValue({ id: 'dash-1', name: 'Cũ' });
+      renderPage();
+      await screen.findByRole('heading', { name: 'Cũ' });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Đổi tên dashboard' }));
+      const input = screen.getByLabelText('Tên dashboard');
+      fireEvent.change(input, { target: { value: 'Báo cáo 2026' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Lưu' }));
+
+      await waitFor(() =>
+        expect(mockRenameDashboard).toHaveBeenCalledWith('dash-1', 'Báo cáo 2026'),
+      );
+    });
+
+    it('does not call renameDashboard when the name is unchanged', async () => {
+      mockListCharts.mockResolvedValue({ charts: savedCharts, limit: 3 });
+      mockGetDefaultDashboard.mockResolvedValue({ id: 'dash-1', name: 'Cũ' });
+      renderPage();
+      await screen.findByRole('heading', { name: 'Cũ' });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Đổi tên dashboard' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Lưu' })); // không đổi gì
+      expect(mockRenameDashboard).not.toHaveBeenCalled();
+    });
   });
 
   describe('locked chart slot (P2-T4)', () => {

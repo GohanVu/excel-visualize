@@ -272,6 +272,29 @@ Xoá 1 chart khỏi dashboard. deleteMany lọc `dashboard.userId` (owner-guard)
 
 ---
 
+## Dashboards
+
+> Hiện mỗi user có 1 dashboard mặc định (tạo lười khi lưu chart đầu tiên). Tất cả yêu cầu JWT.
+
+### GET /dashboards/default
+Dashboard mặc định (đầu tiên theo thứ tự tạo) của user.  
+**Auth**: JWT  
+**Response**: `{ "dashboard": { "id": "cuid", "name": "Dashboard của tôi" } | null }` (null nếu chưa lưu chart nào).
+
+---
+
+### PATCH /dashboards/:id
+Đổi tên dashboard (P2-T7). updateMany lọc `userId` (owner-guard). Tên được trim; rỗng → `400`.  
+**Auth**: JWT  
+**Body**:
+```json
+{ "name": "Báo cáo doanh số 2026" }
+```
+**Response**: `{ "id": "cuid", "name": "Báo cáo doanh số 2026" }`  
+**Lỗi**: `400` tên rỗng; `404` nếu dashboard không thuộc về user.
+
+---
+
 ## Study Progress
 
 > Tiến độ học (flashcard/quiz) per user/dataset/sheet/thẻ. Tất cả yêu cầu JWT.

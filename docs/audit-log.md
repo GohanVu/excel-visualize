@@ -1570,4 +1570,38 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P2-T4 ✅
 
+## [2026-06-30] Session — P2-T7: Đổi tên dashboard
+
+### Yêu cầu
+- Cho user đổi tên dashboard của mình
+
+### Công việc đã làm
+- **Backend — DashboardsModule mới** (chưa từng có; dashboard mặc định vốn do `charts.service` tạo lười):
+  - `DashboardsService`: `getDefault(userId)` (dashboard đầu tiên theo createdAt, select id+name, null nếu chưa có) + `rename(userId, id, name)` (trim, rỗng→400; updateMany lọc `userId` owner-guard; count 0→404)
+  - `DashboardsController`: `GET /dashboards/default`, `PATCH /dashboards/:id`
+  - `RenameDashboardDto` (IsString + MaxLength 100; trim/chặn-rỗng ở service)
+  - Wire vào `app.module.ts`. +7 test (5 service, 2 controller)
+- **Frontend**:
+  - `api/dashboards.ts`: `getDefaultDashboard()`, `renameDashboard(id, name)` + type `Dashboard`
+  - `DashboardPage`: query `['dashboard','default']`; truyền vào `SavedCharts`. Component `DashboardTitle` — hiện tên dashboard làm tiêu đề khu "Biểu đồ đã lưu" + nút ✏️ → form input tại chỗ (Lưu/Huỷ) → `renameDashboard` → invalidate `['dashboard','default']`. Không đổi gì hoặc trùng tên cũ → không gọi API. Chưa có dashboard (chưa lưu chart) → fallback nhãn tĩnh "Biểu đồ đã lưu"
+  - +3 test (hiện tên; rename gọi API đúng id+name; tên không đổi → không gọi)
+
+### Quyết định quan trọng
+- **Tạo DashboardsModule riêng** thay vì nhét vào ChartsController: đúng convention "mỗi domain 1 module"; là chỗ tự nhiên cho P05 (multi-dashboard) sau. Charts vẫn tự tạo dashboard mặc định khi lưu chart (không đổi)
+- **`getDefault` trả null khi chưa có dashboard**: tránh tạo bừa dashboard rỗng chỉ để đặt tên; FE ẩn UI đổi tên tới khi có chart đầu tiên (lúc đó dashboard đã tồn tại)
+- **updateMany + filter userId** (đồng nhất chart owner-guard): không lộ tồn tại (404), 1 query
+- **Đổi tên tại chỗ (inline)** trên header khu biểu đồ thay vì panel/modal: nhẹ, đúng tầm 1 field; reuse pattern form aria-label như LoginPage
+- **Trim + chặn rỗng ở service** (không dùng class-transformer @Transform): giữ DTO đơn giản như các DTO khác trong dự án
+
+### Test coverage
+- Backend: 156 → **163 pass** (lint 0 error)
+- Frontend: 158 → **161 pass**, `pnpm build` (tsc -b) xanh, lint 0 error
+
+### Kết quả
+- User đổi tên dashboard → tên persist + hiện ngay. Phase 2: T1 ✅ T2 ✅ T3 ✅ T4 ✅ T5 ✅ T6 ✅ T7 ✅
+- Còn lại Phase 2: **P2-T8** (export chart PNG) — task cuối Phase 2
+
+### Tasks liên quan
+- P2-T7 ✅
+
 <!-- Thêm session mới ở đây -->

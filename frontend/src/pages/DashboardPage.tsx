@@ -9,6 +9,8 @@ import { fetchDatasets, deleteDataset } from '../api/datasets';
 import type { Dataset } from '../api/datasets';
 import { listCharts, updateLayout, deleteChart, updateChart } from '../api/charts';
 import type { DashboardChart } from '../api/charts';
+import { getDefaultDashboard, renameDashboard } from '../api/dashboards';
+import type { Dashboard } from '../api/dashboards';
 import {
   chartsToLayout,
   layoutToPayload,
@@ -31,6 +33,10 @@ export default function DashboardPage() {
   const chartsQ = useQuery({ queryKey: ['charts'], queryFn: listCharts });
   const charts = chartsQ.data?.charts ?? [];
   const chartLimit = chartsQ.data?.limit ?? null;
+  const dashboardQ = useQuery({
+    queryKey: ['dashboard', 'default'],
+    queryFn: getDefaultDashboard,
+  });
 
   const deleteMut = useMutation({
     mutationFn: deleteDataset,
@@ -76,6 +82,7 @@ export default function DashboardPage() {
           <SavedCharts
             charts={charts}
             limit={chartLimit}
+            dashboard={dashboardQ.data ?? null}
             datasets={datasetsQ.data ?? []}
             onPick={(dsId) => navigate(`/datasets/${dsId}/columns`)}
             onUpload={() => navigate('/upload')}
@@ -194,12 +201,14 @@ function SheetCard({
 function SavedCharts({
   charts,
   limit,
+  dashboard,
   datasets,
   onPick,
   onUpload,
 }: {
   charts: DashboardChart[];
   limit: number | null;
+  dashboard: Dashboard | null;
   datasets: Dataset[];
   onPick: (datasetId: string) => void;
   onUpload: () => void;
@@ -239,7 +248,7 @@ function SavedCharts({
     <section className="mt-10">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold">Biểu đồ đã lưu</h2>
+          <DashboardTitle dashboard={dashboard} />
           <p className="mt-1 text-sm text-gray-400">
             {charts.length} biểu đồ — kéo tiêu đề để di chuyển, kéo góc để chỉnh kích thước
           </p>
@@ -335,6 +344,87 @@ function SavedCharts({
         />
       )}
     </section>
+  );
+}
+
+// Tiêu đề dashboard có thể đổi tên tại chỗ (P2-T7). Chưa có dashboard (chưa lưu
+// chart) → fallback nhãn tĩnh "Biểu đồ đã lưu".
+function DashboardTitle({ dashboard }: { dashboard: Dashboard | null }) {
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState('');
+  const renameMut = useMutation({
+    mutationFn: (v: { id: string; name: string }) =>
+      renameDashboard(v.id, v.name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'default'] });
+      setEditing(false);
+    },
+  });
+
+  if (!dashboard) {
+    return <h2 className="text-xl font-bold">Biểu đồ đã lưu</h2>;
+  }
+
+  if (editing) {
+    const submit = () => {
+      const trimmed = name.trim();
+      if (trimmed && trimmed !== dashboard.name) {
+        renameMut.mutate({ id: dashboard.id, name: trimmed });
+      } else {
+        setEditing(false);
+      }
+    };
+    return (
+      <form
+        aria-label="Đổi tên dashboard"
+        className="flex items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <input
+          autoFocus
+          aria-label="Tên dashboard"
+          value={name}
+          maxLength={100}
+          onChange={(e) => setName(e.target.value)}
+          className="rounded-lg border border-gray-700 bg-gray-900 px-2 py-1 text-xl font-bold text-white focus:border-purple-500 focus:outline-none"
+        />
+        <button
+          type="submit"
+          disabled={renameMut.isPending}
+          className="rounded bg-purple-600 px-3 py-1 text-sm transition hover:bg-purple-500 disabled:opacity-60"
+        >
+          Lưu
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditing(false)}
+          className="rounded bg-gray-700 px-3 py-1 text-sm transition hover:bg-gray-600"
+        >
+          Huỷ
+        </button>
+      </form>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <h2 className="text-xl font-bold">{dashboard.name}</h2>
+      <button
+        type="button"
+        aria-label="Đổi tên dashboard"
+        onClick={() => {
+          setName(dashboard.name);
+          setEditing(true);
+        }}
+        className="rounded p-1 text-gray-500 transition hover:bg-gray-800 hover:text-white"
+      >
+        ✏️
+      </button>
+    </div>
   );
 }
 
