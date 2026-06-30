@@ -366,7 +366,18 @@ P5 có thể bắt đầu song song với P4.
 
 ## Định hướng nâng cấp tương lai (Future Roadmap)
 
-- **Hàng đợi xử lý ngầm (Background Jobs)**: Khi lượng người dùng Pro tăng lên hoặc hệ thống triển khai trên nhiều máy chủ (scale-out), chuyển đổi từ `NestJS Schedule` (In-Memory) sang **BullMQ + Redis** để điều phối tác vụ đồng bộ Google Sheets phân tán, hỗ trợ tính năng tự động thử lại (Retry) và giới hạn tốc độ (Rate-limiting).
+Các hạng mục tối ưu hóa và nâng cao trải nghiệm sẽ được thực hiện sau cùng:
+
+-   **Hàng đợi xử lý ngầm (Background Jobs)**: Khi lượng người dùng Pro tăng lên, chuyển đổi từ `NestJS Schedule` sang **BullMQ + Redis** để điều phối tác vụ đồng bộ Google Sheets phân tán, hỗ trợ tự động thử lại (Retry) và giới hạn tốc độ (Rate-limiting).
+-   **Phân trang dữ liệu lớn (API Pagination)**: Bổ sung phân trang `?page=...&limit=...` cho API `/datasets/:id/rows` và render cuốn chiếu (Infinite Scroll / Virtual List) trên Frontend để hỗ trợ các tệp Excel cực lớn (>10.000 dòng) không bị lag bộ nhớ.
+-   **Webhook Idempotency cho PayOS**: Thêm cơ chế kiểm tra trùng lặp giao dịch (Idempotency check) dựa trên `orderCode` và trạng thái để tránh xử lý trùng lặp webhook khi mạng chập chờn.
+-   **Tải lên phân đoạn (Multipart Upload)**: Hỗ trợ chia nhỏ tệp lớn thành nhiều chunk khi tải lên MinIO qua Presigned URL để tăng độ tin cậy khi kết nối mạng yếu.
+-   **Tối ưu ECharts render**: Cấu hình chế độ `large: true` và tự động chuyển đổi linh hoạt giữa Canvas và SVG renderer dựa trên dung lượng dữ liệu.
+-   **Tối ưu hóa hiển thị Mobile & Tablet (Mảng lớn - Cần brainstorm thêm)**: 
+    *   Thiết kế lại luồng kéo-thả layout biểu đồ trên mobile (RGL vô hiệu hóa kéo thả trên màn hình dọc nhỏ, chuyển sang dạng sắp xếp danh sách dọc tự động).
+    *   Tối ưu hóa khả năng hiển thị ECharts Responsive trên mobile (tự động ẩn bớt chú thích legend, giảm kích thước font chữ, hoặc xoay ngang màn hình biểu đồ chi tiết).
+    *   Tối ưu hóa giao diện Flashcard/Quiz thích ứng với màn hình nhỏ, hỗ trợ các thao tác vuốt (swipe gestures) để đánh dấu nhanh trạng thái đã thuộc/chưa thuộc.
+
 
 ---
 
