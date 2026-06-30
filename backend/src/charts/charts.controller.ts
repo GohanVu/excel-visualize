@@ -14,6 +14,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { ChartsService } from './charts.service';
 import { SaveChartDto } from './dto/save-chart.dto';
 import { UpdateLayoutDto } from './dto/update-layout.dto';
+import { UpdateChartDto } from './dto/update-chart.dto';
 
 @Controller('charts')
 @UseGuards(JwtAuthGuard)
@@ -33,6 +34,16 @@ export class ChartsController {
   @Patch('layout')
   updateLayout(@CurrentUser() user: User, @Body() dto: UpdateLayoutDto) {
     return this.chartsService.updateLayout(user.id, dto.layout);
+  }
+
+  // Khai báo SAU @Patch('layout') để route 'layout' không bị ':id' bắt nhầm.
+  @Patch(':id')
+  update(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: UpdateChartDto,
+  ) {
+    return this.chartsService.updateChart(user.id, id, dto);
   }
 
   @Delete(':id')

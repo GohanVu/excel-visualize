@@ -7,7 +7,7 @@ import 'react-resizable/css/styles.css';
 import { useAuth } from '../hooks/useAuth';
 import { fetchDatasets, deleteDataset } from '../api/datasets';
 import type { Dataset } from '../api/datasets';
-import { listCharts, updateLayout, deleteChart } from '../api/charts';
+import { listCharts, updateLayout, deleteChart, updateChart } from '../api/charts';
 import type { DashboardChart } from '../api/charts';
 import {
   chartsToLayout,
@@ -16,6 +16,7 @@ import {
   type GridItem,
 } from '../lib/chartLayout';
 import ChartView from '../components/ChartView';
+import ChartStylePanel from '../components/ChartStylePanel';
 import client from '../api/client';
 
 const GridLayout = WidthProvider(RGL);
@@ -185,6 +186,7 @@ function SavedCharts({ charts }: { charts: DashboardChart[] }) {
   const queryClient = useQueryClient();
   const [layout, setLayout] = useState<GridItem[]>(() => chartsToLayout(charts));
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
   const saveMut = useMutation({ mutationFn: updateLayout });
   const persist = (next: GridItem[]) =>
     saveMut.mutate(layoutToPayload(next));
@@ -195,6 +197,17 @@ function SavedCharts({ charts }: { charts: DashboardChart[] }) {
       setConfirmId(null);
     },
   });
+  const editMut = useMutation({
+    mutationFn: (v: {
+      id: string;
+      patch: { title: string; config: Record<string, unknown> };
+    }) => updateChart(v.id, v.patch),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['charts'] });
+      setEditId(null);
+    },
+  });
+  const editing = charts.find((c) => c.id === editId) ?? null;
   // chặn react-grid-layout bắt đầu kéo khi bấm nút trong thanh tiêu đề
   const stopDrag = (e: { stopPropagation: () => void }) => e.stopPropagation();
 
@@ -248,15 +261,26 @@ function SavedCharts({ charts }: { charts: DashboardChart[] }) {
                     </button>
                   </span>
                 ) : (
-                  <button
-                    type="button"
-                    aria-label={`Xoá ${chart.title ?? 'biểu đồ'}`}
-                    onMouseDown={stopDrag}
-                    onClick={() => setConfirmId(chart.id)}
-                    className="shrink-0 rounded p-1 text-gray-500 transition hover:bg-gray-800 hover:text-red-400"
-                  >
-                    ✕
-                  </button>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      aria-label={`Tuỳ chỉnh ${chart.title ?? 'biểu đồ'}`}
+                      onMouseDown={stopDrag}
+                      onClick={() => setEditId(chart.id)}
+                      className="rounded p-1 text-gray-500 transition hover:bg-gray-800 hover:text-white"
+                    >
+                      ⚙
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Xoá ${chart.title ?? 'biểu đồ'}`}
+                      onMouseDown={stopDrag}
+                      onClick={() => setConfirmId(chart.id)}
+                      className="rounded p-1 text-gray-500 transition hover:bg-gray-800 hover:text-red-400"
+                    >
+                      ✕
+                    </button>
+                  </span>
                 )}
               </div>
               <div className="min-h-0 flex-1 p-2">
@@ -270,6 +294,15 @@ function SavedCharts({ charts }: { charts: DashboardChart[] }) {
           );
         })}
       </GridLayout>
+
+      {editing && (
+        <ChartStylePanel
+          chart={editing}
+          saving={editMut.isPending}
+          onClose={() => setEditId(null)}
+          onSave={(patch) => editMut.mutate({ id: editing.id, patch })}
+        />
+      )}
     </section>
   );
 }

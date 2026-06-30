@@ -152,6 +152,41 @@ describe('ChartsService', () => {
     });
   });
 
+  describe('updateChart', () => {
+    beforeEach(() => mockPrisma.chart.updateMany.mockResolvedValue({ count: 1 }));
+
+    it('updates title + config guarded by dashboard owner', async () => {
+      await service.updateChart('user-1', 'c-1', {
+        title: 'Tên mới',
+        config: { color: ['#fff'] },
+      });
+      expect(mockPrisma.chart.updateMany).toHaveBeenCalledWith({
+        where: { id: 'c-1', dashboard: { userId: 'user-1' } },
+        data: { title: 'Tên mới', config: { color: ['#fff'] } },
+      });
+    });
+
+    it('only sets fields that were provided (omits undefined)', async () => {
+      await service.updateChart('user-1', 'c-1', { title: 'Chỉ tiêu đề' });
+      expect(mockPrisma.chart.updateMany).toHaveBeenCalledWith({
+        where: { id: 'c-1', dashboard: { userId: 'user-1' } },
+        data: { title: 'Chỉ tiêu đề' },
+      });
+    });
+
+    it('returns { updated: true } on success', async () => {
+      const result = await service.updateChart('user-1', 'c-1', { title: 'x' });
+      expect(result).toEqual({ updated: true });
+    });
+
+    it("throws NotFound when chart is not the user's (count 0)", async () => {
+      mockPrisma.chart.updateMany.mockResolvedValue({ count: 0 });
+      await expect(
+        service.updateChart('user-1', 'c-x', { title: 'x' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('deleteChart', () => {
     it('deletes the chart guarded by dashboard owner', async () => {
       mockPrisma.chart.deleteMany.mockResolvedValue({ count: 1 });

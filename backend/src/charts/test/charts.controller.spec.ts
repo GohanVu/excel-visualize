@@ -2,7 +2,11 @@ import { Test } from '@nestjs/testing';
 import { ChartsController } from '../charts.controller';
 import { ChartsService } from '../charts.service';
 
-const mockService = { saveChart: jest.fn(), listCharts: jest.fn() };
+const mockService = {
+  saveChart: jest.fn(),
+  listCharts: jest.fn(),
+  updateChart: jest.fn(),
+};
 const mockUser = { id: 'user-1' } as any;
 
 describe('ChartsController', () => {
@@ -37,5 +41,15 @@ describe('ChartsController', () => {
     const result = await controller.list(mockUser);
     expect(mockService.listCharts).toHaveBeenCalledWith('user-1');
     expect(result.charts).toHaveLength(1);
+  });
+
+  it('PATCH /charts/:id → delegates to service.updateChart with userId + id + dto', async () => {
+    const dto = { title: 'Tên mới', config: { color: ['#fff'] } };
+    mockService.updateChart.mockResolvedValue({ updated: true });
+
+    const result = await controller.update(mockUser, 'c-1', dto as any);
+
+    expect(mockService.updateChart).toHaveBeenCalledWith('user-1', 'c-1', dto);
+    expect(result).toEqual({ updated: true });
   });
 });

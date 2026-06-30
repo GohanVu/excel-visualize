@@ -1426,4 +1426,41 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P2-T6 ✅ → tiếp P2-T2 hoặc P2-T7
 
+## [2026-06-30] Session — P2-T5: Panel tuỳ chỉnh chart (tiêu đề/màu/nền)
+
+### Yêu cầu
+- Hoàn thành P2-T5 (đang dở: commit trước mới scaffold `UpdateChartDto`, chưa wire). Panel tuỳ chỉnh khi click chart: đổi tiêu đề, màu, theme
+
+### Công việc đã làm
+- **Backend**: wire `UpdateChartDto` → `ChartsService.updateChart` (updateMany lọc `dashboard.userId` = owner-guard như deleteChart/updateLayout; chỉ set field gửi lên, bỏ qua undefined → không ghi đè nhầm; count 0 → 404). Controller `PATCH /charts/:id` đặt SAU `@Patch('layout')` để route 'layout' không bị ':id' bắt nhầm. +5 test (4 service: update title+config, chỉ-field-gửi, trả updated, 404; 1 controller delegate)
+- **Frontend**:
+  - `lib/chartCustomize.ts` (thuần): 4 bảng màu (Mặc định/Đại dương/Hoàng hôn/Rừng) + theme Tối/Sáng; `applyCustomization(config, style)` set `color`+`backgroundColor`+`textStyle.color` (trả config mới, không sửa gốc); `readStyle(config)` suy ngược style để khởi tạo panel (không nhồi field lạ vào ECharts option)
+  - `components/ChartStylePanel.tsx`: drawer bên phải (role=dialog), input tiêu đề + swatch bảng màu + segmented nền + preview ChartView trực tiếp; Lưu/Huỷ
+  - `api/charts.ts`: `updateChart(id, patch)`
+  - `DashboardPage`: nút ⚙ trên header mỗi chart (onMouseDown stopPropagation để RGL không kéo) → mở panel; `editMut` → updateChart → invalidate ['charts'] + đóng panel
+  - +13 test (6 chartCustomize, 5 ChartStylePanel, 2 DashboardPage: mở panel + lưu gọi updateChart đúng id/patch)
+- **api.md**: thêm `PATCH /charts/:id` + bổ sung doc còn thiếu cho `PATCH /charts/layout` & `DELETE /charts/:id` (vốn chưa được ghi từ T1/T6)
+
+### Quyết định quan trọng
+- **updateMany + relation filter** (đồng nhất deleteChart/updateLayout): owner-guard ngay trong where, không lộ tồn tại (404 khi không phải chart user). Không trả lại record (FE đã có sẵn patch + invalidate refetch)
+- **Chỉ set field gửi lên**: title/config độc lập — gửi mỗi title không xoá config và ngược lại
+- **Tiêu đề = `chart.title`** (nhãn header thẻ), KHÔNG đụng `config.title.text` — tránh trùng/nhập nhằng nguồn hiển thị
+- **Style suy ngược từ config** (readStyle so khớp `color`/`backgroundColor`) thay vì lưu key riêng → không nhồi field non-ECharts vào option JSONB
+- **Tách helper thuần `chartCustomize`**: test màu/nền/round-trip không cần DOM; panel + DashboardPage mock ChartView
+- **Route `@Patch(':id')` khai báo sau `@Patch('layout')`**: tránh ':id' nuốt path 'layout'
+
+### Môi trường
+- Sau fresh state: không còn `.env`/image/volume. Build dev-stage image riêng (`ev-backend-dev`, `ev-frontend-dev`) chạy unit test (mock, không cần DB/MinIO): `docker run --rm <img> sh -c "pnpm db:generate && pnpm test"`. KHÔNG cần dựng cả stack cho unit test
+
+### Test coverage
+- Backend: 146 → **151 pass** (lint 0 error)
+- Frontend: 135 → **148 pass**, `pnpm build` (tsc -b) xanh (Issue-012), lint 0 error
+
+### Kết quả
+- P2-T5 hoàn tất. User click ⚙ → đổi tiêu đề/màu/nền có preview → Lưu → chart re-render + persist. Phần visual drawer cần xem ở browser
+- Phase 2: T1 ✅ T5 ✅ T6 ✅. Tiếp: P2-T2 (thêm chart vào dashboard đang mở) / P2-T3+T4 (free-tier gate) / P2-T7 (đổi tên dashboard) / P2-T8 (export PNG)
+
+### Tasks liên quan
+- P2-T5 ✅
+
 <!-- Thêm session mới ở đây -->

@@ -45,6 +45,14 @@ export async function deleteChart(chartId: string): Promise<void> {
   await client.delete(`/charts/${chartId}`);
 }
 
+// Cập nhật tiêu đề và/hoặc config (panel tuỳ chỉnh). Chỉ gửi field cần đổi.
+export async function updateChart(
+  chartId: string,
+  patch: { title?: string; config?: Record<string, unknown> },
+): Promise<void> {
+  await client.patch(`/charts/${chartId}`, patch);
+}
+
 export async function saveChart(
   datasetId: string,
   type: string,

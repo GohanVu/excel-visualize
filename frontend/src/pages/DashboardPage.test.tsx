@@ -13,6 +13,7 @@ vi.mock('../api/charts', () => ({
   listCharts: vi.fn(),
   updateLayout: vi.fn(),
   deleteChart: vi.fn(),
+  updateChart: vi.fn(),
 }));
 vi.mock('../api/datasets', () => ({ fetchDatasets: vi.fn(), deleteDataset: vi.fn() }));
 // react-grid-layout đo bề rộng container (≈0 trong test) → mock thành passthrough
@@ -28,11 +29,12 @@ vi.mock('../components/ChartView', () => ({
   ),
 }));
 
-import { listCharts, deleteChart } from '../api/charts';
+import { listCharts, deleteChart, updateChart } from '../api/charts';
 import { fetchDatasets, deleteDataset } from '../api/datasets';
 
 const mockListCharts = listCharts as ReturnType<typeof vi.fn>;
 const mockDeleteChart = deleteChart as ReturnType<typeof vi.fn>;
+const mockUpdateChart = updateChart as ReturnType<typeof vi.fn>;
 const mockFetchDatasets = fetchDatasets as ReturnType<typeof vi.fn>;
 const mockDeleteDataset = deleteDataset as ReturnType<typeof vi.fn>;
 
@@ -68,6 +70,7 @@ describe('DashboardPage', () => {
     mockListCharts.mockResolvedValue([]);
     mockDeleteDataset.mockResolvedValue(undefined);
     mockDeleteChart.mockResolvedValue(undefined);
+    mockUpdateChart.mockResolvedValue(undefined);
   });
 
   it('renders user name in header', () => {
@@ -164,5 +167,34 @@ describe('DashboardPage', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Huỷ' }));
     expect(mockDeleteChart).not.toHaveBeenCalled();
+  });
+
+  it('mở panel tuỳ chỉnh khi bấm ⚙', async () => {
+    mockListCharts.mockResolvedValue(savedCharts);
+    renderPage();
+    await screen.findByText('Doanh thu theo tháng');
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Tuỳ chỉnh Doanh thu theo tháng' }),
+    );
+    expect(
+      screen.getByRole('dialog', { name: 'Tuỳ chỉnh biểu đồ' }),
+    ).toBeInTheDocument();
+  });
+
+  it('lưu tuỳ chỉnh → gọi updateChart với id + patch (đổi bảng màu)', async () => {
+    mockListCharts.mockResolvedValue(savedCharts);
+    renderPage();
+    await screen.findByText('Doanh thu theo tháng');
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Tuỳ chỉnh Doanh thu theo tháng' }),
+    );
+    // đổi bảng màu sang "Đại dương" rồi lưu
+    fireEvent.click(screen.getByRole('button', { name: /Đại dương/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu' }));
+    await waitFor(() => expect(mockUpdateChart).toHaveBeenCalledTimes(1));
+    const [id, patch] = mockUpdateChart.mock.calls[0];
+    expect(id).toBe('c-1');
+    expect(patch.title).toBe('Doanh thu theo tháng');
+    expect((patch.config as { color: string[] }).color).toContain('#1d4ed8');
   });
 });

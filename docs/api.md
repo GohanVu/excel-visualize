@@ -233,8 +233,40 @@ Lấy các chart đã lưu của user (qua dashboard), cũ → mới.
 **Auth**: JWT  
 **Response**:
 ```json
-{ "charts": [ { "id": "cuid", "type": "line", "title": "...", "config": { }, "createdAt": "ISO date" } ] }
+{ "charts": [ { "id": "cuid", "type": "line", "title": "...", "config": { }, "position": { }, "createdAt": "ISO date" } ] }
 ```
+
+---
+
+### PATCH /charts/layout
+Lưu vị trí/kích thước các chart sau khi kéo-thả/resize (react-grid-layout). updateMany lọc `dashboard.userId` (owner-guard).  
+**Auth**: JWT  
+**Body**:
+```json
+{ "layout": [ { "id": "cuid", "x": 0, "y": 0, "w": 6, "h": 7 } ] }
+```
+**Response**: `{ "updated": 2 }`
+
+---
+
+### PATCH /charts/:id
+Cập nhật 1 chart từ panel tuỳ chỉnh (P2-T5): đổi tiêu đề và/hoặc config (màu, nền). Chỉ field gửi lên mới bị ghi đè. updateMany lọc `dashboard.userId` (owner-guard).  
+**Auth**: JWT  
+**Body** (cả hai optional):
+```json
+{ "title": "Tên mới", "config": { } }
+```
+`config`: ECharts option đầy đủ (JSONB) đã áp bảng màu/nền.  
+**Response**: `{ "updated": true }`  
+**Lỗi**: `404` nếu chart không thuộc về user.
+
+---
+
+### DELETE /charts/:id
+Xoá 1 chart khỏi dashboard. deleteMany lọc `dashboard.userId` (owner-guard).  
+**Auth**: JWT  
+**Response**: `{ "deleted": true }`  
+**Lỗi**: `404` nếu chart không thuộc về user.
 
 ---
 
