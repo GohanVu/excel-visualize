@@ -1,4 +1,5 @@
 import type { ChartSuggestion, Aggregation } from '../api/datasets';
+import { formatDate } from './formatDate';
 
 type Row = Record<string, string>;
 // EChartsOption rộng — dùng record để khỏi phụ thuộc type nội bộ echarts
@@ -65,10 +66,16 @@ function maybePercent(data: number[], on: boolean): number[] {
   return data.map((v) => Math.round((v / total) * 1000) / 10);
 }
 
-const valueAxis = (percent: boolean) =>
-  percent
-    ? { type: 'value', axisLabel: { formatter: '{value}%' } }
-    : { type: 'value' };
+const valueAxis = (percent: boolean, minInterval: boolean) => {
+  const axis: Record<string, unknown> = { type: 'value' };
+  if (percent) {
+    axis.axisLabel = { formatter: '{value}%' };
+  }
+  if (minInterval) {
+    axis.minInterval = 1;
+  }
+  return axis;
+};
 
 /** Dựng ECharts option từ 1 gợi ý chart + data rows (dùng cho cả thumbnail và full) */
 export function buildChartOption(
@@ -84,7 +91,10 @@ export function buildChartOption(
   // Gộp ra category → bar (hoặc pie). Không gộp (aggregation rỗng) đi nhánh raw.
   if (aggregation) {
     if (type === 'pie') {
-      const data = groupAggregate(rows, x, y[0] ?? '', aggregation);
+      const data = groupAggregate(rows, x, y[0] ?? '', aggregation).map((d) => ({
+        name: formatDate(d.name),
+        value: d.value,
+      }));
       return {
         color: PALETTE,
         tooltip: { trigger: 'item' },
@@ -94,20 +104,28 @@ export function buildChartOption(
     // bar: mỗi cột số = 1 series (count → y rỗng → 1 series đếm).
     // Thứ tự nhóm x giống nhau với mọi cột y (nhóm theo x), lấy từ cột đầu.
     const cols = y.length > 0 ? y : [''];
-    const names = groupAggregate(rows, x, cols[0], aggregation).map((d) => d.name);
+    const names = groupAggregate(rows, x, cols[0], aggregation).map((d) =>
+      formatDate(d.name),
+    );
+    const seriesList = cols.map((c) =>
+      maybePercent(
+        groupAggregate(rows, x, c, aggregation).map((d) => d.value),
+        percent,
+      ),
+    );
+    const isIntegerAxis =
+      !percent && seriesList.every((data) => data.every((v) => Number.isInteger(v)));
+
     return {
       color: PALETTE,
       tooltip: { trigger: 'axis' },
       legend: cols.length > 1 ? { data: cols } : undefined,
       xAxis: { type: 'category', data: names },
-      yAxis: valueAxis(percent),
-      series: cols.map((c) => ({
+      yAxis: valueAxis(percent, isIntegerAxis),
+      series: cols.map((c, i) => ({
         name: c,
         type: 'bar',
-        data: maybePercent(
-          groupAggregate(rows, x, c, aggregation).map((d) => d.value),
-          percent,
-        ),
+        data: seriesList[i],
       })),
     };
   }
@@ -120,7 +138,10 @@ export function buildChartOption(
         {
           type: 'pie',
           radius: '70%',
-          data: rows.map((r) => ({ name: r[x] ?? '', value: num(r[y[0]]) })),
+          data: rows.map((r) => ({
+            name: formatDate(r[x] ?? ''),
+            value: num(r[y[0]]),
+          })),
         },
       ],
     };
@@ -142,19 +163,26 @@ export function buildChartOption(
   }
 
   // line | bar — trục x là category, mỗi cột số liệu là 1 series
+  const seriesList = y.map((col) =>
+    maybePercent(
+      rows.map((r) => num(r[col])),
+      percent,
+    ),
+  );
+  const isIntegerAxis =
+    !percent && seriesList.every((data) => data.every((v) => Number.isInteger(v)));
+
   return {
     color: PALETTE,
     tooltip: { trigger: 'axis' },
     legend: y.length > 1 ? { data: y } : undefined,
-    xAxis: { type: 'category', data: rows.map((r) => r[x] ?? '') },
-    yAxis: valueAxis(percent),
-    series: y.map((col) => ({
+    xAxis: { type: 'category', data: rows.map((r) => formatDate(r[x] ?? '')) },
+    yAxis: valueAxis(percent, isIntegerAxis),
+    series: y.map((col, i) => ({
       name: col,
       type,
-      data: maybePercent(
-        rows.map((r) => num(r[col])),
-        percent,
-      ),
+      data: seriesList[i],
     })),
   };
 }
+

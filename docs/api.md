@@ -42,6 +42,22 @@ Callback sau khi Google xác thực.
 
 ---
 
+### GET /auth/google/sheets
+Yêu cầu cấp quyền Google Sheets.  
+**Auth**: JWT (cookie `access_token`)  
+**Redirect**: Google OAuth consent screen (với scope `spreadsheets.readonly` + `access_type=offline` + `prompt=consent`) → `/auth/google/sheets/callback`
+
+---
+
+### GET /auth/google/sheets/callback
+Callback nhận Google OAuth code, lưu Refresh Token và redirect về Frontend.  
+**Auth**: JWT (cookie `access_token` để biết user hiện tại)  
+**Query**: `code` (OAuth authorization code từ Google)  
+**Redirect**: `FRONTEND_URL/upload?google_connected=true` (nếu thành công)  
+**Errors**: `400` nếu thiếu code, lỗi kết nối hoặc Google không trả về refresh token.
+
+---
+
 ### POST /auth/refresh
 Lấy access token mới từ refresh token.  
 **Auth**: cookie `refresh_token` (tự động gửi khi path khớp)  
@@ -129,6 +145,37 @@ Xác nhận upload thành công, tạo Dataset record trong DB.
   "updatedAt": "ISO date"
 }
 ```
+
+---
+
+### POST /datasets/google-sheet
+Kết nối và import dữ liệu từ một liên kết Google Sheet (công khai hoặc riêng tư qua Google OAuth).  
+**Auth**: JWT  
+**Body**:
+```json
+{
+  "url": "https://docs.google.com/spreadsheets/d/spreadsheet-id/edit..."
+}
+```
+**Response**: Dataset object (tương tự `POST /datasets`)  
+**Quota/Size limit**: Áp dụng giới hạn số lượng dataset (2 Free, 20 Pro) và kích thước (10MB Free, 50MB Pro)  
+**Errors**: `400` nếu URL không hợp lệ hoặc quá quota; `403/404` nếu sheet riêng tư nhưng user chưa liên kết Google OAuth.
+
+---
+
+### POST /datasets/:id/sync
+Đồng bộ (refresh) tức thì dữ liệu của một Google Sheet dataset từ nguồn Google Sheets về hệ thống.  
+**Auth**: JWT  
+**Response**:
+```json
+{
+  "id": "cuid",
+  "sizeBytes": 102400,
+  "lastSyncedAt": "ISO date"
+}
+```
+**Side effects**: Ghi đè file XLSX mới lên MinIO tại key cũ, cập nhật kích thước và ghi Audit Log.  
+**Errors**: `404` nếu dataset không tồn tại hoặc không thuộc về user; `400` nếu dataset không có nguồn gốc từ Google Sheet.
 
 ---
 

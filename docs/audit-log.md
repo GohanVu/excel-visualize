@@ -521,6 +521,100 @@
 ### Tasks liên quan
 - Troubleshooting & Quality Assurance (Phase 0.5 & Phase 2 follow-ups).
 
+## [2026-06-30] Session — Check chéo dự án & Cập nhật tài liệu API Phase 3
 
+### Yêu cầu
+- Sử dụng codebase-memory MCP kiểm tra chéo code thực tế và tài liệu.
 
+### Công việc đã làm
+- **Kiểm tra chéo hệ thống**:
+  * Kiểm tra và xác nhận code thực tế khớp với tiến độ trong `docs/plan.md` (đã hoàn thành Phase 3).
+  * Chạy toàn bộ bộ test backend (192/192 passed) và frontend (188/188 passed) thành công 100%.
+  * Phát hiện khoảng trống tài liệu API: Các API Google Sheet & Google OAuth mới của Phase 3 chưa được ghi nhận trong `docs/api.md`.
+- **Cập nhật tài liệu**:
+  * Bổ sung đầy đủ 4 endpoint mới của Phase 3 vào [docs/api.md](file:///d:/Project/excel-visualize/docs/api.md): `GET /auth/google/sheets`, `GET /auth/google/sheets/callback`, `POST /datasets/google-sheet`, `POST /datasets/:id/sync`.
+- **Tạo báo cáo**:
+  * Lưu báo cáo check chéo chi tiết tại [cross_check_report.md](file:///C:/Users/Admin/.gemini/antigravity-ide/brain/086ce09a-d3a9-4b86-ac38-fd7f4e15a486/cross_check_report.md).
 
+### Quyết định quan trọng
+- Cập nhật trực tiếp tài liệu API bị thiếu để duy trì nguyên tắc "Documentation Integrity" của dự án mà không cần tạo plan lớn vì đây là thay đổi tài liệu thuần túy và không có rủi ro kỹ thuật.
+
+### Kết quả
+- Tài liệu API đã đồng bộ 100% với mã nguồn hiện tại. Sẵn sàng cho Phase 4 (AI Features).
+
+### Tasks liên quan
+- Quality Assurance / Documentation (Phase 3 follow-up).## [2026-06-30] Session — Brainstorm Notion-like Chart View / Editor
+
+### Yêu cầu
+- Brainstorm thiết kế tính năng biểu đồ hoạt động tương tự như Notion Chart View.
+- So sánh tính năng Notion Charts với cấu trúc codebase hiện tại của dự án.
+- Đề xuất giải pháp thiết kế UI và kiến trúc kỹ thuật tích hợp.
+
+### Công việc đã làm
+- **Nghiên cứu & Phân tích**:
+  * Đọc và phân tích cách Notion Charts hoạt động (loại biểu đồ, cách cấu hình trực tiếp trục X/Y, tính năng Aggregation, Sort, Limit, Style/Color Palettes).
+  * Kiểm tra cấu trúc source code hiện tại (Prisma schema, backend suggester service, frontend `buildChartOption`, `ChartDetailPage`, và drawer `ChartStylePanel` trên Dashboard).
+- **Tạo Tài liệu Brainstorm**:
+  * Tạo file [brainstorm_notion_charts.md](file:///C:/Users/Admin/.gemini/antigravity-ide/brain/bca2a39c-89b3-4af5-a2f2-d14bd3960a57/brainstorm_notion_charts.md) chứa phân tích chi tiết, biểu đồ luồng hoạt động UX lai (hybrid flow), thiết kế giao diện sidebar panel cấu hình, và giải pháp lưu trữ cấu trúc định nghĩa biểu đồ trong Database.
+
+### Quyết định quan trọng
+- **Giữ luồng Hybrid**: Vẫn giữ auto-suggest 30 giây đầu tiên cho người mới để tối ưu "Wow moment", đồng thời cung cấp thêm "Studio Chart Editor" có sidebar cấu hình trực quan như Notion làm escape hatch để user tự do tinh chỉnh (loại chart, cột X, cột Y, phép gộp, sắp xếp, style...).
+- **Cấu trúc lại trường Config**: Đề xuất lưu thêm trường `definition` (Notion-like spec) và `option` (đã build xong) trong cùng một đối tượng Json của cột `Chart.config` trong database. Việc này tránh làm phức tạp schema prisma mà vẫn lưu giữ được đầy đủ trạng thái để phục hồi form cấu hình ở UI.
+- **Nâng cấp buildChartOption thành Compiler**: Chuyển đổi logic render option từ nhận dạng gợi ý tĩnh sang nhận cấu hình tự do `definition` từ client và tự compile ra ECharts option.
+
+### Kết quả
+- Hoàn thành báo cáo brainstorm chi tiết định hướng phát triển tính năng Notion-like Chart Editor cho giai đoạn tương lai.
+
+### Tasks liên quan
+- Định hướng tương lai (Future Roadmap - Chart Editor).
+## [2026-06-30] Session — Sửa lỗi định dạng ngày & Chặn số lẻ trục Y
+
+### Yêu cầu
+- Sửa lỗi thời gian chưa được định dạng ở Preview Table, mẫu dữ liệu, và Trục X của biểu đồ (hiển thị chuỗi ISO-8601 thô `2026-06-01T00:00:00.000Z`).
+- Chặn hiển thị số lẻ thập phân (ví dụ `1.5, 2.5`) trên trục Y của biểu đồ khi dữ liệu gốc biểu diễn các dán nhãn phân loại bằng số hoặc toàn bộ là số nguyên.
+
+### Công việc đã làm
+- **Frontend**:
+  * Tạo helper [formatDate.ts](file:///d:/Project/excel-visualize/frontend/src/lib/formatDate.ts) sử dụng regex an toàn (tránh lệch ngày múi giờ) tách chuỗi ISO-8601 lấy phần ngày `YYYY-MM-DD`.
+  * Cập nhật [ColumnOverviewPage.tsx](file:///d:/Project/excel-visualize/frontend/src/pages/ColumnOverviewPage.tsx): Định dạng ngày trong Preview Table và danh sách sample values.
+  * Cập nhật [buildChartOption.ts](file:///d:/Project/excel-visualize/frontend/src/lib/buildChartOption.ts):
+    * Áp dụng `formatDate` lên trục hoành (`xAxis.data`) của các biểu đồ dạng line, bar, pie.
+    * Tự động quét dữ liệu của toàn bộ series hiển thị. Nếu tất cả giá trị đều là số nguyên, thiết lập `minInterval: 1` cho trục Y của ECharts để tránh tự động chia nhỏ thành các số thập phân.
+  * Viết unit test:
+    * Tạo [formatDate.test.ts](file:///d:/Project/excel-visualize/frontend/src/lib/formatDate.test.ts) kiểm thử logic format.
+    * Bổ sung test cases trong [buildChartOption.test.ts](file:///d:/Project/excel-visualize/frontend/src/lib/buildChartOption.test.ts) xác minh format date trên category X-axis và cấu hình `minInterval: 1` cho `yAxis`.
+- **Chạy kiểm thử**: Chạy `docker compose exec -T frontend pnpm test -- --run` thành công 100% (196/196 passed).
+
+### Quyết định quan trọng
+- **Format date phía client dùng Regex**: Việc format date tại client giúp giữ nguyên định dạng thô trong DB/MinIO. Sử dụng regex split thay vì `new Date()` giúp tránh hoàn toàn các lỗi lệch múi giờ (timezone offset) khi chuyển đổi trên các máy khách khác nhau.
+- **Tự động kích hoạt `minInterval`**: Hệ thống tự kiểm tra kiểu số nguyên (`Number.isInteger`) của toàn bộ series đang vẽ để áp đặt `minInterval: 1` mà không làm hỏng trải nghiệm hiển thị khi biểu đồ thực sự vẽ dữ liệu số lẻ (như điểm số trung bình, nhiệt độ, tỷ lệ phần trăm).
+
+### Kết quả
+- Preview Table, chip mẫu dữ liệu và trục hoành biểu đồ hiển thị ngày dạng `YYYY-MM-DD`.
+- Trục Y của các cột phân loại/số nguyên được vẽ đúng tỉ lệ nguyên, không còn xuất hiện các vạch chia số lẻ.
+
+### Tasks liên quan
+- Troubleshooting & Quality Assurance (UI bugs).
+
+## [2026-06-30] Session — Tinh chỉnh Auto-detect: Cột số nguyên ít distinct thành Phân loại (Category)
+
+### Yêu cầu
+- Người dùng chỉ ra cột "Phân loại" có giá trị `1, 2, 2` bản chất là nhãn phân loại (Category / label string), không phải là Số liệu đo lường. Hệ thống không nên nhận diện là `number` và gợi ý biểu đồ diễn biến Line/Bar sai lệch.
+
+### Công việc đã làm
+- **Backend**:
+  * Cập nhật [column-type.service.ts](file:///d:/Project/excel-visualize/backend/src/parser/column-type.service.ts) tinh chỉnh logic tự động nhận diện:
+    * Nếu một cột toàn bộ là số nguyên, có số lượng dòng $\ge 10$, số giá trị phân biệt (distinct) $\le 10$, và tỷ lệ phân biệt $\le 20\%$.
+    * Hệ thống sẽ tự động gán kiểu của cột này là `ColumnType.category` với `confidence: 0.6`.
+  * Viết unit test:
+    * Bổ sung test cases trong [column-type.service.spec.ts](file:///d:/Project/excel-visualize/backend/src/parser/test/column-type.service.spec.ts) để kiểm thử việc nhận diện cột số nguyên lặp thành `category` và cột số nguyên liên tục thành `number`.
+- **Chạy kiểm thử**: Chạy toàn bộ unit tests của backend thành công (194/194 passed).
+
+### Quyết định quan trọng
+- **Thiết lập confidence = 0.6 cho cột integer category**: Giúp cột tự động hiển thị trong tab **Phân loại** (🏷️) đúng như bản chất dữ liệu, đồng thời kích hoạt panel **Xác nhận kiểu cột** (hiện khi confidence < 0.8) ở UI để người dùng vẫn có quyền đổi lại thành **Số liệu** (Number) chỉ bằng một click nếu họ thực sự muốn.
+
+### Kết quả
+- Cột số nguyên ít phân biệt (ví dụ: `1, 2, 2` dán nhãn) được nhận diện chính xác là **Phân loại**, không bị đẩy nhầm vào **Số liệu** và không tạo ra biểu đồ line/bar vô nghĩa.
+
+### Tasks liên quan
+- Troubleshooting & Quality Assurance (UI & auto-detect).

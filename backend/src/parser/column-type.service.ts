@@ -41,6 +41,22 @@ export class ColumnTypeService {
     // Guard: cột quá thưa không đủ tin để gán number/date
     if (fillRatio >= MIN_FILL_RATIO) {
       if (numberRatio >= MATCH_THRESHOLD) {
+        // Kiểm tra xem đây có phải là cột phân loại dạng số nguyên (integer category) không?
+        const isAllInt = nonEmpty.every((v) => {
+          const n = Number(v.replace(/,/g, ''));
+          return Number.isInteger(n);
+        });
+        const distinct = new Set(nonEmpty).size;
+        const isLowDistinct =
+          nonEmpty.length >= 10 &&
+          distinct <= 10 &&
+          distinct / nonEmpty.length <= 0.2;
+
+        if (isAllInt && isLowDistinct) {
+          // Đoán là category với confidence thấp để user xác nhận ở UI
+          return { type: ColumnType.category, confidence: 0.6 };
+        }
+
         return { type: ColumnType.number, confidence: this.round2(numberRatio) };
       }
       if (dateRatio >= MATCH_THRESHOLD) {

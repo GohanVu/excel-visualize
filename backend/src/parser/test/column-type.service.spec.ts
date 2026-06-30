@@ -109,4 +109,21 @@ describe('ColumnTypeService', () => {
       expect(service.detect(values).confidence).toBeGreaterThan(0.9);
     });
   });
+
+  describe('integer category detection', () => {
+    it('detects integer labels as category with low confidence', () => {
+      // 30 dòng chỉ chứa các giá trị 1, 2, 3 lặp lại
+      const values = Array.from({ length: 30 }, (_, i) => String((i % 3) + 1));
+      const result = service.detect(values);
+      expect(result.type).toBe(ColumnType.category);
+      expect(result.confidence).toBe(0.6);
+    });
+
+    it('detects unique integer list as number', () => {
+      // 30 dòng chứa 30 số nguyên khác nhau liên tục -> phải là number
+      const values = Array.from({ length: 30 }, (_, i) => String(i + 1));
+      const result = service.detect(values);
+      expect(result.type).toBe(ColumnType.number);
+    });
+  });
 });

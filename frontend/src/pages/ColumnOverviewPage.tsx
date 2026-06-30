@@ -5,6 +5,7 @@ import { fetchColumns } from '../api/datasets';
 import type { DatasetColumn, ColumnType } from '../api/datasets';
 import { groupColumns, autoSelectColumns } from '../lib/columnGrouping';
 import Header from '../components/Header';
+import { formatDate } from '../lib/formatDate';
 
 const GROUP_META = [
   { key: 'date', label: 'Thời gian', icon: '📅', hint: 'Ngày, tháng, năm' },
@@ -354,7 +355,9 @@ function ColumnGroup({
               >
                 <span className="block truncate font-medium">{col.name}</span>
                 <span className="block truncate text-xs text-gray-500">
-                  {col.sampleValues.join(', ') || '—'}
+                  {col.type === 'date'
+                    ? col.sampleValues.map((v) => formatDate(v)).join(', ')
+                    : col.sampleValues.join(', ') || '—'}
                 </span>
               </button>
             </li>
@@ -393,7 +396,9 @@ function PreviewTable({
               <tr key={i} className="text-gray-300">
                 {columns.map((col) => (
                   <td key={col.index} className="px-4 py-2">
-                    {row[col.name] ?? ''}
+                    {col.type === 'date'
+                      ? formatDate(row[col.name])
+                      : (row[col.name] ?? '')}
                   </td>
                 ))}
               </tr>

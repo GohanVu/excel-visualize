@@ -110,5 +110,23 @@ Upload file (5s)
 - Plan có bao nhiêu tier? (Free + 1 Pro, hay Free + Pro + Business?)
 
 ---
+## Session 2 — 2026-06-30 — Notion-like Chart View / Editor
+
+### Bối cảnh & Mục tiêu
+Người dùng muốn có cách thiết kế biểu đồ hoạt động tương tự như Notion Chart View: trực quan, linh hoạt, cấu hình trực tiếp từ sidebar bên phải thay vì đi theo luồng tuyến tính từng bước.
+
+### Thiết kế đã thống nhất (Brainstorm)
+1. **Luồng UX Lai (Hybrid Flow)**:
+   * Giữ luồng Upload $\rightarrow$ Suggest 4 mẫu nhanh cho người dùng phổ thông.
+   * Cung cấp nút **"Tự thiết kế / Chỉnh sửa"** mở ra **Studio Chart Editor** cho power-user.
+2. **Studio Chart Editor Layout**:
+   * **Bên trái (Preview & Table)**: Biểu đồ ECharts kích thước lớn kèm bảng dữ liệu thu nhỏ phía dưới để đối chiếu.
+   * **Bên phải (Control Sidebar)**: Panel Glassmorphism cấu hình trực tiếp bao gồm:
+     * *Dữ liệu (Data)*: Loại biểu đồ, cột Trục X, cột Trục Y, Phép gộp (Aggregation), Nhóm theo (Series), Sắp xếp (Sort), Giới hạn (Limit).
+     * *Giao diện (Style)*: Tiêu đề, Mô tả, Bảng màu gradient, Toggles (Grid lines, Data labels, Legend, Dark mode).
+3. **Giải pháp Lưu trữ**:
+   * Không thay đổi schema Prisma. Lưu cả `definition` (Notion-like spec) và `option` (đã biên dịch cho ECharts) vào chung cột `config: Json` của bảng `Chart` để dễ phục hồi state của Sidebar Editor.
+4. **Trình biên dịch Option**:
+   * Nâng cấp `buildChartOption.ts` thành một compiler nhận `definition` + `rows` $\rightarrow$ sinh ra option ECharts tương ứng trực tiếp ở frontend.
 
 <!-- Thêm session mới ở đây -->

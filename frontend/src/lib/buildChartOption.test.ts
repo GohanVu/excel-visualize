@@ -250,4 +250,50 @@ describe('buildChartOption', () => {
       ]);
     });
   });
+
+  describe('date formatting', () => {
+    it('formats ISO-8601 strings on category X axis', () => {
+      const opt = buildChartOption(
+        suggestion({
+          type: 'line',
+          encoding: { x: 'Ngày', y: ['Doanh thu'] },
+        }),
+        [
+          { Ngày: '2026-06-01T00:00:00.000Z', 'Doanh thu': '100' },
+          { Ngày: '2026-06-02T00:00:00.000Z', 'Doanh thu': '200' },
+        ],
+      ) as any;
+      expect(opt.xAxis.data).toEqual(['2026-06-01', '2026-06-02']);
+    });
+  });
+
+  describe('integer axis minInterval', () => {
+    it('sets minInterval: 1 on yAxis when all values are integers', () => {
+      const opt = buildChartOption(
+        suggestion({
+          type: 'line',
+          encoding: { x: 'Ngày', y: ['Doanh thu'] },
+        }),
+        [
+          { Ngày: 'A', 'Doanh thu': '1' },
+          { Ngày: 'B', 'Doanh thu': '2' },
+        ],
+      ) as any;
+      expect(opt.yAxis.minInterval).toBe(1);
+    });
+
+    it('does NOT set minInterval: 1 on yAxis when there are decimal values', () => {
+      const opt = buildChartOption(
+        suggestion({
+          type: 'line',
+          encoding: { x: 'Ngày', y: ['Doanh thu'] },
+        }),
+        [
+          { Ngày: 'A', 'Doanh thu': '1.5' },
+          { Ngày: 'B', 'Doanh thu': '2' },
+        ],
+      ) as any;
+      expect(opt.yAxis.minInterval).toBeUndefined();
+    });
+  });
 });
