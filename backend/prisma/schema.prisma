@@ -63,15 +63,16 @@ model User {
 // ─── Datasets ─────────────────────────────────────────────────────────────────
 
 model Dataset {
-  id           String   @id @default(cuid())
-  userId       String
-  name         String
-  originalName String
-  mimeType     String
-  sizeBytes    Int
-  minioKey     String
-  rowCount     Int?
-  lastSyncedAt DateTime?
+  id                  String          @id @default(cuid())
+  userId              String
+  name                String
+  originalName        String
+  mimeType            String
+  sizeBytes           Int
+  minioKey            String
+  rowCount            Int?
+  lastSyncedAt        DateTime?
+  googleSpreadsheetId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

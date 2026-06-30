@@ -24,12 +24,15 @@ const mockAuthService = {
     refreshToken: 'refresh-tok',
   }),
   verifyRefreshToken: jest.fn(),
-  // logic thật để test sanitize loại bỏ field nhạy cảm
+  saveGoogleRefreshToken: jest.fn(),
   sanitizeUser: jest.fn((u: any) => {
     const { passwordHash, encryptedRefreshToken, ...safe } = u;
     void passwordHash;
     void encryptedRefreshToken;
-    return safe;
+    return {
+      ...safe,
+      googleConnected: !!u.encryptedRefreshToken,
+    };
   }),
 };
 
@@ -163,6 +166,65 @@ describe('AuthController', () => {
         email: mockUser.email,
         role: mockUser.role,
       });
+    });
+  });
+
+  describe('googleSheetsAuth', () => {
+    it('redirects to Google Accounts OAuth URL with correct scopes', () => {
+      mockConfig.getOrThrow.mockImplementation((key) => {
+        if (key === 'GOOGLE_CLIENT_ID') return 'g-client-id';
+        if (key === 'GOOGLE_CALLBACK_URL') return 'http://localhost:3000/auth/google/callback';
+        return '';
+      });
+      const res = mockRes();
+
+      controller.googleSheetsAuth(res);
+
+      expect(res.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('https://accounts.google.com/o/oauth2/v2/auth'),
+      );
+      const redirectedUrl = res.redirect.mock.calls[0][0];
+      expect(redirectedUrl).toContain('scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fspreadsheets.readonly');
+      expect(redirectedUrl).toContain('access_type=offline');
+      expect(redirectedUrl).toContain('prompt=consent');
+    });
+  });
+
+  describe('googleSheetsCallback', () => {
+    let fetchSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      fetchSpy = jest.spyOn(globalThis, 'fetch');
+    });
+
+    afterEach(() => {
+      fetchSpy.mockRestore();
+    });
+
+    it('exchanges code and saves refresh token', async () => {
+      mockConfig.getOrThrow.mockImplementation((key) => {
+        if (key === 'GOOGLE_CLIENT_ID') return 'g-client-id';
+        if (key === 'GOOGLE_CLIENT_SECRET') return 'g-client-secret';
+        if (key === 'GOOGLE_CALLBACK_URL') return 'http://localhost:3000/auth/google/callback';
+        return '';
+      });
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        json: async () => ({ refresh_token: 'g-refresh-token' }),
+      } as any);
+      const res = mockRes();
+
+      await controller.googleSheetsCallback('oauth-code', mockUser as any, res);
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://oauth2.googleapis.com/token',
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('"code":"oauth-code"'),
+        }),
+      );
+      expect(mockAuthService.saveGoogleRefreshToken).toHaveBeenCalledWith('user-1', 'g-refresh-token');
+      expect(res.redirect).toHaveBeenCalledWith('http://localhost:5174/upload?google_connected=true');
     });
   });
 });

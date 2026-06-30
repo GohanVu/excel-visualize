@@ -10,6 +10,8 @@ const mockService = {
   getRows: jest.fn(),
   suggestCharts: jest.fn(),
   deleteDataset: jest.fn(),
+  importGoogleSheet: jest.fn(),
+  syncGoogleSheet: jest.fn(),
 };
 
 const mockUser = { id: 'user-1' } as any;
@@ -122,5 +124,20 @@ describe('DatasetsController', () => {
       undefined,
       undefined,
     );
+  });
+
+  it('POST /datasets/google-sheet → delegates to service.importGoogleSheet', async () => {
+    const dto = { url: 'https://docs.google.com/spreadsheets/d/1abc/edit' };
+    mockService.importGoogleSheet.mockResolvedValue({ id: 'ds-google' });
+    const result = await controller.importGoogleSheet(mockUser, dto);
+    expect(mockService.importGoogleSheet).toHaveBeenCalledWith(mockUser, dto.url);
+    expect(result).toEqual({ id: 'ds-google' });
+  });
+
+  it('POST /datasets/:id/sync → delegates to service.syncGoogleSheet', async () => {
+    mockService.syncGoogleSheet.mockResolvedValue({ id: 'ds-1', sizeBytes: 200 });
+    const result = await controller.sync(mockUser, 'ds-1');
+    expect(mockService.syncGoogleSheet).toHaveBeenCalledWith('user-1', 'ds-1');
+    expect(result).toEqual({ id: 'ds-1', sizeBytes: 200 });
   });
 });

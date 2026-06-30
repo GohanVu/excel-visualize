@@ -5,6 +5,7 @@ import type { ChartSuggestion, TypeOverride } from '../api/datasets';
 
 import { buildChartOption } from '../lib/buildChartOption';
 import ChartView from '../components/ChartView';
+import Header from '../components/Header';
 
 interface LocationState {
   selectedColumns?: number[];
@@ -94,8 +95,9 @@ function SuggestionContent({
   const { suggestions } = suggest.data;
 
   return (
-    <div className="min-h-screen bg-gray-950 p-6 text-white">
-      <div className="mx-auto max-w-5xl">
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+      <Header showBack backUrl={`/datasets/${datasetId}/columns`} backText="Quay lại chọn cột" />
+      <div className="mx-auto max-w-5xl p-6 w-full">
         <button
           type="button"
           onClick={onBack}

@@ -4,6 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { fetchColumns, fetchRows } from '../api/datasets';
 import type { DatasetColumn } from '../api/datasets';
 import { fetchProgress, saveProgress } from '../api/study-progress';
+import Header from '../components/Header';
 import type { ProgressItem, StudyStatus } from '../api/study-progress';
 import { rowCardKey } from '../lib/cardKey';
 import QuizMode from './QuizMode';
@@ -84,8 +85,9 @@ export default function LearnPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 p-6 text-white">
-      <div className="mx-auto max-w-2xl">
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+      <Header showBack backUrl={`/datasets/${id}/columns`} backText="Quay lại chọn cột" />
+      <div className="mx-auto max-w-2xl p-6 w-full">
         <button
           type="button"
           onClick={onBack}

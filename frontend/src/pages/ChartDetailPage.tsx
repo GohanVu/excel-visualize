@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useParams, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchRows } from '../api/datasets';
+import Header from '../components/Header';
 import type { ChartSuggestion, Aggregation } from '../api/datasets';
 import { saveChart } from '../api/charts';
 import { apiErrorMessage } from '../lib/apiError';
@@ -146,8 +147,9 @@ function ChartDetail({
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 p-6 text-white">
-      <div className="mx-auto max-w-4xl">
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+      <Header showBack backUrl={`/datasets/${datasetId}/columns`} backText="Quay lại chọn cột" />
+      <div className="mx-auto max-w-4xl p-6 w-full">
         <button
           type="button"
           onClick={onBack}

@@ -17,6 +17,7 @@ KHÔNG code ngay khi nhận yêu cầu. Tuân theo workflow:
 2. Đọc context trước khi code — luôn đọc audit log + plan
 3. Ghi lại quyết định — mọi technical decision ghi vào audit log
 4. Bug fix = test bắt buộc — mỗi fix phải có test đi kèm
+5. Rà soát danh sách sự cố — Trước khi kết thúc bất kỳ task nào, đối chiếu với [docs/issues.md](file:///d:/Project/excel-visualize/docs/issues.md) để tránh lặp lại các lỗi cũ đã biết (đặc biệt là lỗi môi trường Windows/Docker như hot-reload, volume db).
 
 ## Files quan trọng phải đọc
 

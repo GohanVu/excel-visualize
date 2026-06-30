@@ -348,5 +348,179 @@
 
 <!-- Thêm session mới ở đây -->
 
+## [2026-06-30] Session — P3-T4: Tự động đồng bộ Google Sheet theo lịch (Pro only) bằng NestJS Schedule
+
+### Yêu cầu
+- Triển khai tính năng tự động đồng bộ (auto-sync) dữ liệu từ Google Sheets theo lịch chạy ngầm cho người dùng gói Pro.
+
+### Công việc đã làm
+- **Quyết định kiến trúc**: 
+  * Thay vì sử dụng BullMQ phức tạp (yêu cầu cấu hình hàng đợi, kết nối Redis, quản lý trạng thái), chọn giải pháp tối giản **`@nestjs/schedule`** (chạy ngầm trong bộ nhớ bằng Node.js timer) theo triết lý "Simple is the best".
+  * BullMQ được đưa vào kế hoạch nâng cấp tương lai khi dự án cần mở rộng quy mô chạy nhiều máy chủ.
+- **Backend (NestJS)**:
+  * Cài đặt thư viện `@nestjs/schedule` trong container `backend`.
+  * Đăng ký `ScheduleModule.forRoot()` trong [app.module.ts](file:///d:/Project/excel-visualize/backend/src/app.module.ts).
+  * Tạo dịch vụ [DatasetsSyncService](file:///d:/Project/excel-visualize/backend/src/datasets/datasets-sync.service.ts):
+    * Triển khai tác vụ `@Cron(CronExpression.EVERY_HOUR)`.
+    * Quét cơ sở dữ liệu để tìm toàn bộ các `Dataset` có `googleSpreadsheetId` của những người dùng có gói subscription hoạt động là `pro` (status = `active`).
+    * Duyệt qua từng dataset và gọi `DatasetsService.syncGoogleSheet` để tải dữ liệu mới và cập nhật.
+    * Xử lý lỗi độc lập cho từng dataset bằng `try-catch` để đảm bảo lỗi ở một sheet không gây ảnh hưởng đến các sheet khác trong hàng chờ.
+  * Đăng ký `DatasetsSyncService` vào mảng `providers` trong [datasets.module.ts](file:///d:/Project/excel-visualize/backend/src/datasets/datasets.module.ts).
+  * Viết bộ unit tests đầy đủ trong [datasets-sync.service.spec.ts](file:///d:/Project/excel-visualize/backend/src/datasets/test/datasets-sync.service.spec.ts) bao gồm các trường hợp: chạy thành công, lọc đúng đối tượng người dùng Pro và xử lý lỗi cô lập khi có sheet bị lỗi.
+- **Kiểm thử**: Tất cả 192 backend tests và 188 frontend tests đều pass thành công.
+
+### Quyết định quan trọng
+- **Cô lập lỗi khi chạy vòng lặp (Error Isolation)**: Sử dụng khối `try-catch` bọc quanh mỗi lần gọi hàm đồng bộ của từng dataset trong vòng lặp. Nếu một dataset bị lỗi (ví dụ: link lỗi, quyền truy cập bị thu hồi), hệ thống ghi log lỗi và tiếp tục đồng bộ các dataset tiếp theo bình thường.
+
+### Kết quả
+- Tính năng tự động đồng bộ chạy ngầm mỗi giờ một lần đã hoạt động hoàn chỉnh, tự động phát hiện và cập nhật dữ liệu cho các tài khoản Pro.
+
+### Tasks liên quan
+- P3-T4 ✅
+
+
+## [2026-06-30] Session — P3-T3: Nút "Refresh data" đồng bộ dữ liệu Google Sheet
+
+### Yêu cầu
+- Triển khai tính năng đồng bộ (refresh) dữ liệu từ Google Sheet cho Dataset đã liên kết.
+
+### Công việc đã làm
+- **Cơ sở dữ liệu**:
+  * Trường `lastSyncedAt DateTime?` đã có sẵn trong model `Dataset` của [schema.prisma](file:///d:/Project/excel-visualize/backend/prisma/schema.prisma).
+- **Backend (NestJS)**:
+  * Refactor: Trích xuất phương thức helper `downloadGoogleSheet` dùng chung trong [DatasetsService](file:///d:/Project/excel-visualize/backend/src/datasets/datasets.service.ts) để tránh trùng lặp code tải file.
+  * Triển khai `syncGoogleSheet` trong [DatasetsService](file:///d:/Project/excel-visualize/backend/src/datasets/datasets.service.ts):
+    * Lấy thông tin `Dataset` và kiểm tra quyền sở hữu.
+    * Tải file XLSX mới nhất từ Google Sheets (tự động fallback từ công khai sang riêng tư qua OAuth).
+    * Ghi đè file XLSX mới lên MinIO tại vị trí `minioKey` cũ.
+    * Cập nhật `sizeBytes` và `lastSyncedAt` (thời điểm đồng bộ thành công).
+    * Ghi Audit Log hành động `dataset.sync`.
+  * Thêm endpoint `POST /datasets/:id/sync` trong [DatasetsController](file:///d:/Project/excel-visualize/backend/src/datasets/datasets.controller.ts).
+  * Bổ sung unit tests đầy đủ cho `syncGoogleSheet` trong service và controller specs.
+- **Frontend (React)**:
+  * Cập nhật interface `Dataset` và thêm hàm API `syncDataset` trong [api/datasets.ts](file:///d:/Project/excel-visualize/frontend/src/api/datasets.ts).
+  * Cập nhật component `SheetCard` trong [DashboardPage.tsx](file:///d:/Project/excel-visualize/frontend/src/pages/DashboardPage.tsx):
+    * Hiển thị nút **"🔄"** (Đồng bộ) bên cạnh các dataset có nguồn gốc từ Google Sheet.
+    * Hiển thị hiệu ứng xoay (spin) khi đang trong trạng thái tải và thông báo lỗi nếu đồng bộ thất bại.
+    * Hiển thị nhãn thời gian đồng bộ gần nhất: *Đồng bộ: dd/mm/yyyy*.
+  * Viết unit test kiểm thử hành vi đồng bộ trên Dashboard trong [DashboardPage.test.tsx](file:///d:/Project/excel-visualize/frontend/src/pages/DashboardPage.test.tsx).
+- **Kiểm thử**: Tất cả 189 backend tests và 188 frontend tests đều pass thành công.
+
+### Quyết định quan trọng
+- **Ghi đè file trên MinIO**: Thay vì sinh ra file mới mỗi lần đồng bộ, chúng ta ghi đè trực tiếp lên `minioKey` hiện tại để tránh tích tụ file rác trên hệ thống lưu trữ MinIO và giữ nguyên đường dẫn liên kết của dataset.
+- **Trích xuất helper `downloadGoogleSheet`**: Giúp luồng tải (công khai -> riêng tư OAuth) được tái sử dụng 100%, giữ cho code service ngắn gọn và dễ bảo trì.
+
+### Kết quả
+- Người dùng có thể bấm nút đồng bộ trên Dashboard để cập nhật tức thì dữ liệu biểu đồ/bảng tính từ Google Sheet mà không cần xoá đi tạo lại.
+
+### Tasks liên quan
+- P3-T3 ✅
+
+
+## [2026-06-30] Session — P3-T2: Kết nối Google Sheet riêng tư qua Google OAuth
+
+### Yêu cầu
+- Kết nối Google Sheet riêng tư bằng cách xác thực qua Google OAuth và lưu Refresh Token mã hóa.
+
+### Công việc đã làm
+- **Backend (NestJS)**:
+  * Triển khai `saveGoogleRefreshToken` và `getGoogleAccessToken` trong [AuthService](file:///d:/Project/excel-visualize/backend/src/auth/auth.service.ts):
+    * `saveGoogleRefreshToken`: Mã hóa Refresh Token bằng thuật toán AES-256-CBC và lưu vào trường `encryptedRefreshToken` trong DB.
+    * `getGoogleAccessToken`: Giải mã Refresh Token và gửi POST request đến Google OAuth endpoint `https://oauth2.googleapis.com/token` để lấy `access_token` mới phục vụ cho việc tải dữ liệu.
+  * Cấu hình và thêm hai endpoint trong [AuthController](file:///d:/Project/excel-visualize/backend/src/auth/auth.controller.ts):
+    * `GET /auth/google/sheets`: Chuyển hướng người dùng đến Google Consent Screen để yêu cầu thêm scope đọc bảng tính `https://www.googleapis.com/auth/spreadsheets.readonly` cùng chế độ `access_type=offline` & `prompt=consent`.
+    * `GET /auth/google/sheets/callback`: Nhận `code` từ Google, đổi lấy Refresh Token, lưu trữ và chuyển hướng người dùng quay lại giao diện `/upload?google_connected=true` của Frontend.
+  * Nâng cấp phương thức `importPublicGoogleSheet` thành `importGoogleSheet` trong [DatasetsService](file:///d:/Project/excel-visualize/backend/src/datasets/datasets.service.ts):
+    * Thử tải công khai trước. Nếu thất bại (403/404), kiểm tra tài khoản đã liên kết Google chưa.
+    * Nếu đã liên kết, gọi `getGoogleAccessToken` để lấy access token và tải sheet bằng header `Authorization: Bearer {accessToken}`.
+  * Cập nhật `sanitizeUser` để trả về cờ `googleConnected: !!user.encryptedRefreshToken`.
+  * Viết unit tests đầy đủ cho tất cả logic mới.
+- **Frontend (React)**:
+  * Thêm thuộc tính `googleConnected: boolean` vào interface `User` trong [types/user.ts](file:///d:/Project/excel-visualize/frontend/src/types/user.ts).
+  * Cập nhật [UploadPage.tsx](file:///d:/Project/excel-visualize/frontend/src/pages/UploadPage.tsx):
+    * Hiển thị trạng thái liên kết tài khoản Google rõ ràng (màu xanh lá nếu đã liên kết, màu cam nếu chưa liên kết).
+    * Cung cấp nút **"Kết nối ngay"** chuyển hướng đến luồng OAuth của Backend nếu tài khoản chưa được liên kết.
+  * Viết unit tests bổ sung trong [UploadPage.test.tsx](file:///d:/Project/excel-visualize/frontend/src/pages/UploadPage.test.tsx) kiểm tra hiển thị đúng trạng thái liên kết.
+- **Chạy kiểm thử**: Tất cả 185 backend tests và 187 frontend tests đều pass thành công.
+- **Khắc phục sự cố**: Restart container `backend` để đảm bảo code mới được biên dịch đầy đủ trên môi trường Windows.
+
+### Quyết định quan trọng
+- **Tải fallback thông minh**: Ứng dụng luôn ưu tiên tải công khai trước để tiết kiệm API quota và tránh gọi API Google không cần thiết. Chỉ khi tải công khai thất bại mới kích hoạt luồng tải riêng tư qua OAuth Access Token.
+- **Bảo mật**: Refresh Token được mã hóa AES-256-CBC bằng khóa bí mật từ file môi trường trước khi lưu trữ dưới cơ sở dữ liệu, đảm bảo an toàn tuyệt đối.
+
+### Kết quả
+- Người dùng có thể liên kết tài khoản Google của mình chỉ bằng 1 cú click và dễ dàng phân tích cả các Google Sheet ở chế độ riêng tư của họ.
+
+### Tasks liên quan
+- P3-T2 ✅
+
+
+## [2026-06-30] Session — P3-T1: Kết nối Google Sheet công khai (Không đăng nhập)
+
+### Yêu cầu
+- Kết nối Google Sheet qua link public (không cần đăng nhập) thay cho file Excel cục bộ.
+
+### Công việc đã làm
+- **Database**:
+  * Cập nhật `backend/prisma/schema.prisma` thêm trường `googleSpreadsheetId String?` vào model `Dataset`.
+  * Tạo và chạy migration: `20260630052652_add_google_spreadsheet_id` thành công.
+- **Backend**:
+  * Tạo `ImportGoogleSheetDto` validate link URL.
+  * Cập nhật [StorageService](file:///d:/Project/excel-visualize/backend/src/storage/storage.service.ts) thêm phương thức `putObject` để tải trực tiếp buffer lên MinIO.
+  * Triển khai `importPublicGoogleSheet` trong [DatasetsService](file:///d:/Project/excel-visualize/backend/src/datasets/datasets.service.ts):
+    * Trích xuất `spreadsheetId` từ link bằng regex.
+    * Dùng native `fetch` tải file dạng XLSX từ link export công khai của Google: `https://docs.google.com/spreadsheets/d/{id}/export?format=xlsx`.
+    * Validate quota (2 cho Free, 20 cho Pro) và kích thước (10MB/50MB).
+    * Lưu file XLSX vào MinIO.
+    * Lưu `Dataset` record vào Postgres với `googleSpreadsheetId` được điền.
+  * Tạo endpoint `POST /datasets/google-sheet` trong [DatasetsController](file:///d:/Project/excel-visualize/backend/src/datasets/datasets.controller.ts).
+  * Viết unit tests đầy đủ cho service và controller.
+- **Frontend**:
+  * Cập nhật type `Dataset` và thêm API `importGoogleSheet` trong [api/datasets.ts](file:///d:/Project/excel-visualize/frontend/src/api/datasets.ts).
+  * Cập nhật [UploadPage.tsx](file:///d:/Project/excel-visualize/frontend/src/pages/UploadPage.tsx): Thiết kế thêm tab "Kết nối Google Sheet" với ô nhập link và hướng dẫn chia sẻ công khai chi tiết.
+  * Viết unit tests bổ sung trong [UploadPage.test.tsx](file:///d:/Project/excel-visualize/frontend/src/pages/UploadPage.test.tsx) kiểm thử chuyển tab, điền URL, kết nối thành công và xử lý lỗi.
+- **Chạy kiểm thử**: Tất cả 180 backend tests và 185 frontend tests đều pass.
+
+### Quyết định quan trọng
+- **Tải XLSX trực tiếp thay vì dùng Sheets API**: Tận dụng link export XLSX công khai của Google giúp tải toàn bộ bảng tính (gồm cả các tab) chỉ trong 1 request mà **không cần Google API Key**. Toàn bộ dữ liệu được lưu vào MinIO dưới dạng file Excel thông thường, giúp tái sử dụng 100% logic phân tích và gợi ý hiện có mà không cần sửa đổi.
+- **Dùng native `fetch` (Node 20)**: Tránh cài thêm thư viện Axios phía backend, giữ cho backend gọn nhẹ và hiệu năng tốt.
+
+### Kết quả
+- Người dùng có thể dán link Google Sheet công khai -> Hệ thống tự kết nối, tải về lưu trữ và mở giao diện tổng quan giống như file Excel upload.
+
+### Tasks liên quan
+- P3-T1 ✅
+
+
+## [2026-06-30] Session — Check chéo dự án, bổ sung tài liệu & viết Unit Test cho Admin Panel
+
+### Yêu cầu
+- Check chéo code thực tế với các file hướng dẫn, ghi chú tiến trình, steering.
+- Bổ sung tài liệu và viết unit test đầy đủ theo yêu cầu sau khi phát hiện các khoảng trống.
+
+### Công việc đã làm
+- **Check chéo toàn diện**: So sánh code thực tế với các chỉ dẫn kỹ thuật trong `project-conventions.md`, `security-review.md`, và tiến độ trong `plan.md`. Ghi nhận kết quả chi tiết vào [cross_check_report.md](file:///C:/Users/Admin/.gemini/antigravity-ide/brain/ce32ad77-af0f-4341-84d6-cee917dcdeb2/cross_check_report.md).
+- **Cập nhật Tài liệu API**: Bổ sung đầy đủ thông tin cho 4 endpoint quản trị mới (`GET /admin/users`, `PATCH /admin/users/:id/plan`, `GET /admin/stats`, `GET /admin/audit-logs`) vào [docs/api.md](file:///d:/Project/excel-visualize/docs/api.md).
+- **Viết Unit Tests bổ sung (Frontend)**:
+  * [ProfilePage.test.tsx](file:///d:/Project/excel-visualize/frontend/src/pages/ProfilePage.test.tsx): Kiểm thử hiển thị thông tin, quyền admin, và luồng đăng xuất.
+  * [AdminStatsPage.test.tsx](file:///d:/Project/excel-visualize/frontend/src/pages/admin/AdminStatsPage.test.tsx): Kiểm thử hiển thị KPI hệ thống, tỷ lệ chuyển đổi và các trạng thái online/offline.
+  * [AdminUsersPage.test.tsx](file:///d:/Project/excel-visualize/frontend/src/pages/admin/AdminUsersPage.test.tsx): Kiểm thử bảng danh sách người dùng, nút nâng cấp/hạ cấp plan hoạt động bất đồng bộ qua mutation.
+  * [AdminAuditLogsPage.test.tsx](file:///d:/Project/excel-visualize/frontend/src/pages/admin/AdminAuditLogsPage.test.tsx): Kiểm thử hiển thị bảng lịch sử, định dạng chi tiết metadata dạng JSON và chức năng phân trang.
+- **Chạy kiểm thử**: Đảm bảo tất cả test suites đều xanh.
+
+### Quyết định quan trọng
+- **Đồng bộ hóa tài liệu và mã nguồn**: Giúp các thành viên mới/AI dễ dàng nắm bắt các API admin bảo vệ bởi RolesGuard mà không phải đọc chay code.
+- **Bao phủ kiểm thử (Test Coverage)**: Việc viết test bổ sung cho các trang admin đảm bảo tuân thủ nguyên tắc "test viết cùng lúc với implementation", phòng ngừa các lỗi hồi quy (regression) ở các phase tiếp theo.
+
+### Kết quả
+- Toàn bộ unit tests đều qua:
+  * Backend: **174/174 passed**
+  * Frontend: **184/184 passed** (tăng từ 165)
+- Mọi khoảng trống tài liệu và kiểm thử phát hiện từ Phase 0.5 đã được lấp đầy.
+
+### Tasks liên quan
+- Troubleshooting & Quality Assurance (Phase 0.5 & Phase 2 follow-ups).
+
+
 
 

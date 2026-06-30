@@ -282,10 +282,10 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
-| P3-T1 | Kết nối Google Sheet qua link public (không cần đăng nhập) | ⬜ Todo | P1 done | Parse từ Sheets API public endpoint |
-| P3-T2 | Kết nối Google Sheet riêng tư qua Google OAuth | ⬜ Todo | P0-T4, P3-T1 | Lưu refresh token đã mã hoá |
-| P3-T3 | Nút "Refresh data" — sync lại data từ Sheet | ⬜ Todo | P3-T1 | Cập nhật `last_synced_at` |
-| P3-T4 | Auto-sync theo lịch (Pro only) — BullMQ cron job | ⬜ Todo | P3-T3 | Gate: chỉ chạy cho user Pro |
+| P3-T1 | Kết nối Google Sheet qua link public (không cần đăng nhập) | ✅ Done | P1 done | Tải XLSX trực tiếp qua link export công khai, lưu MinIO |
+| P3-T2 | Kết nối Google Sheet riêng tư qua Google OAuth | ✅ Done | P0-T4, P3-T1 | Cấp quyền spreadsheets.readonly, lưu Refresh Token mã hoá AES-256-CBC |
+| P3-T3 | Nút "Refresh data" — sync lại data từ Sheet | ✅ Done | P3-T1 | Ghi đè XLSX lên MinIO, cập nhật `lastSyncedAt` và kích thước |
+| P3-T4 | Auto-sync theo lịch (Pro only) — NestJS Schedule | ✅ Done | P3-T3 | Quét và đồng bộ mỗi giờ một lần bằng @Cron |
 
 ### Test cases P3
 
@@ -339,7 +339,7 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 | P6-T3 | Security hardening: UFW, fail2ban, đổi SSH port, Cloudflare | ⬜ Todo | — | Xem checklist trong spec |
 | P6-T4 | Backup Postgres (pg_dump cron) + MinIO mirror ra nơi khác | ⬜ Todo | — | Test thử restore trước launch |
 | P6-T5 | Performance: lazy load chart, phân trang dataset lớn | ⬜ Todo | P1 done | |
-| P6-T6 | Deploy production lên VPS | ⬜ Todo | P6-T3, P6-T4 | |
+| P6-T6 | Deploy production lên VPS | ⬜ Todo | P6-T3, P6-T4 | Gồm cấu hình và xác minh Google OAuth (xem [Deployment-001](file:///d:/Project/excel-visualize/docs/issues.md)) |
 
 ---
 
@@ -360,6 +360,12 @@ P5 có thể bắt đầu song song với P4.
 - Giá subscription cụ thể (cần trước P5)
 - VPS provider (cần trước P6)
 - Số tier: Free + Pro, hay thêm Business tier? (cần trước P5)
+
+---
+
+## Định hướng nâng cấp tương lai (Future Roadmap)
+
+- **Hàng đợi xử lý ngầm (Background Jobs)**: Khi lượng người dùng Pro tăng lên hoặc hệ thống triển khai trên nhiều máy chủ (scale-out), chuyển đổi từ `NestJS Schedule` (In-Memory) sang **BullMQ + Redis** để điều phối tác vụ đồng bộ Google Sheets phân tán, hỗ trợ tính năng tự động thử lại (Retry) và giới hạn tốc độ (Rate-limiting).
 
 ---
 

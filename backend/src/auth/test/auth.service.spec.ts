@@ -242,4 +242,56 @@ describe('AuthService', () => {
       );
     });
   });
+
+  describe('saveGoogleRefreshToken', () => {
+    it('encrypts and updates user with refresh token', async () => {
+      mockPrisma.user.update.mockResolvedValue(mockUser);
+      await service.saveGoogleRefreshToken('user-1', 'my-google-rt');
+
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: {
+          encryptedRefreshToken: expect.stringContaining(':'),
+        },
+      });
+    });
+  });
+
+  describe('getGoogleAccessToken', () => {
+    let fetchSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      fetchSpy = jest.spyOn(globalThis, 'fetch');
+    });
+
+    afterEach(() => {
+      fetchSpy.mockRestore();
+    });
+
+    it('throws UnauthorizedException if user has no refresh token', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ ...mockUser, encryptedRefreshToken: null });
+      await expect(service.getGoogleAccessToken('user-1')).rejects.toThrow('Tài khoản Google chưa được kết nối.');
+    });
+
+    it('exchanges refresh token for access token', async () => {
+      const encrypted = (service as any).encryptToken('my-google-rt');
+      mockPrisma.user.findUnique.mockResolvedValue({ ...mockUser, encryptedRefreshToken: encrypted });
+      
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        json: async () => ({ access_token: 'new-access-token' }),
+      } as any);
+
+      const result = await service.getGoogleAccessToken('user-1');
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://oauth2.googleapis.com/token',
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('"refresh_token":"my-google-rt"'),
+        }),
+      );
+      expect(result).toBe('new-access-token');
+    });
+  });
 });

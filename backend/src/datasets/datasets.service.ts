@@ -8,6 +8,7 @@ import { ChartSuggesterService } from '../suggester/chart-suggester.service';
 import { PresignUploadDto } from './dto/presign-upload.dto';
 import { ConfirmUploadDto } from './dto/confirm-upload.dto';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { AuthService } from '../auth/auth.service';
 
 const FREE_LIMIT_BYTES = 10 * 1024 * 1024;
 const PRO_LIMIT_BYTES = 50 * 1024 * 1024;
@@ -25,6 +26,7 @@ export class DatasetsService {
     private columnType: ColumnTypeService,
     private suggester: ChartSuggesterService,
     private auditLogs: AuditLogsService,
+    private authService: AuthService,
   ) {}
 
   async presignUpload(user: User, dto: PresignUploadDto) {
@@ -245,6 +247,181 @@ export class DatasetsService {
     await this.storage.removeObject(dataset.minioKey).catch(() => undefined);
 
     return { id: datasetId, deleted: true };
+  }
+
+  async importGoogleSheet(user: User, url: string) {
+    const isPro = await this.isProUser(user.id);
+
+    // 1. Kiểm tra quota số lượng sheet
+    const maxDatasets = isPro ? PRO_DATASET_LIMIT : FREE_DATASET_LIMIT;
+    const datasetCount = await this.prisma.dataset.count({
+      where: { userId: user.id },
+    });
+    if (datasetCount >= maxDatasets) {
+      throw new BadRequestException(
+        `Đã đạt giới hạn ${maxDatasets} sheet (gói ${isPro ? 'Pro' : 'Free'}). Xoá bớt sheet để thêm mới.`,
+      );
+    }
+
+    // 2. Trích xuất spreadsheetId từ URL
+    const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if (!match) {
+      throw new BadRequestException('Đường dẫn Google Sheet không hợp lệ.');
+    }
+    const spreadsheetId = match[1];
+
+    // 3. Tải file
+    const { buffer, filename } = await this.downloadGoogleSheet(user.id, spreadsheetId);
+
+    // Kiểm tra kích thước file
+    const maxBytes = isPro ? PRO_LIMIT_BYTES : FREE_LIMIT_BYTES;
+    const maxMb = maxBytes / 1024 / 1024;
+    if (buffer.length > maxBytes) {
+      throw new BadRequestException(
+        `Dữ liệu Google Sheet quá lớn. Giới hạn ${maxMb}MB cho plan ${isPro ? 'Pro' : 'Free'}.`,
+      );
+    }
+
+    // 4. Upload XLSX lên MinIO
+    const ext = '.xlsx';
+    const rand = Math.random().toString(36).slice(2, 8);
+    const objectKey = `google-sheets/${user.id}/${Date.now()}-${rand}${ext}`;
+
+    await this.storage.putObject(
+      objectKey,
+      buffer,
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+
+    // 5. Lưu vào Database
+    const dataset = await this.prisma.dataset.create({
+      data: {
+        userId: user.id,
+        name: this.baseName(filename),
+        originalName: filename,
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        sizeBytes: buffer.length,
+        minioKey: objectKey,
+        googleSpreadsheetId: spreadsheetId,
+        lastSyncedAt: new Date(),
+      },
+    });
+
+    // 6. Ghi Audit Log
+    await this.auditLogs.log({
+      userId: user.id,
+      action: 'dataset.import_google_sheet',
+      entity: 'Dataset',
+      entityId: dataset.id,
+      metadata: { name: dataset.name, spreadsheetId },
+    });
+
+    return dataset;
+  }
+
+  async syncGoogleSheet(userId: string, datasetId: string) {
+    const isPro = await this.isProUser(userId);
+
+    // 1. Lấy thông tin Dataset
+    const dataset = await this.prisma.dataset.findFirst({
+      where: { id: datasetId, userId },
+    });
+    if (!dataset) {
+      throw new NotFoundException('Dataset không tồn tại.');
+    }
+
+    if (!dataset.googleSpreadsheetId) {
+      throw new BadRequestException('Dataset này không được liên kết với Google Sheets.');
+    }
+
+    // 2. Tải file từ Google
+    const { buffer } = await this.downloadGoogleSheet(userId, dataset.googleSpreadsheetId);
+
+    // Kiểm tra kích thước file
+    const maxBytes = isPro ? PRO_LIMIT_BYTES : FREE_LIMIT_BYTES;
+    const maxMb = maxBytes / 1024 / 1024;
+    if (buffer.length > maxBytes) {
+      throw new BadRequestException(
+        `Dữ liệu Google Sheet quá lớn. Giới hạn ${maxMb}MB cho plan ${isPro ? 'Pro' : 'Free'}.`,
+      );
+    }
+
+    // 3. Ghi đè file cũ trên MinIO
+    await this.storage.putObject(
+      dataset.minioKey,
+      buffer,
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+
+    // 4. Cập nhật cơ sở dữ liệu
+    const updatedDataset = await this.prisma.dataset.update({
+      where: { id: datasetId },
+      data: {
+        sizeBytes: buffer.length,
+        lastSyncedAt: new Date(),
+      },
+    });
+
+    // 5. Ghi Audit Log
+    await this.auditLogs.log({
+      userId,
+      action: 'dataset.sync',
+      entity: 'Dataset',
+      entityId: datasetId,
+      metadata: { name: dataset.name, spreadsheetId: dataset.googleSpreadsheetId },
+    });
+
+    return updatedDataset;
+  }
+
+  private async downloadGoogleSheet(userId: string, spreadsheetId: string): Promise<{ buffer: Buffer; filename: string }> {
+    const exportUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=xlsx`;
+    let response: globalThis.Response = null as any;
+    let isPublic = true;
+    try {
+      response = await fetch(exportUrl);
+      if (!response.ok) {
+        isPublic = false;
+      }
+    } catch (err) {
+      isPublic = false;
+    }
+
+    if (!isPublic) {
+      const accessToken = await this.authService.getGoogleAccessToken(userId);
+      try {
+        response = await fetch(exportUrl, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+      } catch (err) {
+        throw new BadRequestException('Không thể kết nối đến Google Sheets API.');
+      }
+
+      if (!response.ok) {
+        throw new BadRequestException(
+          'Không thể truy cập Google Sheet. Hãy đảm bảo tài khoản Google của bạn có quyền xem tài liệu này.',
+        );
+      }
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    let filename = `Google Sheet ${spreadsheetId}.xlsx`;
+    const contentDisp = response.headers.get('content-disposition');
+    if (contentDisp) {
+      const fnMatch = contentDisp.match(/filename="?([^"]+)"?/);
+      if (fnMatch) {
+        filename = fnMatch[1];
+        if (!filename.endsWith('.xlsx')) {
+          filename += '.xlsx';
+        }
+      }
+    }
+
+    return { buffer, filename };
   }
 
   private async isProUser(userId: string): Promise<boolean> {

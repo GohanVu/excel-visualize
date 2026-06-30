@@ -8,6 +8,7 @@ import { ColumnTypeService } from '../../parser/column-type.service';
 import { ChartSuggesterService } from '../../suggester/chart-suggester.service';
 import { ColumnType } from '@prisma/client';
 import { AuditLogsService } from '../../audit-logs/audit-logs.service';
+import { AuthService } from '../../auth/auth.service';
 
 const mockPrisma = {
   subscription: { findUnique: jest.fn() },
@@ -17,6 +18,7 @@ const mockPrisma = {
     findFirst: jest.fn(),
     delete: jest.fn(),
     count: jest.fn(),
+    update: jest.fn(),
   },
   chart: { deleteMany: jest.fn() },
   $transaction: jest.fn().mockResolvedValue(undefined),
@@ -26,6 +28,7 @@ const mockStorage = {
   presignedPutUrl: jest.fn().mockResolvedValue('https://minio/presigned'),
   getObject: jest.fn(),
   removeObject: jest.fn().mockResolvedValue(undefined),
+  putObject: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockParser = {
@@ -36,6 +39,10 @@ const mockUser = { id: 'user-1', email: 'u@test.com' } as any;
 
 const mockAuditLogs = {
   log: jest.fn(),
+};
+
+const mockAuthService = {
+  getGoogleAccessToken: jest.fn(),
 };
 
 const XLSX_MIME =
@@ -54,6 +61,7 @@ describe('DatasetsService', () => {
         ColumnTypeService,
         ChartSuggesterService,
         { provide: AuditLogsService, useValue: mockAuditLogs },
+        { provide: AuthService, useValue: mockAuthService },
       ],
     }).compile();
     service = module.get(DatasetsService);
@@ -432,6 +440,182 @@ describe('DatasetsService', () => {
       });
       expect(spy).toHaveBeenCalledWith('user-1', 'ds-1', 'Tab2', 1);
       spy.mockRestore();
+    });
+  });
+
+  describe('importGoogleSheet', () => {
+    const mockGoogleUrl = 'https://docs.google.com/spreadsheets/d/1abc123_xyz/edit#gid=0';
+    let fetchSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      fetchSpy = jest.spyOn(globalThis, 'fetch');
+    });
+
+    afterEach(() => {
+      fetchSpy.mockRestore();
+    });
+
+    it('rejects invalid Google Sheet URL', async () => {
+      await expect(
+        service.importGoogleSheet(mockUser, 'https://example.com/invalid'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException if fetch fails and user not connected to Google', async () => {
+      fetchSpy.mockRejectedValue(new Error('Network error'));
+      mockAuthService.getGoogleAccessToken.mockRejectedValue(new BadRequestException());
+      
+      await expect(
+        service.importGoogleSheet(mockUser, mockGoogleUrl),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('imports public Google Sheet successfully without using token', async () => {
+      const mockBuffer = Buffer.from('fake xlsx content');
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => mockBuffer.buffer,
+        headers: {
+          get: (name: string) => {
+            if (name === 'content-disposition') return 'attachment; filename="MySheet.xlsx"';
+            return null;
+          },
+        },
+      } as any);
+
+      mockPrisma.dataset.create.mockResolvedValue({
+        id: 'ds-google',
+        name: 'MySheet',
+        originalName: 'MySheet.xlsx',
+        mimeType: XLSX_MIME,
+        sizeBytes: mockBuffer.length,
+        minioKey: 'google-sheets/user-1/xxxx.xlsx',
+        googleSpreadsheetId: '1abc123_xyz',
+      });
+
+      const result = await service.importGoogleSheet(mockUser, mockGoogleUrl);
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://docs.google.com/spreadsheets/d/1abc123_xyz/export?format=xlsx',
+      );
+      expect(mockStorage.putObject).toHaveBeenCalled();
+      expect(result.id).toBe('ds-google');
+    });
+
+    it('imports private Google Sheet successfully using OAuth access token', async () => {
+      const mockBuffer = Buffer.from('fake private xlsx content');
+      
+      // Lần fetch đầu tiên (công khai) trả về lỗi 403
+      fetchSpy.mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+      } as any);
+
+      // Lần fetch thứ hai (riêng tư với token) trả về 200
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        arrayBuffer: async () => mockBuffer.buffer,
+        headers: {
+          get: (name: string) => null,
+        },
+      } as any);
+
+      mockAuthService.getGoogleAccessToken.mockResolvedValue('fake-access-token');
+
+      mockPrisma.dataset.create.mockResolvedValue({
+        id: 'ds-private-google',
+        name: 'Google Sheet 1abc123_xyz',
+        originalName: 'Google Sheet 1abc123_xyz.xlsx',
+        mimeType: XLSX_MIME,
+        sizeBytes: mockBuffer.length,
+        minioKey: 'google-sheets/user-1/xxxx.xlsx',
+        googleSpreadsheetId: '1abc123_xyz',
+      });
+
+      const result = await service.importGoogleSheet(mockUser, mockGoogleUrl);
+
+      expect(mockAuthService.getGoogleAccessToken).toHaveBeenCalledWith('user-1');
+      expect(fetchSpy).toHaveBeenLastCalledWith(
+        'https://docs.google.com/spreadsheets/d/1abc123_xyz/export?format=xlsx',
+        {
+          headers: {
+            Authorization: 'Bearer fake-access-token',
+          },
+        },
+      );
+      expect(result.id).toBe('ds-private-google');
+    });
+
+    it('enforces quota limit for free user', async () => {
+      mockPrisma.subscription.findUnique.mockResolvedValue(null); // Free
+      mockPrisma.dataset.count.mockResolvedValue(2); // Already 2 datasets
+
+      await expect(
+        service.importGoogleSheet(mockUser, mockGoogleUrl),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('syncGoogleSheet', () => {
+    it('throws NotFoundException if dataset not found', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue(null);
+      await expect(service.syncGoogleSheet('user-1', 'invalid-id')).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws BadRequestException if dataset has no googleSpreadsheetId', async () => {
+      mockPrisma.dataset.findFirst.mockResolvedValue({ id: 'ds-1', userId: 'user-1', googleSpreadsheetId: null });
+      await expect(service.syncGoogleSheet('user-1', 'ds-1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('syncs public Google Sheet successfully and updates sizeBytes + lastSyncedAt', async () => {
+      const mockBuffer = Buffer.from('new fake xlsx content');
+      const fetchSpy = jest.spyOn(globalThis, 'fetch');
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        arrayBuffer: async () => new TextEncoder().encode('new fake xlsx content').buffer,
+        headers: {
+          get: (name: string) => null,
+        },
+      } as any);
+
+      const mockDataset = {
+        id: 'ds-google',
+        userId: 'user-1',
+        name: 'MySheet',
+        originalName: 'MySheet.xlsx',
+        mimeType: XLSX_MIME,
+        sizeBytes: 100,
+        minioKey: 'google-sheets/user-1/xxxx.xlsx',
+        googleSpreadsheetId: '1abc123_xyz',
+      };
+
+      mockPrisma.dataset.findFirst.mockResolvedValue(mockDataset);
+      mockPrisma.dataset.update.mockResolvedValue({
+        ...mockDataset,
+        sizeBytes: mockBuffer.length,
+        lastSyncedAt: new Date(),
+      });
+
+      const result = await service.syncGoogleSheet('user-1', 'ds-google');
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://docs.google.com/spreadsheets/d/1abc123_xyz/export?format=xlsx',
+      );
+      expect(mockStorage.putObject).toHaveBeenCalledWith(
+        'google-sheets/user-1/xxxx.xlsx',
+        mockBuffer,
+        XLSX_MIME,
+      );
+      expect(mockPrisma.dataset.update).toHaveBeenCalledWith({
+        where: { id: 'ds-google' },
+        data: expect.objectContaining({
+          sizeBytes: mockBuffer.length,
+          lastSyncedAt: expect.any(Date),
+        }),
+      });
+      expect(result.sizeBytes).toBe(mockBuffer.length);
+
+      fetchSpy.mockRestore();
     });
   });
 });

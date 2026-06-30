@@ -5,8 +5,9 @@ import RGL, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { useAuth } from '../hooks/useAuth';
-import { fetchDatasets, deleteDataset } from '../api/datasets';
+import { fetchDatasets, deleteDataset, syncDataset } from '../api/datasets';
 import type { Dataset } from '../api/datasets';
+import { apiErrorMessage } from '../lib/apiError';
 import { listCharts, updateLayout, deleteChart, updateChart } from '../api/charts';
 import type { DashboardChart } from '../api/charts';
 import { getDefaultDashboard, renameDashboard } from '../api/dashboards';
@@ -20,7 +21,7 @@ import {
 import ChartView from '../components/ChartView';
 import ChartStylePanel from '../components/ChartStylePanel';
 import AddChartMenu from '../components/AddChartMenu';
-import client from '../api/client';
+import Header from '../components/Header';
 
 const GridLayout = WidthProvider(RGL);
 
@@ -44,31 +45,9 @@ export default function DashboardPage() {
       queryClient.invalidateQueries({ queryKey: ['datasets'] }),
   });
 
-  async function handleLogout() {
-    try {
-      await client.post('/auth/logout');
-    } finally {
-      window.location.href = '/login';
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      <header className="flex items-center justify-between border-b border-gray-800 px-6 py-4">
-        <h1 className="text-lg font-bold">ChartLy</h1>
-        <div className="flex items-center gap-4">
-          {user?.name && (
-            <span className="text-sm text-gray-400">{user.name}</span>
-          )}
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="text-sm text-gray-400 transition hover:text-white"
-          >
-            Đăng xuất
-          </button>
-        </div>
-      </header>
+      <Header />
 
       <main className="mx-auto max-w-5xl px-6 py-10">
         <SheetsSection
@@ -152,6 +131,19 @@ function SheetCard({
   onDelete: (id: string) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const syncMut = useMutation({
+    mutationFn: () => syncDataset(dataset.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['datasets'] });
+      setSyncError(null);
+    },
+    onError: (err) => {
+      setSyncError(apiErrorMessage(err) || 'Đồng bộ thất bại. Vui lòng thử lại.');
+    },
+  });
 
   return (
     <div className="relative flex flex-col rounded-xl border border-gray-800 bg-gray-900 p-4">
@@ -163,8 +155,36 @@ function SheetCard({
         <span className="truncate pr-6 font-medium">📄 {dataset.name}</span>
         <span className="mt-1 text-xs text-gray-500">
           {formatDate(dataset.createdAt)}
+          {dataset.lastSyncedAt && (
+            <span className="block mt-0.5 text-[10px] text-emerald-400">
+              Đồng bộ: {formatDate(dataset.lastSyncedAt)}
+            </span>
+          )}
         </span>
       </button>
+
+      {syncError && (
+        <span className="mt-2 text-[10px] text-red-400 truncate" title={syncError}>
+          ⚠️ {syncError}
+        </span>
+      )}
+
+      {!confirming && dataset.googleSpreadsheetId && (
+        <button
+          type="button"
+          aria-label={`Đồng bộ ${dataset.name}`}
+          disabled={syncMut.isPending}
+          onClick={(e) => {
+            e.stopPropagation();
+            syncMut.mutate();
+          }}
+          className={`absolute right-8 top-2 rounded p-1 text-gray-500 transition hover:bg-gray-800 hover:text-blue-400 ${
+            syncMut.isPending ? 'animate-spin text-blue-400' : ''
+          }`}
+        >
+          🔄
+        </button>
+      )}
 
       {confirming ? (
         <div className="mt-3 flex items-center gap-2 text-xs">

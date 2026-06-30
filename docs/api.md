@@ -325,6 +325,97 @@ Lưu/cập nhật tiến độ 1 thẻ (upsert theo `userId+datasetId+sheet+card
 
 ---
 
+## Admin
+
+> Tất cả endpoints `/admin/*` đều yêu cầu JWT và quyền admin (`role === 'admin'`).
+
+### GET /admin/users
+Lấy danh sách tất cả người dùng trong hệ thống kèm thông tin gói đăng ký (subscription).  
+**Auth**: JWT (Role: admin)  
+**Response**: `UserItem[]`
+```json
+[
+  {
+    "id": "string",
+    "email": "string",
+    "name": "string | null",
+    "avatarUrl": "string | null",
+    "role": "user | admin",
+    "createdAt": "ISO date",
+    "updatedAt": "ISO date",
+    "subscription": {
+      "plan": "free | pro",
+      "status": "active | canceled | past_due",
+      "currentPeriodEnd": "ISO date | null"
+    } | null
+  }
+]
+```
+
+---
+
+### PATCH /admin/users/:id/plan
+Thay đổi (override) gói đăng ký của một người dùng cụ thể. Hành động này sẽ được ghi nhận vào nhật ký hệ thống (audit log).  
+**Auth**: JWT (Role: admin)  
+**Body**:
+```json
+{
+  "plan": "free | pro"
+}
+```
+**Response**: Bản ghi `Subscription` sau khi cập nhật.
+
+---
+
+### GET /admin/stats
+Lấy các số liệu thống kê tổng quan của hệ thống phục vụ dashboard quản trị.  
+**Auth**: JWT (Role: admin)  
+**Response**:
+```json
+{
+  "totalUsers": 10,
+  "totalCharts": 25,
+  "totalDatasets": 15,
+  "proUsers": 3
+}
+```
+
+---
+
+### GET /admin/audit-logs
+Lấy danh sách nhật ký hoạt động của toàn hệ thống (phân trang).  
+**Auth**: JWT (Role: admin)  
+**Query**:
+- `page` (optional, mặc định `1`) — số trang
+- `limit` (optional, mặc định `50`) — số bản ghi mỗi trang
+**Response**:
+```json
+{
+  "logs": [
+    {
+      "id": "string",
+      "userId": "string | null",
+      "action": "string",
+      "entity": "string | null",
+      "entityId": "string | null",
+      "metadata": {},
+      "ipAddress": "string | null",
+      "createdAt": "ISO date",
+      "user": {
+        "email": "string",
+        "name": "string | null"
+      } | null
+    }
+  ],
+  "total": 100,
+  "page": 1,
+  "limit": 50,
+  "totalPages": 2
+}
+```
+
+---
+
 ## Upload Flow (end-to-end)
 
 ```

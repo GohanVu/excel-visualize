@@ -71,4 +71,14 @@ export class StorageService implements OnModuleInit {
   async removeObject(objectKey: string): Promise<void> {
     await this.client.removeObject(this.bucket, objectKey);
   }
+
+  async putObject(objectKey: string, buffer: Buffer, mimeType?: string): Promise<void> {
+    await this.client.putObject(
+      this.bucket,
+      objectKey,
+      buffer,
+      buffer.length,
+      mimeType ? { 'Content-Type': mimeType } : undefined,
+    );
+  }
 }

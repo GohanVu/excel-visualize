@@ -143,12 +143,14 @@
 
 ### [Issue-013] Dev server không hot-reload trên Windows (bind mount + inotify)
 
-- **Status**: 🟡 Workaround (chưa fix tận gốc)
+- **Status**: 🟢 Fixed
 - **Severity**: Medium (dev experience — dễ verify nhầm code cũ)
 - **Phát hiện**: 2026-06-29 — chạy e2e thấy `aggregation` undefined dù T2 đã code. Backend đang chạy **JS compile từ code CŨ**: sửa file `.ts` không trigger `nest start --watch` recompile
-- **Root cause**: Bind mount `./backend:/app` trên Docker Desktop Windows (WSL2) KHÔNG truyền inotify event từ host vào container → file watcher (nest/vite) không thấy thay đổi. Chỉ `pnpm test`/`pnpm build` (chạy mới mỗi lần) mới phản ánh code mới nhất; dev server live thì đứng yên
-- **Workaround**: sau khi sửa code backend/frontend mà muốn test trên server đang chạy → `docker compose restart backend` (hoặc frontend). Hoặc bật polling: thêm `CHOKIDAR_USEPOLLING=true` (vite) / `WATCHPACK_POLLING=true` và nest `--watch` với polling cho tsc (cấu hình sau)
-- **Lesson learned**: Trên Windows, KHÔNG tin dev server đã reload. Khi verify e2e/thủ công sau khi sửa code → restart container trước. Unit test (`pnpm test`) luôn đúng vì compile mới. Cân nhắc thêm polling env vào docker-compose để fix hẳn (follow-up).
+- **Root cause**: Bind mount `./backend:/app` và `./frontend:/app` trên Docker Desktop Windows (WSL2) KHÔNG truyền inotify event từ host vào container → file watcher (nest/vite) không thấy thay đổi. Chỉ `pnpm test`/`pnpm build` mới phản ánh code mới nhất; dev server live thì đứng yên.
+- **Fix**: 
+  1. Cấu hình `watch: { usePolling: true }` trong `frontend/vite.config.ts` để Vite tự động phát hiện thay đổi qua polling trên Windows.
+  2. (Workaround cho backend): restart container backend khi có thay đổi lớn hoặc cấu hình tương tự.
+- **Lesson learned**: Trên Windows, khi chạy Docker với bind mount, inotify thường bị lỗi. Cần cấu hình polling watcher cho dev server để đảm bảo hot-reload hoạt động trơn tru mà không cần restart container thủ công.
 
 ### [Issue-014] Khởi động mới (fresh setup) gây lỗi 500 ở Backend do chưa chạy Migrate & Generate
 
@@ -165,5 +167,40 @@
 - **Test added**: N/A (Môi trường / Cấu hình Docker)
 - **Lesson learned**: Để đảm bảo nguyên lý "Clone -> 1 command -> chạy" của dự án, các container chạy môi trường dev có sử dụng ORM (như Prisma) nên được cấu hình tự động chạy migration và sinh client tại thời điểm khởi động (sau khi database dependency đã healthy). Khi gặp lỗi database, cần xử lý trọn gói từ việc sửa kết nối (cấu hình biến môi trường) cho đến đồng bộ hóa schema.
 
+### [Issue-015] Thiếu thanh điều hướng (Header/Back button) trên các trang con làm đứt gãy trải nghiệm người dùng
+
+- **Status**: 🟢 Fixed
+- **Severity**: High (UX/Usability — người dùng bị "kẹt" không thể quay lại hoặc đăng xuất)
+- **Phát hiện**: 2026-06-30 — Người dùng gửi ảnh chụp màn hình trang chọn cột chỉ ra không có cách nào để quay lại Dashboard hoặc đăng xuất trừ khi dùng nút Back của trình duyệt.
+- **Root cause**: Khi phát triển độc lập các trang con (`UploadPage`, `ColumnOverviewPage`, `ChartSuggestionPage`, `ChartDetailPage`, `LearnPage`), các phiên làm việc trước chỉ tập trung vào logic nghiệp vụ của trang đó mà quên mất việc bao bọc trang trong một Layout chung hoặc bổ sung thanh điều hướng toàn cục (Global Header).
+- **Fix**:
+  1. Xây dựng component `Header` dùng chung tại [Header.tsx](file:///d:/Project/excel-visualize/frontend/src/components/Header.tsx) tích hợp sẵn logo (về dashboard), nút quay lại linh hoạt (showBack), liên kết trang cá nhân và nút đăng xuất.
+  2. Tích hợp `Header` vào tất cả các trang con bị thiếu.
+- **Lesson learned**: Khi thiết kế bất kỳ trang mới nào, **BẮT BUỘC** phải tự đặt câu hỏi về luồng đi của người dùng (User Flow): *Họ vào trang này bằng cách nào? Họ sẽ quay lại trang trước thế nào? Họ có thể đăng xuất hoặc vào trang cá nhân từ đây không?* Luôn ưu tiên dùng layout/component dùng chung thay vì code giao diện cô lập.
+
 <!-- Thêm issues ở đây -->
+
+## Ghi chú Cấu hình & Deployment
+
+### [Deployment-001] Cấu hình & Xác minh Google OAuth trên Production
+
+- **Bối cảnh**: Tính năng kết nối Google Sheet riêng tư (P3-T2) sử dụng Google OAuth 2.0. Ở môi trường phát triển cục bộ, ứng dụng dùng client_id giả lập.
+- **Yêu cầu khi lên Production**:
+  1. **Google Cloud Console**:
+     * Đăng ký tên miền chính thức của ứng dụng.
+     * Cấu hình **Authorized JavaScript origins**: `https://yourdomain.com`.
+     * Cấu hình **Authorized redirect URIs**:
+       * `https://api.yourdomain.com/auth/google/callback`
+       * `https://api.yourdomain.com/auth/google/sheets/callback`
+  2. **Biến môi trường (.env)**:
+     Cập nhật các giá trị thật trên production server:
+     ```env
+     FRONTEND_URL=https://yourdomain.com
+     GOOGLE_CLIENT_ID=real_client_id
+     GOOGLE_CLIENT_SECRET=real_client_secret
+     GOOGLE_CALLBACK_URL=https://api.yourdomain.com/auth/google/callback
+     ```
+  3. **Xác minh ứng dụng (Google Verification)**:
+     Vì ứng dụng yêu cầu scope nhạy cảm `spreadsheets.readonly`, cần gửi yêu cầu xác minh ứng dụng (OAuth consent screen verification) trên Google Cloud Console trước khi phát hành công khai để tránh màn hình cảnh báo bảo mật của Google. Trong thời gian thử nghiệm, có thể thêm email của các tester vào danh sách "Test users" để bỏ qua bước xác minh này.
+
 

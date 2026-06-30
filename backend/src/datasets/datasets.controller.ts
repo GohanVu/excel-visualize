@@ -15,11 +15,22 @@ import { DatasetsService } from './datasets.service';
 import { PresignUploadDto } from './dto/presign-upload.dto';
 import { ConfirmUploadDto } from './dto/confirm-upload.dto';
 import { SuggestChartsDto } from './dto/suggest-charts.dto';
+import { ImportGoogleSheetDto } from './dto/import-google-sheet.dto';
 
 @Controller('datasets')
 @UseGuards(JwtAuthGuard)
 export class DatasetsController {
   constructor(private readonly datasetsService: DatasetsService) {}
+
+  @Post('google-sheet')
+  importGoogleSheet(@CurrentUser() user: User, @Body() dto: ImportGoogleSheetDto) {
+    return this.datasetsService.importGoogleSheet(user, dto.url);
+  }
+
+  @Post(':id/sync')
+  sync(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.datasetsService.syncGoogleSheet(user.id, id);
+  }
 
   @Post('presign')
   presign(@CurrentUser() user: User, @Body() dto: PresignUploadDto) {

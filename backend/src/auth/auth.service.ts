@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
@@ -133,7 +133,55 @@ export class AuthService {
   /** Loại bỏ field nhạy cảm trước khi trả user ra ngoài (passwordHash, refresh token) */
   sanitizeUser(user: User) {
     const { passwordHash: _ph, encryptedRefreshToken: _rt, ...safe } = user;
-    return safe;
+    return {
+      ...safe,
+      googleConnected: !!user.encryptedRefreshToken,
+    };
+  }
+
+  async saveGoogleRefreshToken(userId: string, refreshToken: string) {
+    const encryptedRefreshToken = this.encryptToken(refreshToken);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { encryptedRefreshToken },
+    });
+  }
+
+  async getGoogleAccessToken(userId: string): Promise<string> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user?.encryptedRefreshToken) {
+      throw new UnauthorizedException('Tài khoản Google chưa được kết nối.');
+    }
+
+    const refreshToken = this.decryptToken(user.encryptedRefreshToken);
+    const clientId = this.config.getOrThrow('GOOGLE_CLIENT_ID');
+    const clientSecret = this.config.getOrThrow('GOOGLE_CLIENT_SECRET');
+
+    const tokenUrl = 'https://oauth2.googleapis.com/token';
+    let response: globalThis.Response;
+    try {
+      response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: clientId,
+          client_secret: clientSecret,
+          refresh_token: refreshToken,
+          grant_type: 'refresh_token',
+        }),
+      });
+    } catch (err) {
+      throw new BadRequestException('Không thể kết nối đến Google OAuth API.');
+    }
+
+    if (!response.ok) {
+      throw new UnauthorizedException('Kết nối Google Sheet đã hết hạn. Vui lòng kết nối lại tài khoản Google.');
+    }
+
+    const data = await response.json() as { access_token: string };
+    return data.access_token;
   }
 
   private encryptToken(token: string): string {

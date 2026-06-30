@@ -15,7 +15,11 @@ vi.mock('../api/charts', () => ({
   deleteChart: vi.fn(),
   updateChart: vi.fn(),
 }));
-vi.mock('../api/datasets', () => ({ fetchDatasets: vi.fn(), deleteDataset: vi.fn() }));
+vi.mock('../api/datasets', () => ({
+  fetchDatasets: vi.fn(),
+  deleteDataset: vi.fn(),
+  syncDataset: vi.fn(),
+}));
 vi.mock('../api/dashboards', () => ({
   getDefaultDashboard: vi.fn(),
   renameDashboard: vi.fn(),
@@ -34,7 +38,7 @@ vi.mock('../components/ChartView', () => ({
 }));
 
 import { listCharts, deleteChart, updateChart } from '../api/charts';
-import { fetchDatasets, deleteDataset } from '../api/datasets';
+import { fetchDatasets, deleteDataset, syncDataset } from '../api/datasets';
 import { getDefaultDashboard, renameDashboard } from '../api/dashboards';
 
 const mockListCharts = listCharts as ReturnType<typeof vi.fn>;
@@ -42,6 +46,7 @@ const mockDeleteChart = deleteChart as ReturnType<typeof vi.fn>;
 const mockUpdateChart = updateChart as ReturnType<typeof vi.fn>;
 const mockFetchDatasets = fetchDatasets as ReturnType<typeof vi.fn>;
 const mockDeleteDataset = deleteDataset as ReturnType<typeof vi.fn>;
+const mockSyncDataset = syncDataset as ReturnType<typeof vi.fn>;
 const mockGetDefaultDashboard = getDefaultDashboard as ReturnType<typeof vi.fn>;
 const mockRenameDashboard = renameDashboard as ReturnType<typeof vi.fn>;
 
@@ -76,6 +81,7 @@ describe('DashboardPage', () => {
     mockFetchDatasets.mockResolvedValue([]);
     mockListCharts.mockResolvedValue({ charts: [], limit: 3 });
     mockDeleteDataset.mockResolvedValue(undefined);
+    mockSyncDataset.mockResolvedValue(undefined);
     mockDeleteChart.mockResolvedValue(undefined);
     mockUpdateChart.mockResolvedValue(undefined);
     mockGetDefaultDashboard.mockResolvedValue(null);
@@ -84,7 +90,7 @@ describe('DashboardPage', () => {
 
   it('renders user name in header', () => {
     renderPage();
-    expect(screen.getByText('Gohan')).toBeInTheDocument();
+    expect(screen.getByText(/Gohan/)).toBeInTheDocument();
   });
 
   it('renders logout button', () => {
@@ -284,6 +290,40 @@ describe('DashboardPage', () => {
       renderPage();
       await screen.findByText('Tỷ trọng');
       expect(screen.queryByRole('note', { name: 'Biểu đồ bị khoá' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Google Sheet Sync (P3-T3)', () => {
+    it('renders sync button for Google Sheet datasets and triggers sync API on click', async () => {
+      mockFetchDatasets.mockResolvedValue([
+        {
+          id: 'ds-google',
+          name: 'My Google Sheet',
+          originalName: 'sheet.xlsx',
+          mimeType: 'x',
+          sizeBytes: 1,
+          minioKey: 'k',
+          rowCount: null,
+          googleSpreadsheetId: '1abc123',
+          lastSyncedAt: '2026-06-29T12:00:00.000Z',
+          createdAt: '2026-06-27T00:00:00.000Z',
+        },
+      ]);
+
+      renderPage();
+
+      // Check last synced label
+      expect(await screen.findByText(/Đồng bộ: 29\/6\/2026/i)).toBeInTheDocument();
+
+      // Find and click sync button
+      const syncBtn = screen.getByRole('button', { name: /Đồng bộ My Google Sheet/i });
+      expect(syncBtn).toBeInTheDocument();
+
+      fireEvent.click(syncBtn);
+
+      await waitFor(() => {
+        expect(mockSyncDataset).toHaveBeenCalledWith('ds-google');
+      });
     });
   });
 });

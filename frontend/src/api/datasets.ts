@@ -8,6 +8,8 @@ export interface Dataset {
   sizeBytes: number;
   minioKey: string;
   rowCount: number | null;
+  googleSpreadsheetId?: string | null;
+  lastSyncedAt?: string | null;
   createdAt: string;
 }
 
@@ -173,5 +175,15 @@ export async function suggestCharts(
       typeOverrides: opts.typeOverrides,
     },
   );
+  return data;
+}
+
+export async function importGoogleSheet(url: string): Promise<Dataset> {
+  const { data } = await client.post<Dataset>('/datasets/google-sheet', { url });
+  return data;
+}
+
+export async function syncDataset(datasetId: string): Promise<Dataset> {
+  const { data } = await client.post<Dataset>(`/datasets/${datasetId}/sync`);
   return data;
 }

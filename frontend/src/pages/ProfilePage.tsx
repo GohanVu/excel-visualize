@@ -2,6 +2,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import client from '../api/client';
 import { useNavigate } from 'react-router-dom';
+import Header from '../components/Header';
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -21,18 +22,12 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-gray-900 p-8 shadow-2xl relative overflow-hidden">
-        {/* Glow decoration */}
-        <div className="absolute top-0 right-0 -mt-12 -mr-12 h-40 w-40 rounded-full bg-blue-600/10 blur-3xl" />
-
-        {/* Back Button */}
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="text-xs text-gray-400 hover:text-white mb-6 flex items-center space-x-1 transition-colors"
-        >
-          <span>← Quay lại Dashboard</span>
-        </button>
+    <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
+      <Header showBack />
+      <main className="flex-1 flex items-center justify-center p-6">
+        <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-gray-900 p-8 shadow-2xl relative overflow-hidden">
+          {/* Glow decoration */}
+          <div className="absolute top-0 right-0 -mt-12 -mr-12 h-40 w-40 rounded-full bg-blue-600/10 blur-3xl" />
 
         {/* Profile Content */}
         <div className="flex flex-col items-center text-center">
@@ -97,6 +92,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+      </main>
     </div>
   );
 }

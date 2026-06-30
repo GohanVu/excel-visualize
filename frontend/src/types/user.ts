@@ -8,6 +8,7 @@ export interface User {
   role: Role;
   createdAt: string;
   updatedAt: string;
+  googleConnected: boolean;
   subscription?: {
     plan: 'free' | 'pro';
     status: string;

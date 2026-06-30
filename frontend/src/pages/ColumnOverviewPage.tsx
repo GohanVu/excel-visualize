@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchColumns } from '../api/datasets';
 import type { DatasetColumn, ColumnType } from '../api/datasets';
 import { groupColumns, autoSelectColumns } from '../lib/columnGrouping';
+import Header from '../components/Header';
 
 const GROUP_META = [
   { key: 'date', label: 'Thời gian', icon: '📅', hint: 'Ngày, tháng, năm' },
@@ -108,8 +109,9 @@ export default function ColumnOverviewPage() {
   const showHeaderControl = !data.headerConfident || headerRow != null;
 
   return (
-    <div className="min-h-screen bg-gray-950 p-6 text-white">
-      <div className="mx-auto max-w-4xl">
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+      <Header showBack />
+      <div className="mx-auto max-w-4xl p-6 w-full">
         <h1 className="text-2xl font-bold">{data.name}</h1>
         <p className="mt-1 text-sm text-gray-400">
           {data.totalRows} dòng · {data.columns.length} cột · chọn cột để tạo
