@@ -63,6 +63,14 @@ export default function ProfilePage() {
                 {user.subscription?.plan === 'pro' ? '⭐ PRO' : 'FREE'}
               </span>
             </div>
+            {user.subscription?.plan === 'pro' && user.subscription?.expiredAt && (
+              <div className="flex justify-between items-center text-sm py-1.5 border-b border-gray-800">
+                <span className="text-gray-400">Hạn dùng đến</span>
+                <span className="text-gray-300 font-medium">
+                  {new Date(user.subscription.expiredAt).toLocaleDateString('vi-VN')}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between items-center text-sm py-1.5">
               <span className="text-gray-400">Ngày tham gia</span>
               <span className="text-gray-300 font-medium">
@@ -73,6 +81,12 @@ export default function ProfilePage() {
 
           {/* Action Buttons */}
           <div className="w-full mt-8 space-y-3">
+            <button
+              onClick={() => navigate('/pricing')}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white transition shadow-lg shadow-purple-600/10"
+            >
+              {user.subscription?.plan === 'pro' ? '⭐ Gia hạn gói PRO' : '⭐ Nâng cấp lên PRO'}
+            </button>
             {user.role === 'admin' && (
               <button
                 onClick={() => navigate('/admin')}

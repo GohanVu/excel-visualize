@@ -428,7 +428,10 @@ export class DatasetsService {
     const sub = await this.prisma.subscription.findUnique({
       where: { userId },
     });
-    return sub?.plan === 'pro' && sub?.status === 'active';
+    if (!sub) return false;
+    if (sub.plan !== 'pro' || sub.status !== 'active') return false;
+    if (sub.expiredAt && sub.expiredAt < new Date()) return false;
+    return true;
   }
 
   private getExtension(filename: string): string {

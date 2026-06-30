@@ -129,4 +129,27 @@ Người dùng muốn có cách thiết kế biểu đồ hoạt động tương
 4. **Trình biên dịch Option**:
    * Nâng cấp `buildChartOption.ts` thành một compiler nhận `definition` + `rows` $\rightarrow$ sinh ra option ECharts tương ứng trực tiếp ở frontend.
 
+## Session 3 — 2026-06-30 — Thay thế Stripe bằng Cổng thanh toán Việt Nam (VietQR / PayOS)
+
+### Bối cảnh & Yêu cầu
+Người dùng phát triển dự án tại Việt Nam, không sử dụng Stripe hoặc các hình thức đăng ký tự động gia hạn (Subscription auto-recurring). 
+Yêu cầu:
+- Tích hợp quét mã QR (VietQR) chuyển khoản ngân hàng.
+- Lựa chọn các gói trả trước theo thời hạn cố định: 1 tháng, 3 tháng, 6 tháng, 12 tháng.
+- Xử lý tự động: Khách hàng chuyển khoản thành công -> hệ thống nhận webhook -> kích hoạt gói Pro tự động.
+
+### Giải pháp đề xuất
+1. **Cổng thanh toán hỗ trợ**: Sử dụng **PayOS** (payos.vn).
+   - *Lý do:* Hỗ trợ tài khoản cá nhân, tạo mã QR động chứa chính xác số tiền và mã giao dịch duy nhất, hoàn toàn miễn phí giao dịch (hoặc phí rất thấp tùy ngân hàng), hỗ trợ Webhook tự động bắn tín hiệu thanh toán thành công về Backend cực kỳ ổn định mà không cần cào lịch sử giao dịch thủ công.
+2. **Mô hình thanh toán**: Chuyển đổi từ **Subscription (tự động gia hạn)** sang **Prepaid (trả trước theo thời hạn)**.
+   - Khi giao dịch thành công, gói Pro sẽ được kích hoạt bằng cách cập nhật ngày hết hạn `expiredAt` trên tài khoản.
+   - User có thể nạp thêm để cộng dồn thời hạn (ví dụ: đang còn 15 ngày Pro, nạp gói 1 tháng sẽ thành 45 ngày).
+3. **Cấu trúc DB Schema**:
+   - Bảng `Subscription` sẽ chuyển đổi ngữ nghĩa từ trạng thái cổng Stripe sang lưu trữ thông tin thời hạn của user: `plan` (free/pro), `status` (active/expired), `startDate`, `endDate` (tương ứng với `expiredAt`), và `paymentProvider` (payos).
+   - Thêm bảng `PaymentTransaction` để lưu lịch sử giao dịch (id, userId, orderCode, amount, durationMonths, status, createdAt).
+4. **Luồng thanh toán**:
+   - **Frontend:** User click chọn gói (1/3/6/12 tháng) $\rightarrow$ FE gọi API `POST /payments/create-link` $\rightarrow$ Nhận link thanh toán PayOS $\rightarrow$ Redirect hoặc hiển thị Modal chứa mã QR động $\rightarrow$ Chờ thông báo thanh toán (qua polling hoặc websocket) $\rightarrow$ Hiển thị popup thành công.
+   - **Backend:** Nhận request tạo link thanh toán $\rightarrow$ Generate mã đơn hàng (`orderCode` ngẫu nhiên/tăng dần) $\rightarrow$ Gọi API PayOS tạo link thanh toán $\rightarrow$ Lưu `PaymentTransaction` trạng thái `PENDING`.
+   - **Webhook:** Khi khách chuyển khoản thành công $\rightarrow$ PayOS bắn Webhook POST tới `/payments/webhook` $\rightarrow$ Backend verify signature $\rightarrow$ Cập nhật `PaymentTransaction` sang `SUCCESS` $\rightarrow$ Tính toán cộng dồn hạn dùng và cập nhật bảng `Subscription` $\rightarrow$ Trả về 200 OK cho PayOS.
+
 <!-- Thêm session mới ở đây -->

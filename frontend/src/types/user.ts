@@ -12,5 +12,6 @@ export interface User {
   subscription?: {
     plan: 'free' | 'pro';
     status: string;
+    expiredAt?: string | null;
   } | null;
 }

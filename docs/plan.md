@@ -320,11 +320,12 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
-| P5-T1 | Stripe integration: tạo subscription, webhook handler | ⬜ Todo | P0-T3 | Schema `subscriptions` đã có sẵn |
-| P5-T2 | Upgrade flow UI: màn chọn plan, redirect Stripe Checkout | ⬜ Todo | P5-T1 | |
-| P5-T3 | Enforce limits theo plan (chart count, dashboard count, AI access) | ⬜ Todo | P5-T1 | Middleware check subscription status |
-| P5-T4 | Webhook: tự động cập nhật plan khi Stripe xác nhận payment | ⬜ Todo | P5-T1 | |
-| P5-T5 | Trang quản lý subscription (xem plan, cancel, billing history) | ⬜ Todo | P5-T2 | |
+| P5-T1 | Tích hợp PayOS: tạo link thanh toán, webhook handler | ✅ Done | P0-T3 | Cài đặt @payos/node v2 |
+| P5-T2 | Giao diện bảng giá: PricingPage chọn gói trả trước 1/3/6/12 tháng | ✅ Done | P5-T1 | Giao diện tối, gradient tím-hồng |
+| P5-T3 | Kiểm soát quota Pro (số biểu đồ/datasets) dựa trên hạn dùng expiredAt | ✅ Done | P5-T1 | Logic isProUser cập nhật expiredAt |
+| P5-T4 | Webhook PayOS: tự động kích hoạt và cộng dồn thời hạn sử dụng | ✅ Done | P5-T1 | Cập nhật Subscription và PaymentTransaction |
+| P5-T5 | Giao diện hạn dùng: ProfilePage hiển thị ngày hết hạn, cảnh báo sắp hết | ✅ Done | P5-T2 | Header warning banner nếu còn <3 ngày |
+
 
 ---
 

@@ -7,6 +7,9 @@ import ChartSuggestionPage from './pages/ChartSuggestionPage';
 import ChartDetailPage from './pages/ChartDetailPage';
 import LearnPage from './pages/LearnPage';
 import ProfilePage from './pages/ProfilePage';
+import PricingPage from './pages/PricingPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
+import PaymentCancelPage from './pages/PaymentCancelPage';
 import AdminStatsPage from './pages/admin/AdminStatsPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminAuditLogsPage from './pages/admin/AdminAuditLogsPage';
@@ -35,6 +38,9 @@ export default function App() {
         <Route path="/datasets/:id/chart" element={<ChartDetailPage />} />
         <Route path="/datasets/:id/learn" element={<LearnPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/payment/success" element={<PaymentSuccessPage />} />
+        <Route path="/payment/cancel" element={<PaymentCancelPage />} />
       </Route>
 
       {/* Admin-only routes */}

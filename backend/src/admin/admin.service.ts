@@ -24,7 +24,7 @@ export class AdminService {
           select: {
             plan: true,
             status: true,
-            currentPeriodEnd: true,
+            expiredAt: true,
           },
         },
       },

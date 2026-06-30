@@ -11,6 +11,7 @@ import { DashboardsModule } from './dashboards/dashboards.module';
 import { StudyProgressModule } from './study-progress/study-progress.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { AdminModule } from './admin/admin.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { AdminModule } from './admin/admin.module';
     StudyProgressModule,
     AuditLogsModule,
     AdminModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
 })

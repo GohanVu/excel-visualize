@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -478,6 +478,12 @@ function LockedChartSlot({ limit }: { limit: number }) {
         <p className="mt-0.5 text-xs text-gray-400">
           Nâng cấp Pro để thêm biểu đồ không giới hạn
         </p>
+        <Link
+          to="/pricing"
+          className="mt-3 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-500 transition animate-pulse"
+        >
+          Nâng cấp Pro
+        </Link>
       </div>
     </div>
   );

@@ -27,6 +27,46 @@
 > [!NOTE]
 > Các session từ Phase 0 đến Phase 1.8 đã được lưu trữ tại [audit-log-phase-1.md](file:///d:/Project/excel-visualize/docs/archive/audit-log-phase-1.md) để giảm dung lượng file và tối ưu hóa việc đọc context.
 
+## [2026-06-30] Session — Phase 5: VietQR via PayOS Payment Integration
+
+### Yêu cầu
+- Người dùng yêu cầu brainstorm và thiết kế hệ thống thanh toán VietQR (chuyển khoản qua app ngân hàng Việt Nam) thay thế Stripe.
+- Hỗ trợ các gói trả trước theo thời hạn (1, 3, 6, 12 tháng), kích hoạt và cộng dồn thời hạn sử dụng gói Pro tự động khi chuyển khoản thành công.
+
+### Công việc đã làm
+- **Database & Environment Setup**:
+  - Cập nhật `.env` & `.env.example` với 3 cấu hình PayOS API keys.
+  - Sửa đổi `schema.prisma`: Thêm bảng `PaymentTransaction` lưu lịch sử chuyển khoản; Cập nhật bảng `Subscription` thay thế Stripe keys bằng `paymentProvider` và `expiredAt` (lưu ngày hết hạn gói Pro). Chạy migration đồng bộ DB PostgreSQL.
+- **Backend Implementation (NestJS)**:
+  - Cài đặt package `@payos/node` (SDK v2.x).
+  - Xây dựng `PaymentsModule`, `PaymentsService`, `PaymentsController`: Tích hợp sinh mã QR động và link thanh toán; Viết webhook callback xử lý thanh toán thành công (verify signature, cập nhật trạng thái `PAID` và gia hạn/cộng dồn `expiredAt` cho user); Thêm endpoint check status phục vụ frontend polling.
+  - Cập nhật logic `isProUser` ở `DatasetsService` và `ChartsService` kiểm soát quota dựa trên `expiredAt`.
+  - Cập nhật `AdminService` đổi `currentPeriodEnd` thành `expiredAt` trong query thống kê danh sách user.
+  - Viết unit tests cho PaymentsService và PaymentsController (100% pass).
+- **Frontend Implementation (React)**:
+  - Cấu hình routes mới trong `App.tsx`: `/pricing`, `/payment/success`, `/payment/cancel`.
+  - Xây dựng `PricingPage.tsx` hiển thị 4 gói trả trước, nút nâng cấp kích hoạt redirect PayOS.
+  - Xây dựng `PaymentSuccessPage.tsx` & `PaymentCancelPage.tsx`: Polling gọi API check status để phản hồi giao diện tức thì khi có webhook; invalidate query `['auth', 'me']` cập nhật trạng thái tài khoản.
+  - Cập nhật `ProfilePage.tsx` hiển thị ngày hết hạn và nút gia hạn; Cập nhật `Header.tsx` thêm banner màu vàng nổi bật cảnh báo khi gói Pro sắp hết hạn (< 3 ngày).
+  - Kết nối Locked slot trên `DashboardPage.tsx` dẫn tới trang bảng giá.
+  - Viết unit tests cho PricingPage và PaymentSuccessPage (100% pass).
+- **Xác minh & E2E**:
+  - Chạy script verify DB trực tiếp trên container Postgres: Test luồng kích hoạt Pro từ Free (+30 ngày) và cộng dồn thêm gói mới (+90 ngày $\rightarrow$ tổng cộng 120 ngày) thành công 100%.
+
+### Quyết định quan trọng
+- **Sử dụng PayOS (VietQR động) thay thế Stripe**: Giải quyết vấn đề Stripe không khả dụng ở Việt Nam, hỗ trợ tài khoản ngân hàng cá nhân và tự động bắn Webhook hoàn toàn miễn phí.
+- **Prepaid thay thế Auto-Recurring Subscription**: Do chuyển khoản ngân hàng ở Việt Nam không hỗ trợ tự động trừ tiền, mô hình trả trước và tính toán `expiredAt` là giải pháp thực tế nhất.
+- **Cộng dồn ngày hết hạn**: Khi user mua gói mới khi gói cũ còn hạn, ngày hết hạn mới = `expiredAt cũ + hạn dùng gói mới` giúp giữ trọn vẹn quyền lợi cho user.
+- **Mock useAuth trong test thay vì mock react-query sâu**: Giúp cách ly việc test UI khỏi QueryClientProvider mà không làm hỏng `useQuery` trong các component phụ thuộc như Header.
+
+### Kết quả
+- Hoàn thành trọn vẹn Phase 5. Đã verify logic thành công trên DB thực tế. Backend 201 tests pass, Frontend 203 tests pass.
+
+### Tasks liên quan
+- P5-T1, P5-T2, P5-T3, P5-T4, P5-T5 ✅
+
+---
+
 ## [2026-06-30] Session — Fix Docker healthcheck MinIO (clone-and-run)
 
 ### Yêu cầu
