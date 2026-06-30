@@ -169,6 +169,18 @@ describe('DashboardPage', () => {
     expect(mockDeleteChart).not.toHaveBeenCalled();
   });
 
+  it('Thêm biểu đồ → chọn sheet → điều hướng tới /columns của sheet đó', async () => {
+    mockListCharts.mockResolvedValue(savedCharts);
+    mockFetchDatasets.mockResolvedValue(datasets);
+    renderPage();
+    await screen.findByText('Doanh thu theo tháng');
+    fireEvent.click(screen.getByRole('button', { name: '+ Thêm biểu đồ' }));
+    fireEvent.click(
+      screen.getByRole('menuitem', { name: /Từ vựng HSK/ }),
+    );
+    expect(screen.getByText('Trang cột')).toBeInTheDocument();
+  });
+
   it('mở panel tuỳ chỉnh khi bấm ⚙', async () => {
     mockListCharts.mockResolvedValue(savedCharts);
     renderPage();

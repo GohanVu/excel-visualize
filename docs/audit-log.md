@@ -1463,4 +1463,32 @@ User đề xuất: dò header / xác định cột nên kết hợp auto + chút
 ### Tasks liên quan
 - P2-T5 ✅
 
+## [2026-06-30] Session — P2-T2: Thêm chart vào dashboard đang mở
+
+### Yêu cầu
+- Cho phép thêm biểu đồ mới vào dashboard đang mở (re-trigger flow gợi ý từ P1-T4)
+
+### Công việc đã làm
+- **Frontend**:
+  - `components/AddChartMenu.tsx`: nút "+ Thêm biểu đồ" + dropdown (role=menu) liệt kê sheet đã có → `onPick(datasetId)`; mục "⬆ Tải sheet mới" → `onUpload`; backdrop click đóng menu; trạng thái rỗng "Chưa có sheet nào"
+  - `DashboardPage`: đặt AddChartMenu ở header khu "Biểu đồ đã lưu"; `onPick` → `navigate('/datasets/:id/columns')` (vào lại flow cột→gợi ý→lưu), `onUpload` → `/upload`. Truyền `datasets` từ datasetsQ
+  - +6 test (5 AddChartMenu: đóng ban đầu, mở liệt kê sheet, chọn sheet gọi onPick + đóng, tải mới gọi onUpload, rỗng; 1 DashboardPage: chọn sheet → điều hướng /columns)
+
+### Quyết định quan trọng
+- **Không cần endpoint/flow mới**: `saveChart` đã auto gắn chart vào dashboard mặc định → "thêm chart" chỉ là điểm vào lại flow `/columns` từ 1 sheet đã có. Tái dùng toàn bộ ColumnOverview→Suggestion→Detail
+- **Menu chọn sheet thay vì nút đơn**: user thường có nhiều sheet → chọn nguồn dữ liệu ngay; gộp luôn lối "tải sheet mới" để không phải quay lại khu Sheets
+- **Đặt trong khu "Biểu đồ đã lưu"** (chỉ hiện khi đã có ≥1 chart): chart đầu tiên vẫn vào từ card "Sheet của tôi"; giữ test "ẩn khu biểu đồ khi rỗng" không đổi
+- **Bind-mount source vào dev-image để test** (khỏi rebuild): `docker run -v <dir>:/app -v /app/node_modules ev-frontend-dev` — anonymous volume giữ node_modules của image, lấy code mới live
+
+### Test coverage
+- Frontend: 148 → **154 pass**, `pnpm build` (tsc -b) xanh, lint 0 error
+- (Backend không đổi: 151 pass)
+
+### Kết quả
+- Dashboard có nút "+ Thêm biểu đồ" → chọn sheet → dựng & lưu chart mới vào cùng dashboard. Phase 2: T1 ✅ T2 ✅ T5 ✅ T6 ✅
+- Tiếp: P2-T3 (free-tier gate 3 chart/dashboard) → P2-T4 (locked slot) / P2-T7 (đổi tên dashboard) / P2-T8 (export PNG)
+
+### Tasks liên quan
+- P2-T2 ✅
+
 <!-- Thêm session mới ở đây -->

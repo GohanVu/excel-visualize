@@ -17,6 +17,7 @@ import {
 } from '../lib/chartLayout';
 import ChartView from '../components/ChartView';
 import ChartStylePanel from '../components/ChartStylePanel';
+import AddChartMenu from '../components/AddChartMenu';
 import client from '../api/client';
 
 const GridLayout = WidthProvider(RGL);
@@ -70,7 +71,12 @@ export default function DashboardPage() {
           onDelete={(id) => deleteMut.mutate(id)}
         />
         {chartsQ.data && chartsQ.data.length > 0 && (
-          <SavedCharts charts={chartsQ.data} />
+          <SavedCharts
+            charts={chartsQ.data}
+            datasets={datasetsQ.data ?? []}
+            onPick={(dsId) => navigate(`/datasets/${dsId}/columns`)}
+            onUpload={() => navigate('/upload')}
+          />
         )}
       </main>
     </div>
@@ -182,7 +188,17 @@ function SheetCard({
   );
 }
 
-function SavedCharts({ charts }: { charts: DashboardChart[] }) {
+function SavedCharts({
+  charts,
+  datasets,
+  onPick,
+  onUpload,
+}: {
+  charts: DashboardChart[];
+  datasets: Dataset[];
+  onPick: (datasetId: string) => void;
+  onUpload: () => void;
+}) {
   const queryClient = useQueryClient();
   const [layout, setLayout] = useState<GridItem[]>(() => chartsToLayout(charts));
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -213,10 +229,15 @@ function SavedCharts({ charts }: { charts: DashboardChart[] }) {
 
   return (
     <section className="mt-10">
-      <h2 className="text-xl font-bold">Biểu đồ đã lưu</h2>
-      <p className="mt-1 text-sm text-gray-400">
-        {charts.length} biểu đồ — kéo tiêu đề để di chuyển, kéo góc để chỉnh kích thước
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold">Biểu đồ đã lưu</h2>
+          <p className="mt-1 text-sm text-gray-400">
+            {charts.length} biểu đồ — kéo tiêu đề để di chuyển, kéo góc để chỉnh kích thước
+          </p>
+        </div>
+        <AddChartMenu datasets={datasets} onPick={onPick} onUpload={onUpload} />
+      </div>
       <GridLayout
         className="mt-5"
         layout={layout}

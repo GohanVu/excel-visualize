@@ -259,7 +259,7 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 | Task ID | Mô tả | Status | Dependencies | Notes |
 |---------|--------|--------|--------------|-------|
 | P2-T1 | Tích hợp react-grid-layout: kéo thả và resize chart trên dashboard | ✅ Done | P1 done | RGL 12 cột (WidthProvider), drag-handle = tiêu đề. BE: `PATCH /charts/layout` (updateMany owner-guard) + position trong listCharts. FE: `lib/chartLayout` (chartsToLayout/layoutToPayload). E2e: position persist đúng. +9 test. Deps: react-grid-layout 1.4.4 + react-resizable 3.0.5 |
-| P2-T2 | Thêm chart mới vào dashboard đang mở | ⬜ Todo | P2-T1 | Trigger lại flow từ P1-T4 |
+| P2-T2 | Thêm chart mới vào dashboard đang mở | ✅ Done | P2-T1 | `AddChartMenu` (dropdown) ở header khu biểu đồ: chọn sheet đã có → `/datasets/:id/columns` (re-trigger flow P1-T4) hoặc "Tải sheet mới" → /upload. saveChart vốn gắn vào dashboard mặc định. +6 FE test |
 | P2-T3 | Free tier gate: giới hạn 3 chart / dashboard | ⬜ Todo | P2-T2 | Rule: min(3, số chart hợp lý từ data) |
 | P2-T4 | UI locked chart slot: blur + 🔒 + nudge nâng cấp | ⬜ Todo | P2-T3 | Không hiện slot trống nếu data không đủ chart |
 | P2-T5 | Chart customization panel: đổi màu, tiêu đề, theme | ✅ Done | P2-T1 | `PATCH /charts/:id` (updateMany owner-guard, chỉ set field gửi). FE: ChartStylePanel (drawer phải) đổi tiêu đề + 4 bảng màu + nền sáng/tối, preview trực tiếp; `lib/chartCustomize` (applyCustomization/readStyle thuần). Nút ⚙ trên header chart. +5 BE +13 FE test |
