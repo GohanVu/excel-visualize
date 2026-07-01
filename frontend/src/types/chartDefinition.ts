@@ -51,3 +51,14 @@ export interface ChartDefinition {
   display?: ChartDisplay;
   style?: ChartDefinitionStyle;
 }
+
+// Cấu trúc lưu trong `Chart.config` (JSONB) kể từ P3.5-T4.
+// `definition` là nguồn sự thật; `option` là ECharts option đã compile — cache để
+// Dashboard render nhanh KHÔNG cần fetch rows. Chart cũ (trước T4) không có `definition`,
+// `config` chính là ECharts option thô → phân biệt bằng `isDefinitionConfig`.
+// Dùng `type` (không phải interface) để gán được vào Record<string,unknown> khi lưu.
+export type ChartConfigV2 = {
+  version: 2;
+  definition: ChartDefinition;
+  option: Record<string, unknown>;
+};

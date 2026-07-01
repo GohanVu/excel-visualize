@@ -3,6 +3,8 @@ import {
   chartSuggestionToDefinition,
   isDefinitionConfig,
   getChartDefinition,
+  toChartConfigV2,
+  resolveChartOption,
 } from './chartConfigAdapter';
 import type { ChartSuggestion } from '../../api/datasets';
 
@@ -83,5 +85,33 @@ describe('isDefinitionConfig / getChartDefinition', () => {
     expect(isDefinitionConfig(undefined)).toBe(false);
     expect(isDefinitionConfig('x')).toBe(false);
     expect(isDefinitionConfig({ definition: null })).toBe(false);
+  });
+});
+
+describe('toChartConfigV2 / resolveChartOption', () => {
+  const definition = chartSuggestionToDefinition(suggestion());
+
+  it('toChartConfigV2 đóng gói {version:2, definition, option}', () => {
+    const option = { series: [{ type: 'bar' }] };
+    expect(toChartConfigV2(definition, option)).toEqual({ version: 2, definition, option });
+  });
+
+  it('resolveChartOption: config v2 → trả .option đã cache', () => {
+    const cfg = toChartConfigV2(definition, { series: [1] });
+    expect(resolveChartOption(cfg)).toEqual({ series: [1] });
+  });
+
+  it('resolveChartOption: chart cũ (option thô) → trả chính nó', () => {
+    const old = { color: ['#000'], series: [{ type: 'bar' }] };
+    expect(resolveChartOption(old)).toBe(old);
+  });
+
+  it('resolveChartOption: null/undefined → {}', () => {
+    expect(resolveChartOption(null)).toEqual({});
+    expect(resolveChartOption(undefined)).toEqual({});
+  });
+
+  it('resolveChartOption: v2 thiếu option → {}', () => {
+    expect(resolveChartOption({ version: 2, definition })).toEqual({});
   });
 });

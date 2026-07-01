@@ -3,7 +3,7 @@
 // chart MỚI lưu `{ version, definition, option? }`. Guard phân biệt 2 dạng để
 // fork render ở T4: có definition → compile lại; không → dùng option thô như cũ.
 import type { ChartSuggestion } from '../../api/datasets';
-import type { ChartDefinition } from '../../types/chartDefinition';
+import type { ChartDefinition, ChartConfigV2 } from '../../types/chartDefinition';
 import { DEFAULT_DEFINITION_STYLE } from './chartDefinitionDefaults';
 
 /**
@@ -45,4 +45,24 @@ export function isDefinitionConfig(
 /** Lấy ChartDefinition từ config v2, hoặc null nếu là chart cũ (option thô). */
 export function getChartDefinition(config: unknown): ChartDefinition | null {
   return isDefinitionConfig(config) ? config.definition : null;
+}
+
+/** Đóng gói definition + option đã compile thành config v2 để lưu (P3.5-T4). */
+export function toChartConfigV2(
+  definition: ChartDefinition,
+  option: Record<string, unknown>,
+): ChartConfigV2 {
+  return { version: 2, definition, option };
+}
+
+/**
+ * Rút ECharts option để render, từ CẢ config v2 (lấy `.option` cache) lẫn chart cũ
+ * (config chính là option thô). Dùng ở mọi điểm render 1 chart đã lưu.
+ */
+export function resolveChartOption(config: unknown): Record<string, unknown> {
+  if (isDefinitionConfig(config)) {
+    const opt = (config as Partial<ChartConfigV2>).option;
+    return opt ?? {};
+  }
+  return (config as Record<string, unknown>) ?? {};
 }

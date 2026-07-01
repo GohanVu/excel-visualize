@@ -6,7 +6,11 @@ import Header from '../components/Header';
 import type { ChartSuggestion, Aggregation } from '../api/datasets';
 import { saveChart } from '../api/charts';
 import { apiErrorMessage } from '../lib/apiError';
-import { buildChartOption } from '../lib/buildChartOption';
+import {
+  chartSuggestionToDefinition,
+  toChartConfigV2,
+} from '../lib/chart/chartConfigAdapter';
+import { buildChartOptionFromDefinition } from '../lib/chart/chartCompiler';
 import ChartView from '../components/ChartView';
 
 // Nhãn tiếng Việt cho switcher phép gộp (T3). Chưa gate Free/Pro — hiện đủ 6.
@@ -115,7 +119,9 @@ function ChartDetail({
     suggestion.aggregation != null && suggestion.encoding.y.length > 0;
   const canTogglePercent = suggestion.type === 'bar'; // pie vốn đã %
   const activeSuggestion = agg ? { ...suggestion, aggregation: agg } : suggestion;
-  const option = buildChartOption(activeSuggestion, data.rows, { percent });
+  // definition = nguồn sự thật (để lưu config v2); option = bản compile để preview/lưu cache.
+  const definition = chartSuggestionToDefinition(activeSuggestion, { percent });
+  const option = buildChartOptionFromDefinition(definition, data.rows);
 
   function exportPng() {
     const instance = chartRef.current?.getEchartsInstance?.();
@@ -135,7 +141,12 @@ function ChartDetail({
     setSaving(true);
     setSaveError('');
     try {
-      await saveChart(datasetId, suggestion.type, suggestion.title, option);
+      await saveChart(
+        datasetId,
+        suggestion.type,
+        suggestion.title,
+        toChartConfigV2(definition, option),
+      );
       setSaved(true);
       setTimeout(onSaved, 1200);
     } catch (err) {

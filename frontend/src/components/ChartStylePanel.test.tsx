@@ -56,6 +56,28 @@ describe('ChartStylePanel', () => {
     expect(cfg.series).toEqual([{ type: 'bar' }]); // giữ option gốc
   });
 
+  it('chart v2: giữ definition + version, màu áp vào config.option (không top-level)', () => {
+    const onSave = vi.fn();
+    const v2Chart: DashboardChart = {
+      ...chart,
+      config: {
+        version: 2,
+        definition: { version: 1, chartType: 'bar', yFields: [] },
+        option: { series: [{ type: 'bar' }] },
+      },
+    };
+    render(
+      <ChartStylePanel chart={v2Chart} saving={false} onSave={onSave} onClose={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Hoàng hôn/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu' }));
+    const cfg = onSave.mock.calls[0][0].config;
+    expect(cfg.version).toBe(2);
+    expect(cfg.definition).toEqual({ version: 1, chartType: 'bar', yFields: [] });
+    expect(cfg.option.color).toContain('#f97316'); // màu áp vào option cache
+    expect(cfg.color).toBeUndefined(); // KHÔNG ở top-level
+  });
+
   it('nút Huỷ + nút đóng đều gọi onClose', () => {
     const { onClose } = setup();
     fireEvent.click(screen.getByRole('button', { name: 'Huỷ' }));

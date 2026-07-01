@@ -720,3 +720,30 @@
 
 ### Tasks liên quan
 - P3.5-T3 ✅
+
+## [2026-07-01] Session — P3.5-T4: Lưu config v2 + render fork (hoàn tất Nhóm A)
+
+### Yêu cầu
+- Chuyển `Chart.config` sang lưu `definition` (nguồn sự thật) thay vì ECharts option thô; render đọc được cả config v2 mới lẫn chart cũ.
+
+### Công việc đã làm
+- **Type + helper** (`types/chartDefinition.ts` + `chart/chartConfigAdapter.ts`):
+  - `ChartConfigV2 = { version:2, definition, option }` (dùng `type` không `interface` để gán được vào `Record<string,unknown>` khi lưu).
+  - `toChartConfigV2(definition, option)`; `resolveChartOption(config)` — trả `.option` (v2) hoặc chính config (chart cũ) hoặc `{}` (null).
+- **ChartDetailPage**: tính `definition = chartSuggestionToDefinition(activeSuggestion, {percent})` + `option = buildChartOptionFromDefinition(definition, rows)`; save `toChartConfigV2(definition, option)` thay vì option thô. Definition phản ánh cả phép gộp đã switch.
+- **DashboardPage** grid: `option={resolveChartOption(chart.config)}` (cache option → không cần fetch rows).
+- **ChartStylePanel** v2-aware: đọc/preview trên `resolveChartOption(config)`; khi lưu, chart v2 → `{...config, option: customized}` (giữ definition+version), chart cũ → option thô như trước.
+- **Test**: +5 adapter (toChartConfigV2/resolveChartOption: v2/cũ/null/thiếu option); sửa 2 assertion ChartDetailPage (giờ assert `{version, definition, option}` + definition mang aggregation đã switch); +1 ChartStylePanel (v2 giữ definition, màu vào option). **228/228**, build xanh.
+
+### Quyết định quan trọng
+- **Config v2 CACHE `option`** (không chỉ `definition`): Dashboard hiện render chart đã lưu KHÔNG fetch rows; nếu chỉ lưu definition sẽ phải fetch rows từng chart để recompile (N request). Cache option → giữ nguyên tốc độ; Studio (đã có rows) mới recompile khi sửa.
+- **`resolveChartOption` tại điểm tiêu thụ** thay vì migrate dữ liệu: chart cũ (option thô) và v2 cùng render đúng, không cần migration script. Migrate mềm khi user mở Studio + lưu (T5+).
+- **ChartStylePanel giữ definition, chỉ đổi option cache**: chấp nhận `definition.style` có thể lệch màu tạm; Studio T9 sẽ hợp nhất. Đủ để không vỡ panel cũ.
+- **`ChartConfigV2` là `type`**: interface không có index signature → không gán được vào `Record<string,unknown>` của `saveChart`.
+
+### Kết quả
+- **Nhóm A (nền tảng T1–T4) HOÀN TẤT.** Chart mới lưu dạng v2; chart cũ vẫn chạy. Chưa đụng backend.
+- Tiếp: **Nhóm B — Studio UI**, bắt đầu **P3.5-T5** (`GET /charts/:id` + route `/charts/:id/studio` skeleton). Đây là lúc có màn hình để browser-test.
+
+### Tasks liên quan
+- P3.5-T4 ✅

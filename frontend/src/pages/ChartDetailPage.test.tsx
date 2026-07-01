@@ -141,7 +141,11 @@ describe('ChartDetailPage', () => {
       'ds-1',
       'line',
       'Xu hướng theo thời gian',
-      expect.objectContaining({ series: expect.any(Array) }),
+      expect.objectContaining({
+        version: 2,
+        definition: expect.objectContaining({ chartType: 'line' }),
+        option: expect.objectContaining({ series: expect.any(Array) }),
+      }),
     );
   });
 
@@ -193,7 +197,11 @@ describe('ChartDetailPage', () => {
       'bar',
       'So sánh giữa các nhóm',
       expect.objectContaining({
-        series: [expect.objectContaining({ data: [150, 300] })],
+        version: 2,
+        definition: expect.objectContaining({ aggregation: 'average' }),
+        option: expect.objectContaining({
+          series: [expect.objectContaining({ data: [150, 300] })],
+        }),
       }),
     );
   });

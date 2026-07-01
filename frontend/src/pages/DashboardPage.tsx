@@ -19,6 +19,7 @@ import {
 } from '../lib/chartLayout';
 import ChartView from '../components/ChartView';
 import ChartStylePanel from '../components/ChartStylePanel';
+import { resolveChartOption } from '../lib/chart/chartConfigAdapter';
 import AddChartMenu from '../components/AddChartMenu';
 import Header from '../components/Header';
 
@@ -342,7 +343,7 @@ function SavedCharts({
               <div className="min-h-0 flex-1 p-2">
                 <ChartView
                   key={`${chart.id}-${item?.w ?? GRID.DEFAULT_W}-${item?.h ?? GRID.DEFAULT_H}`}
-                  option={chart.config}
+                  option={resolveChartOption(chart.config)}
                   height={h}
                 />
               </div>

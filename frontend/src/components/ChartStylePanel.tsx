@@ -9,6 +9,7 @@ import {
   type ChartStyle,
   type ThemeKey,
 } from '../lib/chartCustomize';
+import { isDefinitionConfig, resolveChartOption } from '../lib/chart/chartConfigAdapter';
 import ChartView from './ChartView';
 
 interface Props {
@@ -20,13 +21,20 @@ interface Props {
 
 // Panel tuỳ chỉnh (P2-T5): đổi tiêu đề, bảng màu, nền sáng/tối — preview trực tiếp.
 export default function ChartStylePanel({ chart, saving, onClose, onSave }: Props) {
+  // Chart v2 lưu option trong config.option; chart cũ config chính là option.
+  const baseOption = resolveChartOption(chart.config);
   const [title, setTitle] = useState(chart.title ?? '');
-  const [style, setStyle] = useState<ChartStyle>(() => readStyle(chart.config));
+  const [style, setStyle] = useState<ChartStyle>(() => readStyle(baseOption));
 
-  const preview = applyCustomization(chart.config, style);
+  const preview = applyCustomization(baseOption, style);
 
   function save() {
-    onSave({ title: title.trim(), config: applyCustomization(chart.config, style) });
+    // v2: giữ definition + version, chỉ cập nhật option cache. Cũ: lưu option thô.
+    const customized = applyCustomization(baseOption, style);
+    const config = isDefinitionConfig(chart.config)
+      ? { ...(chart.config as Record<string, unknown>), option: customized }
+      : customized;
+    onSave({ title: title.trim(), config });
   }
 
   return (
