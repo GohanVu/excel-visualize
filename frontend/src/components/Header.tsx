@@ -1,4 +1,4 @@
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import client from '../api/client';
 
@@ -10,7 +10,6 @@ interface HeaderProps {
 
 export default function Header({ showBack, backUrl = '/dashboard', backText = 'Quay lại Dashboard' }: HeaderProps) {
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   async function handleLogout() {
     try {

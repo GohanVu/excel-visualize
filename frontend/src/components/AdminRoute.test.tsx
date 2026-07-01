@@ -33,7 +33,7 @@ describe('AdminRoute', () => {
     mockedUseAuth.mockReturnValue({
       isLoading: false,
       isAuthenticated: true,
-      user: { id: '1', email: 'a@a.com', role: 'admin', name: 'Admin', avatarUrl: null, createdAt: '', updatedAt: '' },
+      user: { id: '1', email: 'a@a.com', role: 'admin', name: 'Admin', avatarUrl: null, createdAt: '', updatedAt: '', googleConnected: false },
     });
 
     renderWithRouter('/admin');
@@ -45,7 +45,7 @@ describe('AdminRoute', () => {
     mockedUseAuth.mockReturnValue({
       isLoading: false,
       isAuthenticated: true,
-      user: { id: '1', email: 'u@u.com', role: 'user', name: 'User', avatarUrl: null, createdAt: '', updatedAt: '' },
+      user: { id: '1', email: 'u@u.com', role: 'user', name: 'User', avatarUrl: null, createdAt: '', updatedAt: '', googleConnected: false },
     });
 
     renderWithRouter('/admin');

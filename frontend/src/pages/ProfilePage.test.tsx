@@ -59,17 +59,8 @@ describe('ProfilePage', () => {
         role: 'user',
         createdAt: '2026-06-01T00:00:00.000Z',
         updatedAt: '2026-06-01T00:00:00.000Z',
-        subscription: {
-          id: 'sub-1',
-          userId: 'user-1',
-          plan: 'free',
-          status: 'active',
-          stripeCustomerId: null,
-          stripeSubscriptionId: null,
-          currentPeriodEnd: null,
-          createdAt: '',
-          updatedAt: '',
-        },
+        googleConnected: false,
+        subscription: { plan: 'free', status: 'active' },
       },
     });
 
@@ -94,17 +85,8 @@ describe('ProfilePage', () => {
         role: 'admin',
         createdAt: '2026-06-02T00:00:00.000Z',
         updatedAt: '2026-06-02T00:00:00.000Z',
-        subscription: {
-          id: 'sub-2',
-          userId: 'admin-1',
-          plan: 'pro',
-          status: 'active',
-          stripeCustomerId: null,
-          stripeSubscriptionId: null,
-          currentPeriodEnd: null,
-          createdAt: '',
-          updatedAt: '',
-        },
+        googleConnected: false,
+        subscription: { plan: 'pro', status: 'active' },
       },
     });
 
@@ -130,6 +112,7 @@ describe('ProfilePage', () => {
         role: 'admin',
         createdAt: '2026-06-02T00:00:00.000Z',
         updatedAt: '2026-06-02T00:00:00.000Z',
+        googleConnected: false,
         subscription: null,
       },
     });
@@ -152,6 +135,7 @@ describe('ProfilePage', () => {
         role: 'user',
         createdAt: '2026-06-01T00:00:00.000Z',
         updatedAt: '2026-06-01T00:00:00.000Z',
+        googleConnected: false,
         subscription: null,
       },
     });

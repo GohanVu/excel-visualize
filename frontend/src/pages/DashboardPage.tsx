@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import RGL, { WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { useAuth } from '../hooks/useAuth';
 import { fetchDatasets, deleteDataset, syncDataset } from '../api/datasets';
 import type { Dataset } from '../api/datasets';
 import { apiErrorMessage } from '../lib/apiError';
@@ -27,7 +26,6 @@ const GridLayout = WidthProvider(RGL);
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   const queryClient = useQueryClient();
   const datasetsQ = useQuery({ queryKey: ['datasets'], queryFn: fetchDatasets });
