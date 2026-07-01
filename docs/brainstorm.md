@@ -129,4 +129,54 @@ Người dùng muốn có cách thiết kế biểu đồ hoạt động tương
 4. **Trình biên dịch Option**:
    * Nâng cấp `buildChartOption.ts` thành một compiler nhận `definition` + `rows` $\rightarrow$ sinh ra option ECharts tương ứng trực tiếp ở frontend.
 
+## Session 3 — 2026-07-01 — Chart Studio Editor (Phase 3.5)
+
+> Nguồn: thảo luận GitHub Copilot, export ở file `wed_jul_01_2026_notion_chart_view_alternatives_on_git_hub.json` (repo root).
+> Lưu ý: yêu cầu ghi "phase 3.5 cho việc làm **chat**" — thực chất là **chart** (Chart Studio); toàn bộ thảo luận bàn về chart editor.
+> Đây là bản CHI TIẾT HOÁ + THỰC THI của định hướng đã nêu ở Session 2 (Notion-like Chart View).
+
+### Bối cảnh & Vấn đề
+
+- Người dùng khảo sát các repo tham chiếu (ocean-dataview, react-json-chart-builder, Chart-Creator, Superset/Metabase) để định vị `excel-visualize`. Kết luận: repo đã vượt mức "demo chart", đang là **No-code Excel/Google Sheet visualization SaaS** — nên tiến tới trải nghiệm cấu hình biểu đồ kiểu **Notion Chart View**.
+- **Vấn đề gốc phát hiện trong code:** hiện `Chart.config` lưu thẳng **ECharts option đã compile** (`saveChart(datasetId, type, title, option)` ở `ChartDetailPage`). ECharts option quá technical, khó migrate, AI khó sinh ổn định, UI khó map ngược → không phải nguồn sự thật tốt.
+
+### Quyết định thiết kế cốt lõi
+
+1. **Tách 2 lớp `definition` ↔ `option`.** `ChartDefinition` (chartType, xField, yFields, aggregation, seriesField, sort, limit, style) là **nguồn sự thật**; `option` chỉ là kết quả compile/cache. Compiler: `buildChartOptionFromDefinition(definition, rows) → ECharts option`.
+2. **Làm TRƯỚC Phase 4 (AI).** AI suggester nên sinh ra `ChartDefinition` (kèm `reason` tiếng Việt), KHÔNG sinh ECharts option. Khi đó rule-based suggester + AI + Studio editor + dashboard render đều dùng CHUNG 1 schema.
+3. **Không đổi schema Prisma.** `Chart.config Json` đủ linh hoạt; chỉ nâng cấu trúc thành `{ version:2, definition, option? }`. Chỉ thêm bảng sau này nếu cần query theo field / template / collaboration.
+4. **Backward-compat bắt buộc.** Chart cũ (option thô) render qua path cũ; adapter `chartSuggestionToDefinition` + guard `isDefinitionConfig`; migrate mềm khi user mở Studio và bấm Lưu.
+5. **Compiler phải tách nhỏ** (`lib/chart/`: aggregation/series/sort/limit/palettes) — không phình `buildChartOption.ts` (đang 187 dòng, sát ngưỡng 200).
+
+### Đối chiếu code hiện tại (reuse-first)
+
+| Đã có → REUSE | Còn thiếu → LÀM MỚI |
+|---|---|
+| 6 phép gộp (`reduceAgg`/`groupAggregate`) | `seriesField` "Tách nhóm" (split 1 cột phân loại thành nhiều series) |
+| 4 bảng màu + theme sáng/tối (`chartCustomize`) | sort + limit Top N |
+| multi-yField = nhiều series; toggle % (bar) | `ChartDefinition` type + compiler tách helper |
+| `PATCH /charts/:id` (P2-T5) | `GET /charts/:id` (chưa có, chỉ có list) |
+| ChartType bar/line/pie/scatter | config v2 `{version, definition}` + adapter back-compat |
+
+### Trải nghiệm UI (Hybrid Flow)
+
+- **Giữ triết lý cũ:** người mới "upload → thấy chart ngay" (auto-suggest 30s). Studio là lớp nâng cao **opt-in**, không bắt cấu hình từ đầu.
+- **3 entry vào Studio:** Dashboard (gear/⋮ menu — chính) · Chart Detail sau khi chọn gợi ý ("Chỉnh thêm trong Studio") · (defer) từ card gợi ý.
+- **Studio = route riêng full-screen** (không phải drawer): header (← Dashboard · Huỷ/Lưu) · trái = chart preview lớn + data preview table · phải = sidebar sticky 3 section.
+- **Sidebar tiếng Việt theo mental model:** Dữ liệu (Kiểu biểu đồ / So sánh theo / Số liệu / Tính theo / Tách nhóm) · Sắp xếp (Sắp xếp theo / Thứ tự / Hiển thị Top N) · Giao diện (Tiêu đề / Bảng màu / Legend / Nhãn / Lưới / Nền tối).
+- **Nguyên tắc:** chart hiện trước – control đứng sau; realtime preview nhưng **lưu-sau** (không autosave MVP); smart-default không để form trống; disable/hướng dẫn khi config vô lý (pie 1 số liệu, scatter cần 2 cột số); data table highlight cột đang dùng (x/y/series).
+- **Field picker thông minh:** nhóm cột theo loại (Thời gian/Số liệu/Phân loại) + hiện sample values, không list phẳng.
+- Mental model đích: câu "So sánh **[Doanh thu]** theo **[Tháng]**, tính bằng **[Tổng]**, tách nhóm **[Khu vực]**, hiển thị **[Top 10]**".
+
+### Chốt phạm vi (đã quyết cho v1)
+
+- **Chia 2 nhóm:** A = nền tảng (type/adapter/compiler/config v2), B = Studio UI. Làm A trước để không vỡ chart cũ.
+- **Chart type v1:** giữ 4 loại đang có (bar/line/pie/scatter). `area` rẻ (line + areaStyle) có thể thêm; `table`/`kpi` **defer**.
+- **`seriesField`** đưa vào plan nhưng là task advanced cuối cùng — tách lô được nếu cần giảm scope.
+- Kết quả: repo chuyển từ "upload → app suggest chart" thành "upload → suggest → **user mở Studio chỉnh như Notion** → AI (sau) cũng sinh/chỉnh trên cùng schema".
+
+### Tasks liên quan
+
+- Phase 3.5 (P3.5-T1 → T12) trong `docs/plan.md`. Tiền đề cho Phase 4 (AI sinh `ChartDefinition`).
+
 <!-- Thêm session mới ở đây -->

@@ -618,3 +618,105 @@
 
 ### Tasks liên quan
 - Troubleshooting & Quality Assurance (UI & auto-detect).
+
+## [2026-07-01] Session — Brainstorm & lập kế hoạch Phase 3.5 (Chart Studio Editor)
+
+### Yêu cầu
+- Người dùng chia sẻ thảo luận GitHub Copilot (export: `wed_jul_01_2026_notion_chart_view_alternatives_on_git_hub.json`), yêu cầu brainstorm và thêm **Phase 3.5** vào plan. (Ghi "làm chat" — thực chất là **chart**/Chart Studio; toàn bộ thảo luận bàn về chart editor.)
+
+### Công việc đã làm
+- Đọc trọn 11 messages trong file export (Copilot share cần login → WebFetch/curl không lấy được; dùng file JSON user đính kèm, parse bằng Python ra `scratchpad/copilot_convo.txt`).
+- Đối chiếu code thực tế thay vì chép nguyên đề xuất Copilot: đọc `buildChartOption.ts`, `charts.controller.ts`, `chartCustomize.ts`, `ChartSuggestion`/`ChartType`/`Aggregation` type, luồng save ở `ChartDetailPage`.
+- Thêm **Phase 3.5 — Chart Studio Editor** vào `docs/plan.md` (12 task: Nhóm A nền tảng T1–T4, Nhóm B UI T5–T12) + gating + test cases + thứ tự; cập nhật Critical Path (P3.5 trước P4).
+- Ghi `docs/brainstorm.md` Session 3 (WHY + thiết kế + đối chiếu reuse/mới + UX hybrid flow).
+
+### Quyết định quan trọng
+- **`definition` là nguồn sự thật, không phải ECharts option.** Phát hiện code hiện lưu `config` = option thô → đây là anti-pattern cần sửa; compiler `definition + rows → option`.
+- **Làm Phase 3.5 TRƯỚC Phase 4:** AI (P4) sinh `ChartDefinition`, không sinh ECharts option → 1 schema chung cho rule-based + AI + Studio + dashboard.
+- **Không đổi schema Prisma:** nâng `Chart.config` thành `{version:2, definition, option?}`; backward-compat cho chart cũ (option thô) qua adapter + guard.
+- **Reuse-first:** tận dụng `reduceAgg`/`groupAggregate` (6 phép gộp), `PALETTES`/`THEMES`, `PATCH /charts/:id`. Mới hoàn toàn: `seriesField` (tách nhóm), sort/limit Top N, `GET /charts/:id`, Studio route/UI.
+- **Scope v1:** giữ 4 chart type (bar/line/pie/scatter), defer table/kpi; `seriesField` là task advanced cuối, tách lô được.
+
+### Kết quả
+- Phase 3.5 đã có trong plan với 12 task rõ dependency, bám sát code hiện tại. Chưa viết code — đây là session brainstorm/planning. Task code kế tiếp đề xuất: **P3.5-T1** (`ChartDefinition` type + default helper).
+
+### Tasks liên quan
+- Phase 3.5 (P3.5-T1 → T12) — mới thêm. Tiền đề cho Phase 4.
+
+## [2026-07-01] Session — P3.5-T1: `ChartDefinition` type + smart default
+
+### Yêu cầu
+- Bắt đầu code Phase 3.5. Task đầu: định nghĩa `ChartDefinition` (nguồn sự thật) + helper default để Studio không mở ra form trống.
+
+### Công việc đã làm
+- `frontend/src/types/chartDefinition.ts`: type `ChartDefinition` (version, chartType, xField, yFields[], aggregation, seriesField, sort, limit, display, style) + `SortDirection`/`ChartTheme`/`ChartSort`/`ChartDisplay`/`ChartDefinitionStyle`. Reuse `ChartType`+`Aggregation` từ `api/datasets` (re-export).
+- `frontend/src/lib/chart/chartDefinitionDefaults.ts`: `createDefaultChartDefinition(columns)` + `DEFAULT_DEFINITION_STYLE`. Routing theo kiểu cột: date+number→line/sum/sort-asc; category+number→bar/sum/sort-desc/Top10; ≥2 number thuần→scatter; category-only→bar/count; fallback→bar/count. Khởi đầu thư mục `lib/chart/` (sẽ chứa compiler ở T3).
+- +8 unit test (`chartDefinitionDefaults.test.ts`) phủ đủ nhánh + style copy (không chia sẻ reference) + fallback rỗng.
+- **Bonus — fix build đỏ pre-existing** (Issue-012 tái diễn): `googleConnected` thiếu ở fixture `AdminRoute.test`/`ProfilePage.test`; `ProfilePage.test` dựng `subscription` dư field; biến dead `navigate` (Header) + `user` (DashboardPage). Fix hết → build xanh.
+
+### Quyết định quan trọng
+- **`ChartTheme` tự chứa trong types/** (không import `ThemeKey` từ lib/chartCustomize) để giữ types/ không phụ thuộc lib/; giá trị trùng ('dark'|'light') nên T9 bắc cầu sang PALETTES/THEMES dễ dàng.
+- **`palette: string`** (không union cứng) — khớp `ChartStyle.palette` hiện có, tránh drift khi thêm bảng màu.
+- **Default average-theo-tên-cột KHÔNG làm ở đây** — giữ `sum` cho helper thuần & dễ test; heuristic tên cột do suggester backend lo (P1.8-T2 `defaultAggregation`).
+- **Fix build pre-existing luôn** theo tiền lệ P1.6-T7: không để task kế thừa build đỏ.
+
+### Kết quả
+- FE: **204/204 test** pass (25 file, +8 mới), `pnpm build` (tsc -b + vite) xanh. Chưa đụng backend.
+- Tiếp: **P3.5-T2** (adapter `chartSuggestionToDefinition` + guard `isDefinitionConfig`, backward-compat chart cũ lưu ECharts option thô).
+
+### Tasks liên quan
+- P3.5-T1 ✅
+
+## [2026-07-01] Session — P3.5-T2: Adapter suggestion→definition + guard backward-compat
+
+### Yêu cầu
+- Adapter chuyển `ChartSuggestion` → `ChartDefinition` (giữ luồng suggest chạy trên schema mới, không đụng backend) + guard phân biệt config mới/cũ để fork render ở T4.
+
+### Công việc đã làm
+- Xác minh: Dashboard render chart cũ bằng cách truyền thẳng `chart.config` làm ECharts option (`DashboardPage.tsx:345 option={chart.config}`). ⇒ chart cũ = **option đã compile**, không có `definition`.
+- `frontend/src/lib/chart/chartConfigAdapter.ts`:
+  - `chartSuggestionToDefinition(suggestion, {percent})`: map type/x/y/aggregation; `percent` chỉ set `display.percent` khi bar (khớp `buildChartOption`).
+  - `isDefinitionConfig(config)`: type guard `config is { definition }` — true nếu có `definition` là object.
+  - `getChartDefinition(config)`: trả definition hoặc null.
+- +9 test (`chartConfigAdapter.test.ts`): bar/line/pie, count (yFields rỗng), percent bar vs bỏ qua non-bar, style default; guard true/false với config v2, option thô, null/undefined/non-object.
+
+### Quyết định quan trọng
+- **Guard chỉ check sự hiện diện `definition`** (không validate sâu) — đủ để phân biệt cũ/mới; option ECharts không dùng key `definition` nên an toàn.
+- **Chưa định nghĩa type wrapper `ChartConfigV2`** — để dành T4 (nơi chốt có cache `option` hay không). T2 chỉ lo adapter + guard.
+- **Adapter set style = DEFAULT_DEFINITION_STYLE, KHÔNG lấy `suggestion.title`** — tránh chồng nguồn tiêu đề với `Chart.title` (quyết định P2-T5: tiêu đề thẻ = `Chart.title`, không đụng config).
+- Ghi nhận cho T4: config v2 nên **cache `option`** để Dashboard render nhanh khỏi fetch rows recompile (Dashboard hiện không load rows cho chart đã lưu).
+
+### Kết quả
+- FE: **213/213 test** (26 file, +9), `pnpm build` xanh. Chưa đụng backend.
+- Tiếp: **P3.5-T3** (compiler `buildChartOptionFromDefinition` + tách helper `lib/chart/`; giữ `buildChartOption` cũ làm wrapper).
+
+### Tasks liên quan
+- P3.5-T2 ✅
+
+## [2026-07-01] Session — P3.5-T3: Compiler `buildChartOptionFromDefinition` + tách `lib/chart/`
+
+### Yêu cầu
+- Chuyển render từ `buildChartOption(suggestion)` sang compiler nhận `ChartDefinition`; tách helper; giữ wrapper cũ không vỡ code. Thêm năng lực mới: seriesField (tách nhóm), sort, limit.
+
+### Công việc đã làm
+- Tách `frontend/src/lib/chart/`:
+  - `chartAggregation.ts`: `num`, `label`, `reduceAgg`, `groupAggregate`, `maybePercent` (bê từ buildChartOption cũ).
+  - `chartSeries.ts`: IR `{categories, series}` + `buildAggregated` (gộp), `buildRaw` (thô), **`buildSplit`** (seriesField: mỗi giá trị 1 series, gộp theo (x, series)).
+  - `chartSort.ts`: `applySortLimit(data, def)` — sort theo nhãn X (numeric-aware) hoặc giá trị series, + limit Top N. **Identity khi không sort & limit vô hiệu** → backward-compat tuyệt đối.
+  - `chartCompiler.ts`: `buildChartOptionFromDefinition` render IR→ECharts theo type (scatter/pie/bar-line), tách `renderScatter`/`renderPie`/`renderCartesian` (giữ hàm chính <50 dòng).
+- `buildChartOption.ts` → wrapper mỏng: `buildChartOptionFromDefinition(chartSuggestionToDefinition(suggestion, opts), rows)`; re-export `groupAggregate` + type `ChartOption` (giữ import cũ ở ChartDetail/ChartSuggestion/ChartView).
+- Test: **27 test buildChartOption cũ pass byte-identical** (regression gate). +9 test compiler mới (`chartCompiler.test.ts`): seriesField split (sum + count), sort theo giá trị/nhãn X, numeric-aware, limit Top N, identity, agg+line→line.
+
+### Quyết định quan trọng
+- **IR trung gian `{categories, series}`** (categories THÔ, formatDate lúc render) → sort/limit thao tác trên chỉ số, no-op khi unset → giữ output cũ y hệt (không test nào assert `color`/`tooltip` nên an toàn tách).
+- **agg + line → series type line** (compiler tôn trọng `chartType`), thay vì ép 'bar' như code cũ. An toàn: suggester chỉ phát agg kèm bar/pie nên không đổi hành vi thực tế; mở đường cho Studio.
+- **Style (palette/theme/legend/labels/grid) defer T9** — compiler chỉ lo encoding + aggregation/series/sort/limit + percent; giữ `color: PALETTE` hardcode như cũ để không đổi visual.
+- **seriesField dùng `yFields[0]`** (bỏ qua cột y còn lại) — v1 hợp lý; multi-y + split để sau.
+
+### Kết quả
+- FE: **222/222 test** (27 file, +9), `pnpm build` xanh. Source `lib/chart/` **lint sạch** (0 error/warning). Chưa đụng backend.
+- **Pre-existing lint đỏ (KHÔNG fix, ngoài phase)**: `ChartDetailPage.test.tsx:20` (`_ref` unused, từ P2-T8) + `AdminAuditLogsPage.tsx:11` (`any`, từ P0.5). Husky dùng lint-staged nên lỗi cũ lọt lưới. Cân nhắc dọn riêng.
+- Nhóm A (nền tảng) xong T1–T3. Tiếp: **P3.5-T4** (lưu config v2 `{version, definition}` khi save + render fork v2/cũ) — sau đó vào Nhóm B (Studio UI) để browser-test.
+
+### Tasks liên quan
+- P3.5-T3 ✅

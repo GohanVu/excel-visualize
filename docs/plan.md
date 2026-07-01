@@ -295,6 +295,73 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 
 ---
 
+## Phase 3.5 — Chart Studio Editor (biên tập biểu đồ kiểu Notion)
+
+> Mục tiêu: Biến chart từ "gợi ý cố định" thành "biểu đồ chỉnh cấu hình được" như Notion Chart View.
+> `Chart.config` chuyển sang lưu `definition` (NGUỒN SỰ THẬT) thay vì ECharts option thô như hiện tại
+> (nay `saveChart` đang lưu thẳng `option`). Frontend có compiler `definition + rows → ECharts option`.
+> Rule-based suggester, AI (Phase 4) và Studio editor đều sinh/sửa CÙNG một `ChartDefinition` → 1 schema
+> duy nhất để render.
+> Bối cảnh + thiết kế: brainstorm Session 2 (định hướng Notion-like) + Session 3 (chi tiết, từ file
+> `wed_jul_01_2026_notion_chart_view_alternatives_on_git_hub.json`). Làm **TRƯỚC Phase 4** để AI chỉ cần
+> sinh `ChartDefinition`, không sinh ECharts option.
+>
+> **Triết lý Hybrid Flow (giữ nguyên):** người mới vẫn "upload → thấy chart ngay" (auto-suggest);
+> Studio là lớp nâng cao **opt-in** cho ai muốn chỉnh sâu — KHÔNG bắt ai cấu hình từ đầu.
+> UI theo mental model người dùng Excel: "So sánh theo / Số liệu / Tính theo / Tách nhóm" (ẩn jargon).
+
+### Nhóm A — Nền tảng: type + compiler + config v2 (reuse-first, chưa cần UI)
+
+| Task ID | Mô tả | Status | Dependencies | Notes |
+|---------|-------|--------|--------------|-------|
+| P3.5-T1 | `ChartDefinition` type chuẩn + `createDefaultChartDefinition()` (smart default theo kiểu cột) | ✅ Done | P1.8 done | `types/chartDefinition.ts` + `lib/chart/chartDefinitionDefaults.ts`. **Reuse** `Aggregation`+`ChartType` từ `api/datasets`. Smart-default: date+num→line/sum, cat+num→bar/sum/Top10, ≥2num→scatter, cat→count. +8 test. Bonus: fix build đỏ pre-existing (Issue-012 tái diễn: `googleConnected`) |
+| P3.5-T2 | Adapter + guard backward-compat | ✅ Done | P3.5-T1 | `lib/chart/chartConfigAdapter.ts`: `chartSuggestionToDefinition` (opts.percent→display, chỉ bar) + `isDefinitionConfig` (type guard) + `getChartDefinition`. Xác nhận Dashboard render chart cũ = `config` thẳng làm option ([DashboardPage.tsx:345](../frontend/src/pages/DashboardPage.tsx#L345)). +9 test |
+| P3.5-T3 | Compiler `buildChartOptionFromDefinition(def, rows)` — tách helper nhỏ | ✅ Done | P3.5-T2 | Tách `lib/chart/`: chartAggregation (num/reduceAgg/groupAggregate/maybePercent) · chartSeries (buildAggregated/buildRaw/**buildSplit** seriesField) · chartSort (applySortLimit, identity khi unset) · chartCompiler (render IR→ECharts). `buildChartOption` giờ là wrapper (giữ 27 test cũ **byte-identical**). Style (palette/theme/legend) defer T9. +9 test mới (seriesField split, sort, limit Top N, agg+line→line). Chưa xử: 2 lint error pre-existing (ChartDetailPage.test `_ref`, AdminAuditLogsPage `any`) — không thuộc phase |
+| P3.5-T4 | Lưu config v2 `{version:2, definition}` khi save; render đọc CẢ v2 + config cũ | ⬜ Todo | P3.5-T3 | `ChartDetailPage.saveChart` gửi `definition` thay vì `option` thô. Dashboard/Suggestion render qua adapter (v2→compiler mới; cũ→`buildChartOption` cũ). Backend giữ `config Json` — **KHÔNG đổi schema Prisma** |
+
+### Nhóm B — Chart Studio UI (route riêng, full-screen)
+
+| Task ID | Mô tả | Status | Dependencies | Notes |
+|---------|-------|--------|--------------|-------|
+| P3.5-T5 | Backend `GET /charts/:id` (owner-guard) + route `/charts/:id/studio` skeleton | ⬜ Todo | P3.5-T4 | **Chưa có** GET single chart (chỉ có list). Studio load chart + `/datasets/:id/columns` + `/rows` — thread `sheet`/`headerRow` (tránh lệch key như Issue-008). Layout 3 vùng: header (← Dashboard · Huỷ/Lưu) · trái = preview + data table · phải = sidebar sticky |
+| P3.5-T6 | Sidebar "Dữ liệu": kiểu biểu đồ (card icon), So sánh theo (x), Số liệu (y multi), Tính theo (agg) + preview realtime | ⬜ Todo | P3.5-T5 | Field picker nhóm cột theo loại (Thời gian/Số liệu/Phân loại) + sample values. Smart-default KHÔNG để form trống. Disable option vô lý (pie 1 y; scatter cần 2 cột số) |
+| P3.5-T7 | "Tách nhóm" (seriesField): compiler split 1 cột phân loại → nhiều series + control + legend | ⬜ Todo | P3.5-T6 | **TÍNH NĂNG MỚI HOÀN TOÀN** (`buildChartOption` hiện chỉ multi-yField, chưa split theo GIÁ TRỊ 1 cột). Advanced — có thể tách lô riêng nếu cần giảm scope MVP |
+| P3.5-T8 | "Sắp xếp": sort theo x / y / giá trị gộp + chiều + Giới hạn Top N | ⬜ Todo | P3.5-T6 | **Chưa có** sort/limit. Wording theo type: Cao→thấp / A→Z / Mới nhất trước. Chip "Top 10 theo Tổng doanh thu" |
+| P3.5-T9 | "Giao diện": tiêu đề/mô tả/bảng màu/legend/nhãn/lưới/nền tối — reuse ChartStylePanel | ⬜ Todo | P3.5-T6 | **Reuse** PALETTES/THEMES (`chartCustomize`). Style về `definition.style` (compiler emit `color`/`backgroundColor`) thay vì nhồi inline như hiện tại |
+| P3.5-T10 | Data preview table (50 dòng) + highlight cột đang dùng (x=xanh / y=tím / series=vàng) + badge vai trò | ⬜ Todo | P3.5-T6 | Giúp user không chuyên đối chiếu chart ↔ data |
+| P3.5-T11 | Save/dirty state + confirm rời trang + `PATCH /charts/:id` + invalidate `['charts']` | ⬜ Todo | P3.5-T5 | Realtime preview nhưng **lưu-sau** (không autosave ở MVP). "Khôi phục bản đã lưu" reset local về saved definition |
+| P3.5-T12 | Dashboard: gear/⋮ menu chart → "Mở Studio" (+ empty/invalid state hướng dẫn) | ⬜ Todo | P3.5-T11 | Menu: Mở Studio / Tải PNG / Xoá. `ChartStylePanel` cũ giữ tạm (thêm nút "Mở Studio") rồi bỏ dần. ChartDetailPage thêm "Chỉnh thêm trong Studio" |
+
+### Gating (định hướng)
+
+- Studio + chỉnh cơ bản (kiểu biểu đồ, x/y, Đếm/Tổng/Trung bình, đổi màu/tiêu đề): **Free**
+- Tách nhóm (seriesField), Top N, Trung vị/Min/Max, bảng màu mở rộng: cân nhắc **Pro** (đồng nhất gating Phase 1.8)
+
+### Test cases P3.5
+
+- [ ] Chart cũ (ECharts option thô) vẫn render đúng qua adapter (backward-compat)
+- [ ] category + count / sum / average / median → compiler ra đúng số
+- [ ] date + sum + sort tăng dần → trục X đúng thứ tự thời gian
+- [ ] limit Top 10 + sort giảm dần → đúng 10 nhóm giá trị cao nhất
+- [ ] seriesField "Khu vực" → mỗi khu vực 1 series + có legend
+- [ ] pie không cho chọn nhiều "Số liệu"; scatter yêu cầu 2 cột số
+- [ ] Đổi field ở sidebar → preview đổi ngay, CHƯA gọi API
+- [ ] Lưu → `PATCH /charts/:id`, config v2 chứa `definition`; mở lại Studio khôi phục đúng form
+- [ ] Rời trang khi dirty → hiện confirm
+
+### Thứ tự đề xuất
+
+```
+A: T1 (type) → T2 (adapter/back-compat) → T3 (compiler tách helper) → T4 (config v2 + render 2 path)
+  → B: T5 (GET /charts/:id + Studio skeleton) → T6 (sidebar Dữ liệu + preview)
+       → T8 (sort/limit) ∥ T9 (giao diện) ∥ T10 (data table)
+       → T11 (save/dirty) → T12 (dashboard → Studio)
+  → T7 (seriesField) làm sau cùng / tách lô nếu cần giảm scope
+Sau P3.5 → Phase 4 (AI sinh ChartDefinition trên CÙNG schema)
+```
+
+---
+
 ## Phase 4 — AI Features (Pro)
 
 > Mục tiêu: Tích hợp Claude API để suggest chart thông minh hơn và viết insight tiếng Việt.
@@ -346,10 +413,11 @@ Sau Phase 1.5 → Phase 1.7 (quota + quản lý file)
 ## Critical Path
 
 ```
-P0 (Setup) → P1 (Core flow) → P2 (Dashboard) → P3 (Google Sheet) → P4 (AI) → P5 (Billing) → P6 (Launch)
+P0 (Setup) → P1 (Core flow) → P2 (Dashboard) → P3 (Google Sheet) → P3.5 (Chart Studio) → P4 (AI) → P5 (Billing) → P6 (Launch)
 ```
 
-P3 và P4 có thể chạy song song sau khi P2 xong.
+P3 và P3.5 có thể chạy song song sau khi P2 xong.
+**P3.5 nên làm TRƯỚC P4**: AI suggester (P4) sinh `ChartDefinition` — cần schema/compiler từ P3.5 có sẵn trước.
 P5 có thể bắt đầu song song với P4.
 
 ---
